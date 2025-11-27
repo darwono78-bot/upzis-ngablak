@@ -3,15 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pembukuan Dana Koin NU & UPZIS</title>
+    <title>Sistem Pembukuan UPZIS | Ranting</title>
+    
     <style>
-        /* CSS Sederhana untuk Layout */
-        body { font-family: sans-serif; padding: 20px; }
-        .container { max-width: 1200px; margin: auto; }
-        .hidden { display: none; } /* Untuk menyembunyikan form input sebelum login */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
+        body { font-family: Tahoma, sans-serif; margin: 0; background-color: #f0f0f0; }
+        .header { 
+            background-color: #007700; /* Hijau NU */
+            color: white; 
+            padding: 10px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
+        .header h1 { margin: 0; font-size: 24px; font-weight: bold; }
+        .nav-links button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            border-radius: 4px;
+        }
+        .nav-links button:hover { background-color: #009900; }
+        .container { 
+            max-width: 1000px; 
+            margin: 20px auto; 
+            background-color: white; 
+            padding: 20px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .info-lembaga { text-align: center; margin: 10px 0 20px 0; }
+        .info-lembaga h2 { color: #007700; margin-bottom: 5px; }
+        .filter-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        .filter-area label, .filter-area select { margin-right: 10px; }
+        .filter-area button { 
+            background-color: #cc0000; /* Merah untuk Unduh PDF */
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            cursor: pointer;
+        }
+        
+        /* Style Tabel */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+        th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+        th { 
+            background-color: #e0f0e0; /* Warna hijau muda di header tabel */
+            font-weight: bold; 
+            text-align: center;
+        }
+        th:nth-child(7) { text-align: right; } /* NOMINAL rata kanan */
+        
+        /* Pembagian Dana Koin Header */
+        #pembagian-header { text-align: center; }
+        #pembagian-header th { font-weight: normal; background-color: #f0fff0; }
+
+        /* Total Penjumlahan Baris */
+        .total-row td { font-weight: bold; background-color: #f9f9f9; }
+        
+        /* Admin Login Area */
+        .admin-login-area {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+        .admin-login-area h3 { margin-top: 0; }
+        .admin-login-area input {
+            padding: 8px;
+            margin: 5px;
+            width: 150px;
+            border: 1px solid #ccc;
+        }
+        .admin-login-area button {
+            background-color: #007700;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            margin-top: 10px;
+            cursor: pointer;
+            width: 310px;
+        }
+
+        /* Input Form dan Status Admin (tersembunyi secara default) */
+        #input-section { margin-bottom: 20px; padding: 15px; border: 1px solid #007700; background-color: #f0fff0; }
+        .hidden { display: none; }
+        
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
@@ -21,90 +106,102 @@
 </head>
 <body>
 
+    <div class="header">
+        <div style="display: flex; align-items: center;">
+            <span style="font-size: 30px; margin-right: 10px;">☰</span>
+            <h1>Pembukuan UPZIS</h1>
+        </div>
+        <div class="nav-links">
+            <button>Laporan KOIN NU</button>
+            <button>Jurnal Umum</button>
+            <button>Laporan Tahunan</button>
+            <button id="logout-btn" class="hidden">Logout</button>
+        </div>
+    </div>
+
 <div class="container">
 
-    <section id="table-section">
-        <h2>Data Transaksi Dana Koin NU & UPZIS</h2>
-        
-        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-            <div>
-                <label for="filter-bulan">Filter:</label>
-                <select id="filter-bulan">
-                    <option value="">Semua Bulan</option>
-                    </select>
-                <select id="filter-tahun">
-                    <option value="">Semua Tahun</option>
-                    </select>
-            </div>
-            
-            <div>
-                <button id="download-pdf-btn">⬇️ Unduh PDF (Publik)</button>
-            </div>
-        </div>
+    <div class="info-lembaga">
+        <h2>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h2>
+        <p style="font-size: 12px; margin-top: 5px;">Sekretariat: Jalan [Nama Jalan], Desa Ngablak, Kec [Kecamatan], Kab. [Kabupaten]</p>
+    </div>
 
+    <div class="filter-area">
+        <div>
+            <label for="filter-bulan">Bulan:</label>
+            <select id="filter-bulan">
+                <option value="">Semua</option>
+                <option value="11" selected>November</option>
+                </select>
+            <label for="filter-tahun">Tahun:</label>
+            <select id="filter-tahun">
+                <option value="">Semua</option>
+                <option value="2025" selected>2025</option>
+                </select>
+            <span style="margin-left: 20px;">Laporan Pemasukan KOIN NU Periode November 2025</span>
+        </div>
+        
+        <div>
+            <button id="download-pdf-btn">Unduh PDF</button>
+        </div>
+    </div>
+
+    <section id="table-section">
         <table>
             <thead>
                 <tr>
-                    <th>NO</th>
-                    <th>TANGGAL</th>
-                    <th>NAMA PETUGAS</th>
-                    <th>NO HP</th>
-                    <th>DONATUR/KELOMPOK</th>
-                    <th>ALAMAT (RT/RW)</th>
-                    <th>NOMINAL (Rp)</th>
-                    <th>DISTRIBUSI DANA KOIN</th>
-                    <th id="aksi-header" class="hidden">Aksi</th>
+                    <th rowspan="2">NO</th>
+                    <th rowspan="2">TANGGAL</th>
+                    <th rowspan="2">NAMA PETUGAS</th>
+                    <th rowspan="2">NO HP</th>
+                    <th rowspan="2">DONATUR/KELOMPOK</th>
+                    <th rowspan="2">ALAMAT (RT/RW)</th>
+                    <th rowspan="2">NOMINAL</th>
+                    <th colspan="4" id="pembagian-header">PEMBAGIAN DANA KOIN</th>
+                    <th rowspan="2" id="aksi-header" class="hidden" style="width: 50px;">Aksi</th>
+                </tr>
+                <tr id="pembagian-subheader">
+                    <th>Petugas (10%)</th>
+                    <th>Ranting (60%)</th>
+                    <th>MWC (25%)</th>
+                    <th>PC (5%)</th>
                 </tr>
             </thead>
             <tbody id="data-table-body">
                 </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="6" style="text-align: right;">TOTAL PENJUMLAHAN</td>
+                    <td id="total-nominal" style="text-align: right;">0</td>
+                    <td id="total-petugas">0</td>
+                    <td id="total-ranting">0</td>
+                    <td id="total-mwc">0</td>
+                    <td id="total-pc">0</td>
+                    <td id="total-aksi" class="hidden"></td> 
+                </tr>
+            </tfoot>
         </table>
-        
-        <p style="margin-top: 20px;">*Distribusi Dana Koin: Petugas (10%) - Ranting (60%) - MWC (25%) - PC (5%)</p>
     </section>
-
-    <hr>
 
     <section id="input-section" class="hidden">
-        <h2>Input Transaksi Baru</h2>
+        <h3>Input Transaksi Baru <span id="user-status" style="font-size: 12px; font-weight: normal;"></span></h3>
         <form id="input-form">
-            <p><strong>Status Login:</strong> <span id="user-status">Silakan Login di bawah</span></p>
-            
-            <label for="input-tanggal">Tanggal:</label>
-            <input type="date" id="input-tanggal" required><br><br>
-            
-            <label for="input-petugas">Nama Petugas:</label>
-            <input type="text" id="input-petugas" required><br><br>
-            
-            <label for="input-nohp">No HP Petugas:</label>
-            <input type="text" id="input-nohp" required><br><br>
-            
-            <label for="input-donatur">Donatur/Kelompok:</label>
-            <input type="text" id="input-donatur" required><br><br>
-            
-            <label for="input-alamat">Alamat (RT/RW):</label>
-            <input type="text" id="input-alamat" required><br><br>
-            
-            <label for="input-nominal">Nominal (Rp):</label>
-            <input type="number" id="input-nominal" required min="1000"><br><br>
-
+            <label>Tanggal:</label><input type="date" id="input-tanggal" required>
+            <label>Petugas:</label><input type="text" id="input-petugas" required>
+            <label>No HP:</label><input type="text" id="input-nohp" required>
+            <label>Donatur:</label><input type="text" id="input-donatur" required>
+            <label>Alamat:</label><input type="text" id="input-alamat" required>
+            <label>Nominal:</label><input type="number" id="input-nominal" required min="1000">
             <button type="submit">Tambah Transaksi</button>
         </form>
-        <button id="logout-btn" class="hidden" style="margin-top: 10px;">Keluar (Logout)</button>
     </section>
 
-    <hr>
-
-    <section id="login-section">
-        <h2>Akses Admin</h2>
+    <section id="login-section" class="admin-login-area">
+        <h3>ADMIN LOGIN</h3>
         <form id="login-form">
-            <label for="login-email">Email:</label>
-            <input type="email" id="login-email" required value="masukkan@email.anda"><br><br>
-            
-            <label for="login-password">Password:</label>
-            <input type="password" id="login-password" required value="password-anda"><br><br>
-            
-            <button type="submit">Masuk (Login)</button>
+            <input type="email" id="login-email" placeholder="Username" required>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <button type="submit">Masuk</button>
         </form>
     </section>
 
