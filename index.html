@@ -406,7 +406,7 @@
                 </div>
             </div>
              
-            <div class="form-controls" id="tahunan-admin-controls" style="display: none; margin-top: 20px; justify-content: flex-end;">
+            <div class="form-controls" id="tahunan-admin-controls" style="display: none; justify-content: flex-end;">
                 <button class="button btn-blue" onclick="logout()">Log Out</button> 
             </div>
             
@@ -444,30 +444,14 @@
     <script>
         // Data Dummy (Simulasi Database)
         let koinData = [
+            // Sisa satu entri KOIN NU agar perhitungan bulan berjalan (Nov 2025) ada
             { id: 1, tanggal: '2025-11-26', petugas: 'Shodiq', hp: '0813250089797', donatur: 'RT 01', alamat: 'Ngablak RT 1/ RW 1', nominal: 2000000 },
-            { id: 2, tanggal: '2025-11-26', petugas: 'Fulan', hp: '0813250089797', donatur: 'RT 02', alamat: 'Ngablak RT 2/ RW 1', nominal: 1000000 },
-            { id: 3, tanggal: '2025-10-01', petugas: 'Ahmad', hp: '08123456789', donatur: 'Warga RT 02', alamat: '02/01', nominal: 500000 },
-            { id: 4, tanggal: '2025-10-15', petugas: 'Budi', hp: '08198765432', donatur: 'Kelompok Tahlil', alamat: '03/03', nominal: 1500000 },
-            { id: 5, tanggal: '2024-12-10', petugas: 'Caca', hp: '08111111111', donatur: 'Kelompok Arisan', alamat: '04/04', nominal: 500000 }
         ];
         
+        // Jurnal Umum Dikosongkan, hanya tersisa Saldo Bulan Lalu (Des 2024) yang akan otomatis jadi Saldo Awal 2025
         let jurnalData = [
-            // Saldo Bulan Lalu (Okt 2025)
-            { id: 100, tanggal: '2025-10-31', keterangan: 'SALDO BULAN LALU', kategori: 'Saldo Bulan Lalu', masuk: 10000000, keluar: 0, type: 'manual' }, 
-            // Entri Manual Nov 2025
-            { id: 101, tanggal: '2025-11-10', keterangan: 'Bantuan Santunan Yatim Piatu', kategori: 'Untuk Sosial', masuk: 0, keluar: 1500000, type: 'manual' },
-            { id: 103, tanggal: '2025-11-01', keterangan: 'Pembelian ATK Kantor', kategori: 'Lain-lain', masuk: 0, keluar: 50000, type: 'manual' },
-            { id: 104, tanggal: '2025-11-05', keterangan: 'Pemasukan Infaq Jum\'at', kategori: 'Infaq', masuk: 200000, keluar: 0, type: 'manual' },
-            { id: 105, tanggal: '2025-11-07', keterangan: 'Biaya Transportasi Petugas', kategori: 'Lain-lain', masuk: 0, keluar: 25000, type: 'manual' },
-            // Contoh Pengeluaran Otomatis KOIN NU (Akhir Bulan November 2025) - Harusnya dihitung dari koinData, tapi di jurnal juga ada
-            { id: 200, tanggal: '2025-11-30', keterangan: 'Pembagian Petugas KOIN NU', kategori: 'Petugas (10%)', masuk: 0, keluar: 300000, type: 'auto' },
-            { id: 201, tanggal: '2025-11-30', keterangan: 'Pembagian MWC KOIN NU', kategori: 'MWC (25%)', masuk: 0, keluar: 750000, type: 'auto' },
-            { id: 202, tanggal: '2025-11-30', keterangan: 'Pembagian PC KOIN NU', kategori: 'PC (5%)', masuk: 0, keluar: 150000, type: 'auto' },
-            { id: 203, tanggal: '2025-11-30', keterangan: 'Pengeluaran Pendidikan', kategori: 'Untuk Pendidikan', masuk: 0, keluar: 500000, type: 'manual' },
-            // Contoh Pengeluaran Des 2024 (Untuk Laporan Tahunan 2024)
-            { id: 300, tanggal: '2024-12-05', keterangan: 'Sumbangan pembangunan Musholla', kategori: 'Untuk Sosial', masuk: 0, keluar: 200000, type: 'manual' },
-            { id: 301, tanggal: '2024-12-20', keterangan: 'Pembelian obat untuk dhuafa', kategori: 'Untuk Kesehatan', masuk: 0, keluar: 100000, type: 'manual' },
-            { id: 302, tanggal: '2024-12-25', keterangan: 'Subsidi kegiatan maulid Banom Fatayat', kategori: 'Subsidi Banom & Lembaga NU', masuk: 0, keluar: 500000, type: 'manual' }
+            // Contoh Saldo Akhir Desember 2024 (Agar ada data untuk Saldo Bulan Lalu di Jan 2025)
+            { id: 300, tanggal: '2024-12-31', keterangan: 'Saldo Akhir Tahun Lalu', kategori: 'Saldo Bulan Lalu', masuk: 5000000, keluar: 0, type: 'manual' },
         ];
         
         // Data Baru untuk Laporan Tahunan
@@ -475,19 +459,6 @@
             // Saldo Awal 2025
             { type: 'saldo_bank', year: 2025, nominal: 5000000 },
             { type: 'saldo_kas', year: 2025, nominal: 2500000 },
-            // Data Manual Bulanan 2024
-            { 
-                type: 'monthly', 
-                year: 2024, 
-                month: 12, // Desember
-                donatur: 50, 
-                pendidikan: { penerima: 5 },
-                sosial: { penerima: 10 },
-                kesehatan: { penerima: 2 },
-                ekonomi: { penerima: 3 },
-                banom: { keterangan: 'Kegiatan Akhir Tahun' },
-                lain_lain: { nominal: 50000, uraian: 'Pembelian pulsa modem' }
-            }
         ];
 
         let isLoggedIn = false;
@@ -536,13 +507,12 @@
             let num = number === undefined || number === null ? 0 : number;
             let numberString = Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             
-            // >>> PERUBAHAN UNTUK MEMBERSIHKAN BARIS MERAH <<<
-            // Sekarang, hanya angka saldo minus yang akan berwarna merah.
+            // >>> INI LOGIKA UNTUK SALDO MINUS BERWARNA MERAH (BUKAN BARIS MERAH) <<<
             if (num < 0) {
                 return `<span style="color: red; font-weight: bold;">(${numberString})</span>`;
             }
             return numberString;
-            // >>> AKHIR PERUBAHAN <<<
+            // >>> AKHIR LOGIKA <<<
         }
         
         // 3. Helper: Mendapatkan tanggal akhir bulan sebelumnya (untuk Saldo Bulan Lalu)
@@ -769,8 +739,6 @@
                 
                 // Penentuan kelas baris (warna latar belakang)
                 let rowClass = isAutoHeader || isRantingAuto ? 'auto-entry' : (isSaldoBulanLalu ? 'saldo-entry' : 'manual-entry');
-                
-                // Pengecekan adanya logika pewarnaan baris merah (Sudah dihapus/ditiadakan di sini)
                 
                 let actionId = null;
                 let displayTanggal = data.tanggal ? formatTanggal(data.tanggal) : '';
@@ -1746,8 +1714,9 @@
                     koinData = [];
                     alert('Semua data KOIN NU telah dihapus.');
                  } else if (moduleName === 'jurnal') {
-                    jurnalData = [];
-                    alert('Semua data Jurnal Umum telah dihapus.');
+                    // Hapus semua kecuali satu entri saldo awal tahun lalu (untuk jaga-jaga)
+                    jurnalData = jurnalData.filter(d => d.kategori === 'Saldo Bulan Lalu');
+                    alert('Semua data Jurnal Umum telah dihapus (kecuali Saldo Awal).');
                  }
                  filterData(moduleName);
             }
