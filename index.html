@@ -852,29 +852,43 @@
             document.getElementById('tahunan-total-lain-uang').textContent = formatRupiah(total.lain_lain.uang);
         }
 
-        // 6. Fungsi showModule (Diperbarui untuk mengaktifkan mode publik)
-        function showModule(moduleName) {
-            currentModule = moduleName;
-            const modules = ['koin-nu-module', 'jurnal-umum-module', 'laporan-tahunan-module'];
-            const navLinks = ['nav-koin', 'nav-jurnal', 'nav-tahunan'];
-            
-            modules.forEach(id => document.getElementById(id).style.display = 'none');
-            navLinks.forEach(id => document.getElementById(id).classList.remove('active'));
+        // 6. Setup Filter Tahun & Bulan
+        function populateFilters() {
+            const currentYear = new Date().getFullYear();
+            const startYear = 2024; 
+            const monthOptions = namaBulan.map((name, index) => `<option value="${index + 1}">${name}</option>`).join('');
 
-            if (moduleName === 'koin') {
-                document.getElementById('koin-nu-module').style.display = 'block';
-                document.getElementById('nav-koin').classList.add('active');
-            } else if (moduleName === 'jurnal') {
-                document.getElementById('jurnal-umum-module').style.display = 'block';
-                document.getElementById('nav-jurnal').classList.add('active');
-            } else if (moduleName === 'tahunan') {
-                document.getElementById('laporan-tahunan-module').style.display = 'block';
-                document.getElementById('nav-tahunan').classList.add('active');
-                cancelAnnualEdit(); 
+            for (const module of ['koin', 'jurnal']) {
+                const monthSelect = document.getElementById(`${module}-filter-bulan`);
+                const yearSelect = document.getElementById(`${module}-filter-tahun`);
+                
+                // PERBAIKAN: Menambahkan guard check untuk monthSelect
+                if (monthSelect) {
+                    monthSelect.innerHTML = monthOptions;
+                    monthSelect.value = new Date().getMonth() + 1;
+                }
+
+                // PERBAIKAN: Menambahkan guard check untuk yearSelect
+                if (yearSelect) {
+                    yearSelect.innerHTML = '';
+                    for (let y = currentYear; y >= startYear; y--) {
+                        yearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+                    }
+                    yearSelect.value = currentYear;
+                }
             }
+
+            // Filter Tahunan hanya untuk Tahun
+            const tahunanYearSelect = document.getElementById('tahunan-filter-tahun');
             
-            filterData(moduleName); 
-            updateTableActionVisibility(); 
+            // PERBAIKAN: Menambahkan guard check untuk tahunanYearSelect
+            if (tahunanYearSelect) {
+                tahunanYearSelect.innerHTML = '';
+                for (let y = currentYear; y >= startYear; y--) {
+                    tahunanYearSelect.innerHTML += `<option value="${y}">${y}</option>`;
+                }
+                tahunanYearSelect.value = currentYear;
+            }
         }
             // 6a. Cek Status Login (Simulasi)
         function checkLoginStatus() {
@@ -1697,6 +1711,7 @@
     </script>
 </body>
 </html>
+
 
 
 
