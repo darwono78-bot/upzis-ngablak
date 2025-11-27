@@ -116,6 +116,9 @@
         .annual-saldo-row { background-color: #e6ffe6; }
         .annual-total-row { background-color: #d4edda !important; color: #155724; font-weight: bold; }
         .editable-cell { cursor: pointer; border-bottom: 1px dashed #007bff; }
+        
+        /* Gaya untuk Baris KOIN NU (Baris 1-4) */
+        .koin-fixed-entry { background-color: #f0fff0; font-weight: normal; }
     </style>
 </head>
 <body>
@@ -647,7 +650,7 @@
                  saldoBulanLaluEntry = {
                     id: 'new-saldo-awal', // ID Khusus untuk membuat tombol 'Edit Saldo'
                     tanggal: saldoBulanLaluDate,
-                    keterangan: 'SALDO BULAN LALU',
+                    keterangan: 'SALDO BULAN LALU (Saldo Awal)',
                     kategori: 'Saldo Bulan Lalu',
                     masuk: 0,
                     keluar: 0,
@@ -657,32 +660,35 @@
                  // Pastikan type-nya benar agar bisa diedit
                  saldoBulanLaluEntry.type = 'manual_saldo';
             }
+            
             // Update nominal saldo bulan lalu ke initialSaldo
             saldoBulanLaluEntry.masuk = initialSaldo > 0 ? initialSaldo : 0;
             saldoBulanLaluEntry.keluar = initialSaldo < 0 ? Math.abs(initialSaldo) : 0;
             
             // Tambahkan running saldo ke entry saldo bulan lalu (untuk start perhitungan)
-            saldoBulanLaluEntry.runningSaldo = initialSaldo;
+            saldoBulanLaluEntry.runningSaldo = initialSaldo; // Ini adalah saldo awal sebelum KOIN NU diproses
 
-            // 3. Gabungkan data KOIN NU (4 item Pengeluaran Otomatis)
-            let fixedTopFour = [];
+            // 3. Gabungkan data KOIN NU (4 item Pengeluaran Otomatis + 1 item Pemasukan Ranting Otomatis)
+            let fixedTopFive = [];
+            let koinAutoEntries = [];
+            
             if(koinTotals.totalNominal > 0) {
-                 fixedTopFour.push({ 
-                    tanggal: '', 
-                    keterangan: `TOTAL PENJUMLAHAN DARI NOMINAL DONATUR (${formatRupiah(koinTotals.totalNominal)})`, 
-                    kategori: 'HEADER', 
-                    masuk: 0, 
-                    keluar: 0, 
-                    type: 'auto_header' 
-                });
-                fixedTopFour.push({ tanggal: saldoBulanLaluDate, keterangan: 'Pembagian Petugas KOIN NU', kategori: 'Petugas (10%)', masuk: 0, keluar: koinTotals.petugas, type: 'auto' });
-                fixedTopFour.push({ tanggal: saldoBulanLaluDate, keterangan: 'Pembagian MWC KOIN NU', kategori: 'MWC (25%)', masuk: 0, keluar: koinTotals.mwc, type: 'auto' });
-                fixedTopFour.push({ tanggal: saldoBulanLaluDate, keterangan: 'Pembagian PC KOIN NU', kategori: 'PC (5%)', masuk: 0, keluar: koinTotals.pc, type: 'auto' });
-                
-                // Tambahkan sisa 60% ke Dana Masuk Ranting
-                fixedTopFour.push({ tanggal: saldoBulanLaluDate, keterangan: 'Sisa Pembagian KOIN NU (Ranting)', kategori: 'Koin NU', masuk: koinTotals.ranting, keluar: 0, type: 'auto' });
+                // Baris 1: Pengeluaran Petugas (Dikosongkan tanggalnya)
+                koinAutoEntries.push({ id: 'auto-koin-1', tanggal: '', keterangan: 'Pembagian Petugas KOIN NU', kategori: 'Petugas (10%)', masuk: 0, keluar: koinTotals.petugas, type: 'auto' });
+                // Baris 2: Pengeluaran MWC (Dikosongkan tanggalnya)
+                koinAutoEntries.push({ id: 'auto-koin-2', tanggal: '', keterangan: 'Pembagian MWC KOIN NU', kategori: 'MWC (25%)', masuk: 0, keluar: koinTotals.mwc, type: 'auto' });
+                // Baris 3: Pengeluaran PC (Dikosongkan tanggalnya)
+                koinAutoEntries.push({ id: 'auto-koin-3', tanggal: '', keterangan: 'Pembagian PC KOIN NU', kategori: 'PC (5%)', masuk: 0, keluar: koinTotals.pc, type: 'auto' });
+                // Baris 4: Pemasukan Ranting (Dikosongkan tanggalnya)
+                koinAutoEntries.push({ id: 'auto-koin-4', tanggal: '', keterangan: 'Sisa Pembagian KOIN NU (Ranting)', kategori: 'Koin NU', masuk: koinTotals.ranting, keluar: 0, type: 'auto' });
             }
-
+            
+            // Baris 5: Saldo Bulan Lalu (Punya Tanggal Akhir Bulan Sebelumnya)
+            saldoBulanLaluEntry.tanggal = saldoBulanLaluDate; // Pastikan tanggal akhir bulan sebelumnya
+            
+            // Gabungkan 4 baris KOIN NU + 1 baris Saldo Bulan Lalu (total 5 baris di awal)
+            fixedTopFive = [...koinAutoEntries, saldoBulanLaluEntry];
+            
             // 4. Ambil data manual bulan/tahun ini (filter Saldo Bulan Lalu)
             let chronologicalList = manualData.filter(d => 
                 d.kategori !== 'Saldo Bulan Lalu' && 
@@ -691,57 +697,47 @@
 
             // 5. Gabungkan semua dan hitung running saldo
             
-            // Masukkan data Otomatis dan Manual ke dalam daftar yang akan ditampilkan
-            let combinedList = [...fixedTopFour, ...chronologicalList];
+            // Mulai perhitungan saldo dari 0, lalu tambahkan Saldo Bulan Lalu
+            let runningSaldo = 0; 
             
-            // Mulai perhitungan saldo
-            let runningSaldo = saldoBulanLaluEntry.runningSaldo;
-            combinedList.forEach(data => {
-                 // Skip header dari perhitungan saldo
-                 if (data.type !== 'auto_header') {
-                    runningSaldo += (data.masuk - data.keluar);
-                 }
+            // List untuk ditampilkan (Termasuk 5 baris awal)
+            let combinedList = [...fixedTopFive];
+            
+            // Hitung saldo untuk 5 baris awal
+            fixedTopFive.forEach(data => {
+                runningSaldo += (data.masuk - data.keluar);
+                data.runningSaldo = runningSaldo;
+            });
+            
+            // Tambahkan data manual dan lanjutkan perhitungan saldo
+            chronologicalList.forEach(data => {
+                 runningSaldo += (data.masuk - data.keluar);
                  data.runningSaldo = runningSaldo;
+                 combinedList.push(data); // Tambahkan data manual ke list
             });
             
-            let finalDisplayList = [];
-            
-            // Tambahkan data Otomatis (fixedTopFour) ke list, lalu Saldo Bulan Lalu, lalu Manual
-            let dataIndex = 0;
-            fixedTopFour.forEach((data) => {
-                 data.displayNo = ++dataIndex;
-                 finalDisplayList.push(data);
-            });
-            
-            saldoBulanLaluEntry.displayNo = ++dataIndex;
-            finalDisplayList.push(saldoBulanLaluEntry);
-
-            chronologicalList.forEach((data) => {
-                 data.displayNo = ++dataIndex;
-                 finalDisplayList.push(data);
-            });
             
             // Render Tabel
             let totalMasuk = 0;
             let totalKeluar = 0;
             
-            finalDisplayList.forEach((data) => {
-                const isAutoHeader = data.type === 'auto_header';
-                const isRantingAuto = data.type === 'auto';
+            combinedList.forEach((data, index) => {
+                const isAutoKoin = data.type === 'auto';
                 const isSaldoBulanLalu = data.type === 'manual_saldo';
                 const isManual = data.type === 'manual';
                 
-                // Jika bukan header, hitung total
-                if (data.type !== 'auto_header') {
+                // Jika bukan baris saldo, hitung total
+                if (!isSaldoBulanLalu) {
                     totalMasuk += data.masuk;
                     totalKeluar += data.keluar;
                 }
                 
                 // Penentuan kelas baris (warna latar belakang)
-                let rowClass = isAutoHeader || isRantingAuto ? 'auto-entry' : (isSaldoBulanLalu ? 'saldo-entry' : 'manual-entry');
+                let rowClass = isAutoKoin ? 'koin-fixed-entry' : (isSaldoBulanLalu ? 'saldo-entry' : 'manual-entry');
                 
                 let actionId = null;
-                let displayTanggal = data.tanggal ? formatTanggal(data.tanggal) : '';
+                // Baris 1-4 (KOIN NU) tidak punya tanggal, baris 5 punya tanggal
+                let displayTanggal = data.tanggal ? formatTanggal(data.tanggal) : ''; 
 
                 if (isManual || isSaldoBulanLalu) {
                     actionId = data.id;
@@ -750,16 +746,9 @@
                 const finalSaldoValue = data.runningSaldo;
 
                 const row = tableBody.insertRow();
-                // Jika header, buat colspan
-                if (isAutoHeader) {
-                    row.innerHTML = `
-                        <td colspan="8" style="font-weight: bold; text-align: left; background-color: #e0e0e0; font-size: 0.8rem;">${data.keterangan}</td>
-                    `;
-                    return;
-                }
-
+                
                 row.innerHTML = `
-                    <td style="text-align: center;">${data.displayNo || ''}</td>
+                    <td style="text-align: center;">${index + 1}</td>
                     <td>${displayTanggal}</td>
                     <td class="${rowClass}">${data.keterangan}</td> 
                     <td class="${rowClass}">${data.kategori}</td> 
@@ -773,20 +762,23 @@
                 const actionCell = row.querySelector('.action-btns');
 
                 if (isSaldoBulanLalu && isLoggedIn) {
+                    // Baris 5: Saldo Bulan Lalu -> Hanya bisa EDIT
                     actionCell.innerHTML = `<button class="button btn-blue" onclick="editData('jurnal', '${data.id}')">Edit Saldo</button>`;
                 } else if (isManual && isLoggedIn) {
+                    // Baris 6 ke atas: Input Manual -> Bisa EDIT dan HAPUS
                     actionCell.innerHTML = `
                         <button class="button btn-blue" onclick="editData('jurnal', ${data.id})">Edit</button>
                         <button class="button btn-red" onclick="deleteData('jurnal', ${data.id})">Hapus</button>
                     `;
                 }
+                // Baris 1-4 (KOIN NU Otomatis) tidak memiliki tombol aksi.
                 actionCell.style.display = isLoggedIn ? 'table-cell' : 'none';
             });
             
             // Tampilkan Total di Footer
             document.getElementById('jurnal-total-masuk').textContent = formatRupiah(totalMasuk);
             document.getElementById('jurnal-total-keluar').textContent = formatRupiah(totalKeluar);
-            document.getElementById('jurnal-saldo-akhir').textContent = finalDisplayList.length > 0 ? formatRupiah(finalDisplayList[finalDisplayList.length - 1].runningSaldo) : formatRupiah(0);
+            document.getElementById('jurnal-saldo-akhir').textContent = combinedList.length > 0 ? formatRupiah(combinedList[combinedList.length - 1].runningSaldo) : formatRupiah(0);
 
             document.getElementById('jurnal-total-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
             document.getElementById('jurnal-aksi-header').style.display = isLoggedIn ? 'table-cell' : 'none';
@@ -1144,7 +1136,11 @@
 
                     if (isSaldoBulanLaluEdit) {
                         // Saldo Bulan Lalu Edit Logic...
-                        const targetEntry = jurnalData.find(d => d.kategori === 'Saldo Bulan Lalu' && d.tanggal.substring(0, 7) === newTanggal.substring(0, 7));
+                        const currentMonth = document.getElementById('jurnal-filter-bulan').value;
+                        const currentYear = document.getElementById('jurnal-filter-tahun').value;
+                        const targetMonthYear = `${currentYear}-${currentMonth.padStart(2, '0')}`;
+
+                        const targetEntry = jurnalData.find(d => d.kategori === 'Saldo Bulan Lalu' && d.tanggal.substring(0, 7) === targetMonthYear);
                         const maxId = jurnalData.length > 0 ? Math.max(...jurnalData.map(d => d.id)) : 0;
                         
                         let targetIndex = -1;
@@ -1158,15 +1154,15 @@
                              return;
                         }
                         
-                        // Tentukan nominal saldo baru
-                        let saldoValue = newMasuk - newKeluar;
+                        // Tanggal Saldo Bulan Lalu harus akhir bulan sebelumnya
+                        const fixedTanggal = getLastDayOfPreviousMonth(currentMonth, currentYear);
 
                         if (targetIndex !== -1) {
                              // Update entry yang sudah ada
                              jurnalData[targetIndex] = { 
                                 id: targetEntry.id, 
-                                tanggal: newTanggal, 
-                                keterangan: 'SALDO BULAN LALU', 
+                                tanggal: fixedTanggal, // Gunakan tanggal yang ter-fixed
+                                keterangan: 'SALDO BULAN LALU (Saldo Awal)', 
                                 kategori: 'Saldo Bulan Lalu', 
                                 masuk: newMasuk, 
                                 keluar: newKeluar, 
@@ -1177,8 +1173,8 @@
                             // Buat entry baru
                             jurnalData.push({ 
                                 id: maxId + 1, 
-                                tanggal: newTanggal, 
-                                keterangan: 'SALDO BULAN LALU', 
+                                tanggal: fixedTanggal, // Gunakan tanggal yang ter-fixed
+                                keterangan: 'SALDO BULAN LALU (Saldo Awal)', 
                                 kategori: 'Saldo Bulan Lalu', 
                                 masuk: newMasuk, 
                                 keluar: newKeluar, 
@@ -1224,17 +1220,30 @@
                     window.scrollTo(0, document.getElementById('koin-input-area').offsetTop);
                 }
             } else if (moduleName === 'jurnal') {
-                 // Logic untuk Edit Saldo Awal
+                 // Logic untuk Edit Saldo Bulan Lalu (Baris 5)
                  if (id === 'new-saldo-awal') {
                      const currentMonth = document.getElementById('jurnal-filter-bulan').value;
                      const currentYear = document.getElementById('jurnal-filter-tahun').value;
-                     const targetDate = getLastDayOfPreviousMonth(currentMonth, currentYear);
                      
                      // Ambil Saldo Bulan Lalu yang sudah ada di bulan ini (jika ada)
                      const existingEntry = jurnalData.find(d => 
                         d.kategori === 'Saldo Bulan Lalu' && 
                         d.tanggal.substring(0, 7) === `${currentYear}-${currentMonth.padStart(2, '0')}`
                      );
+
+                     // Tanggal yang seharusnya diisi
+                     const fixedTanggal = getLastDayOfPreviousMonth(currentMonth, currentYear);
+                     
+                     // Tentukan Saldo Awal hitungan otomatis (untuk ditampilkan ke user)
+                     let prevMonthData = jurnalData.filter(d => {
+                        const dataDate = new Date(d.tanggal);
+                        return dataDate.getFullYear() < parseInt(currentYear) || 
+                               (dataDate.getFullYear() === parseInt(currentYear) && dataDate.getMonth() < parseInt(currentMonth) - 1);
+                     });
+                     let initialSaldo = prevMonthData.reduce((sum, d) => sum + d.masuk - d.keluar, 0);
+                     let defaultMasuk = initialSaldo > 0 ? initialSaldo : 0;
+                     let defaultKeluar = initialSaldo < 0 ? Math.abs(initialSaldo) : 0;
+
 
                      if (existingEntry) {
                          document.getElementById('jurnal-input-tanggal').value = existingEntry.tanggal;
@@ -1244,17 +1253,17 @@
                          document.getElementById('jurnal-input-keluar').value = existingEntry.keluar;
                          jurnalEditId = existingEntry.id;
                      } else {
-                         // Default form untuk membuat baru
-                         document.getElementById('jurnal-input-tanggal').value = targetDate;
-                         document.getElementById('jurnal-input-keterangan').value = 'SALDO BULAN LALU';
+                         // Default form untuk membuat baru, menggunakan hitungan saldo awal
+                         document.getElementById('jurnal-input-tanggal').value = fixedTanggal;
+                         document.getElementById('jurnal-input-keterangan').value = 'SALDO BULAN LALU (Saldo Awal)';
                          document.getElementById('jurnal-input-kategori').value = 'Saldo Bulan Lalu';
-                         document.getElementById('jurnal-input-masuk').value = '';
-                         document.getElementById('jurnal-input-keluar').value = '';
+                         document.getElementById('jurnal-input-masuk').value = defaultMasuk;
+                         document.getElementById('jurnal-input-keluar').value = defaultKeluar;
                          jurnalEditId = 'new-saldo-awal';
                      }
 
-                     // Disable field yang tidak boleh diubah
-                     document.getElementById('jurnal-input-tanggal').disabled = false;
+                     // Disable field yang tidak boleh diubah (Tanggal, Keterangan, Kategori)
+                     document.getElementById('jurnal-input-tanggal').disabled = true; // Dikunci Tanggalnya
                      document.getElementById('jurnal-input-keterangan').disabled = true;
                      document.getElementById('jurnal-input-kategori').disabled = true;
                      
@@ -1264,7 +1273,7 @@
                  }
 
 
-                // Logic untuk Edit Entri Manual Biasa
+                // Logic untuk Edit Entri Manual Biasa (Baris 6 ke atas)
                 const data = jurnalData.find(d => d.id === id);
                 if (data) {
                      document.getElementById('jurnal-input-tanggal').value = data.tanggal;
@@ -1427,7 +1436,7 @@
                 document.getElementById(displayId).textContent = `${monthName} ${selectedYear}`;
 
                 document.querySelectorAll('#koin-data-table .action-btns').forEach(el => el.style.display = isLoggedIn ? 'table-cell' : 'none');
-                document.getElementById('koin-aksi-header').style.display = isLoggedIn ? 'table-cell' : 'none';
+                document.getElementById('koin-aksi-header').style.display = 'none';
                 document.getElementById('koin-alamat-header').style.display = 'table-cell';
                 document.getElementById('koin-hp-header').style.display = 'table-cell';
 
