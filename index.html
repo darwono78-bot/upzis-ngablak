@@ -443,20 +443,18 @@
         </div>
     </div>
 
-
     <script>
         // ----------------------------------------------------
         // --- KONFIGURASI FIREBASE ---
         // !!! PENTING: Ganti dengan konfigurasi Firebase Anda yang asli !!!
         // ----------------------------------------------------
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+                apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
+                authDomain: "upzis-ngablak.firebaseapp.com",
+                projectId: "upzis-ngablak",
+                storageBucket: "upzis-ngablak.firebasestorage.app",
+                messagingSenderId: "869549648344",
+                appId: "1:869549648344:web:a531a37cce3a87bb672aad"
         };
 
         // Initialize Firebase
@@ -510,7 +508,7 @@
         }
 
         // 2. Format Rupiah (Tanpa Rp)
-        function function formatRupiah(number) {
+        function formatRupiah(number) {
             let num = number === undefined || number === null ? 0 : number;
             let numberString = Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             return num < 0 ? `(${numberString})` : numberString;
@@ -554,7 +552,7 @@
         function calculateJurnalExpenses(month, year, category, data) {
             const filteredJurnal = Object.values(data);
             
-            const filteredByCategory = filteredJurnal.filter(d => d.kategori === category);
+            const filteredByCategory = filteredJurnal.filter(d => d.keluar > 0 && d.kategori === category);
             
             return filteredByCategory.reduce((sum, d) => sum + d.keluar, 0);
         }
@@ -627,7 +625,7 @@
             // Konversi object menjadi array
             let chronologicalList = Object.values(dataObject);
 
-            // 1. Ambil data saldo bulan lalu (Jika ada, Saldo Bulan Lalu disimpan di path tahun/bulan-1)
+            // 1. Ambil data saldo bulan lalu (yang sudah dihitung atau manual input)
             let saldoBulanLaluEntry = chronologicalList.find(d => d.kategori === 'Saldo Bulan Lalu');
             
             // Set saldo awal placeholder jika tidak ada entri Saldo Bulan Lalu
@@ -690,7 +688,7 @@
                 const isAutoHeader = data.type === 'auto_header';
                 const isRantingAuto = data.type === 'auto';
                 const isSaldoBulanLalu = data.kategori === 'Saldo Bulan Lalu';
-                const isManual = !isAutoHeader && !isRantingAuto && !isSaldoBulanLalu;
+                const isManual = data.type === 'manual' || data.type === 'manual_saldo';
                 
                 let rowClass = '';
                 if (isAutoHeader || isRantingAuto) {
@@ -722,7 +720,7 @@
                     <td class="money-col" style="font-weight: bold;">${finalSaldoValue !== undefined ? formatRupiah(finalSaldoValue) : ''}</td>
                     <td class="action-btns" data-id="${actionId}" style="display: ${isLoggedIn && actionId ? 'table-cell' : 'none'};">
                         ${actionId ? `<button class="button btn-blue" onclick="editData('jurnal', '${actionId}')">Edit</button>` : ''}
-                        ${isManual ? `<button class="button btn-red" onclick="deleteData('jurnal', '${actionId}')">Hapus</button>` : ''}
+                        ${isManual && !isSaldoBulanLalu ? `<button class="button btn-red" onclick="deleteData('jurnal', '${actionId}')">Hapus</button>` : ''}
                     </td>
                 `;
                 
@@ -856,7 +854,6 @@
 
         // 6. Fungsi showModule (Diperbarui untuk mengaktifkan mode publik)
         function showModule(moduleName) {
-            // ... (Kode ini tidak berubah, hanya memanggil filterData)
             currentModule = moduleName;
             const modules = ['koin-nu-module', 'jurnal-umum-module', 'laporan-tahunan-module'];
             const navLinks = ['nav-koin', 'nav-jurnal', 'nav-tahunan'];
@@ -882,7 +879,6 @@
 
         // 6b. Helper untuk mengatur visibility kolom aksi
         function updateTableActionVisibility() {
-            // ... (Kode ini tidak berubah, hanya mengatur tampilan berdasarkan isLoggedIn)
             const koinActionCols = document.querySelectorAll('#koin-data-table .action-btns');
             const koinActionHeader = document.getElementById('koin-aksi-header');
             const jurnalActionCols = document.querySelectorAll('#jurnal-data-table .action-btns');
@@ -892,7 +888,7 @@
             const jurnalTotalAksi = document.getElementById('jurnal-total-aksi');
 
             if (koinActionHeader) koinActionHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
-            if (jurnalActionHeader) jurnalActionHeader.style.display = isLoggedIn ? 'table-cell' : 'none';
+            if (jurnalActionHeader) jurnalActionHeader.style.display = 'table-cell' : 'none';
             if (koinTotalAksi) koinTotalAksi.style.display = isLoggedIn ? 'table-cell' : 'none';
             if (jurnalTotalAksi) jurnalTotalAksi.style.display = isLoggedIn ? 'table-cell' : 'none';
             
@@ -902,18 +898,32 @@
             const adminControls = document.querySelectorAll('[id$="-admin-controls"]');
             const inputAreas = document.querySelectorAll('[id$="-input-area"]');
             const editAnnualArea = document.getElementById('tahunan-edit-input-area');
+            const navLoginBtn = document.getElementById('nav-login-btn');
+            const navLogoutBtn = document.getElementById('nav-logout-btn');
 
+
+            // Tampilkan/Sembunyikan tombol Login/Logout di Navigasi
+            navLoginBtn.style.display = isLoggedIn ? 'none' : 'block';
+            navLogoutBtn.style.display = isLoggedIn ? 'block' : 'none';
+            // Sembunyikan form login jika sudah login atau saat mode publik
+            document.getElementById('login-area').style.display = 'none'; 
+
+            // Tampilkan/Sembunyikan Admin Controls dan Input Areas
             adminControls.forEach(el => el.style.display = isLoggedIn ? 'flex' : 'none');
             inputAreas.forEach(el => el.style.display = isLoggedIn ? 'block' : 'none');
 
             if (!isLoggedIn) {
                 editAnnualArea.style.display = 'none';
             }
+            
+            // Atur tampilan editable cell di laporan tahunan
+            document.querySelectorAll('.editable-cell').forEach(el => {
+                el.style.borderBottom = isLoggedIn ? '1px dashed #007bff' : 'none';
+            });
         }
-
+        
         // 7. Pengelolaan Filter (Dropdown Bulan & Tahun)
         function populateFilterOptions() {
-            // ... (Kode ini tidak berubah)
             const currentYear = new Date().getFullYear();
             const startYear = 2024;
             
@@ -1146,66 +1156,57 @@
         }
 
         // 10. Admin: Login & Logout
+        function toggleLoginArea() {
+            const loginArea = document.getElementById('login-area');
+            // Toggle visibility
+            loginArea.style.display = (loginArea.style.display === 'none' || loginArea.style.display === '') ? 'block' : 'none';
+        }
+        
         function attemptLogin() {
-            // ... (Kode ini tidak berubah)
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
             if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
                 isLoggedIn = true;
-                document.getElementById('login-area').style.display = 'none';
+                // Dummy sign in
+                auth.onAuthStateChanged({ uid: 'dummy-admin-uid' }); 
+                alert('Login Berhasil! Anda sekarang dapat mengedit data.');
                 
-                const user = { uid: 'dummy-admin-uid' }; 
-                auth.onAuthStateChanged(user); 
-
-                alert('Login Berhasil!');
+                // Hide login form and update navigation
+                document.getElementById('login-area').style.display = 'none';
+                updateTableActionVisibility(); // Update tampilan
             } else {
                 alert('Username atau Password salah!');
             }
         }
 
         function logout() {
-            // ... (Kode ini tidak berubah)
             isLoggedIn = false;
             currentAnnualEditId = null; 
             currentAnnualEditKey = null;
 
-            document.getElementById('login-area').style.display = 'block'; 
-            
-            const modules = ['koin', 'jurnal', 'tahunan'];
-            modules.forEach(m => {
-                if (document.getElementById(`${m}-input-area`)) document.getElementById(`${m}-input-area`).style.display = 'none';
-                if (document.getElementById(`${m}-admin-controls`)) document.getElementById(`${m}-admin-controls`).style.display = 'none';
-            });
-            document.getElementById('tahunan-edit-input-area').style.display = 'none';
-            
+            // Dummy sign out
             auth.onAuthStateChanged(null); 
             
-            alert('Anda telah Logout.');
+            alert('Anda telah Logout. Kembali ke mode publik.');
+            
+            // Update tampilan
+            updateTableActionVisibility(); 
+            filterData(currentModule); // Refresh data untuk menghapus border editable annual
         }
 
-        // 4. Pengelolaan Status Login (State Listener) - MENENTUKAN TAMPILAN
+        // 4. Pengelolaan Status Login (State Listener) - DIBUAT DUMMY UNTUK MENGATUR TAMPILAN
+        // Kita hanya menggunakan listener ini sebagai trigger untuk update tampilan
         auth.onAuthStateChanged((user) => {
-            // ... (Kode ini tidak berubah)
-            const loginArea = document.getElementById('login-area');
-            const adminControls = document.querySelectorAll('[id$="-admin-controls"]');
-            const inputAreas = document.querySelectorAll('[id$="-input-area"]');
-            
             if (user) {
+                // Saat Login (Dummy)
                 isLoggedIn = true;
-                loginArea.style.display = 'none'; 
-                adminControls.forEach(el => el.style.display = 'flex');
-                inputAreas.forEach(el => el.style.display = 'block');
-                
             } else {
+                // Saat Logout (Default)
                 isLoggedIn = false;
-                loginArea.style.display = 'block'; 
-                adminControls.forEach(el => el.style.display = 'none');
-                inputAreas.forEach(el => el.style.display = 'none');
             }
-            
-            filterData(currentModule); 
             updateTableActionVisibility();
+            // Data sudah di-filter di init, jadi tidak perlu panggil filterData lagi di sini kecuali saat logout
         });
 
 
@@ -1244,16 +1245,17 @@
                     .then(() => {
                         alert(idToSave ? 'Data KOIN NU berhasil diubah!' : 'Data KOIN NU baru berhasil ditambahkan!');
                         koinEditId = null;
+                        
+                        // Reset Form
+                        document.getElementById('koin-input-tanggal').value = '';
+                        document.getElementById('koin-input-petugas').value = '';
+                        document.getElementById('koin-input-hp').value = '';
+                        document.getElementById('koin-input-donatur').value = '';
+                        document.getElementById('koin-input-alamat').value = '';
+                        document.getElementById('koin-input-nominal').value = '';
                     })
                     .catch(error => alert("Gagal menyimpan data ke Firebase: " + error.message));
 
-                // Reset Form
-                document.getElementById('koin-input-tanggal').value = '';
-                document.getElementById('koin-input-petugas').value = '';
-                document.getElementById('koin-input-hp').value = '';
-                document.getElementById('koin-input-donatur').value = '';
-                document.getElementById('koin-input-alamat').value = '';
-                document.getElementById('koin-input-nominal').value = '';
             
             } else if (moduleName === 'jurnal') {
                 const newTanggal = document.getElementById('jurnal-input-tanggal').value;
@@ -1284,16 +1286,24 @@
                         .then(() => {
                             alert('Saldo Awal Berhasil Diubah!');
                             jurnalEditId = null; 
+                            
+                            // Restore form fields
+                            document.getElementById('jurnal-input-tanggal').disabled = false;
+                            document.getElementById('jurnal-input-keterangan').disabled = false;
+                            document.getElementById('jurnal-input-kategori').disabled = false;
+                            document.getElementById('jurnal-input-keluar').disabled = false;
+                            document.getElementById('jurnal-input-masuk').disabled = false;
+                            
+                            // Reset form
+                            document.getElementById('jurnal-input-tanggal').value = '';
+                            document.getElementById('jurnal-input-keterangan').value = '';
+                            document.getElementById('jurnal-input-kategori').value = '';
+                            document.getElementById('jurnal-input-masuk').value = '';
+                            document.getElementById('jurnal-input-keluar').value = '';
+                            updateMasukKeluarFields();
                         })
                         .catch(error => alert("Gagal menyimpan saldo awal ke Firebase: " + error.message));
                     
-                    // Restore form fields
-                    document.getElementById('jurnal-input-tanggal').disabled = false;
-                    document.getElementById('jurnal-input-keterangan').disabled = false;
-                    document.getElementById('jurnal-input-kategori').disabled = false;
-                    document.getElementById('jurnal-input-keluar').disabled = false;
-                    document.getElementById('jurnal-input-masuk').disabled = false;
-
                 } else {
                     if (!newTanggal || !newKeterangan || !newKategori || (newMasuk === 0 && newKeluar === 0) || (newMasuk > 0 && newKeluar > 0)) {
                         alert('Mohon isi Tanggal, Keterangan, Kategori, dan hanya salah satu kolom Dana Masuk atau Dana Keluar.');
@@ -1317,21 +1327,27 @@
                         .then(() => {
                             alert(idToSave ? 'Data Jurnal berhasil diubah!' : 'Data Jurnal baru berhasil ditambahkan!');
                             jurnalEditId = null;
+                            
+                            // Reset form
+                            document.getElementById('jurnal-input-tanggal').value = '';
+                            document.getElementById('jurnal-input-keterangan').value = '';
+                            document.getElementById('jurnal-input-kategori').value = '';
+                            document.getElementById('jurnal-input-masuk').value = '';
+                            document.getElementById('jurnal-input-keluar').value = '';
+                            updateMasukKeluarFields();
                         })
                         .catch(error => alert("Gagal menyimpan data ke Firebase: " + error.message));
                 }
                 
-                // Reset form
-                document.getElementById('jurnal-input-tanggal').value = '';
-                document.getElementById('jurnal-input-keterangan').value = '';
-                document.getElementById('jurnal-input-kategori').value = '';
-                document.getElementById('jurnal-input-masuk').value = '';
-                document.getElementById('jurnal-input-keluar').value = '';
-                updateMasukKeluarFields();
+                
             }
         }
 
         function editData(moduleName, id) {
+            if (!isLoggedIn) {
+                alert('Anda harus login sebagai Admin untuk mengedit data.');
+                return;
+            }
              // ... (Mengambil data dari currentData yang sudah di-fetch)
             if (moduleName === 'koin') {
                 const data = currentKoinData[id];
@@ -1375,6 +1391,10 @@
         }
 
         function deleteData(moduleName, id) {
+            if (!isLoggedIn) {
+                alert('Anda harus login sebagai Admin untuk menghapus data.');
+                return;
+            }
             if (id === null || id === undefined || id === 'new-saldo-awal' || id === 'saldo_awal_manual') {
                 alert('Entri ini tidak dapat dihapus.');
                 return;
@@ -1422,7 +1442,6 @@
         }
 
         function updateMasukKeluarFields() {
-            // ... (Kode ini tidak berubah)
             const kategori = document.getElementById('jurnal-input-kategori').value;
             const masukInput = document.getElementById('jurnal-input-masuk');
             const keluarInput = document.getElementById('jurnal-input-keluar');
@@ -1440,17 +1459,16 @@
             
             if (masukKategori.includes(kategori)) {
                 keluarInput.disabled = true;
-                keluarInput.value = 0;
+                if (jurnalEditId === null) keluarInput.value = 0;
             } else if (keluarKategori.includes(kategori)) {
                 masukInput.disabled = true;
-                masukInput.value = 0;
+                if (jurnalEditId === null) masukInput.value = 0;
             } else {
             }
         }
 
         // 12. Admin: Edit Data Tahunan (Cell Click)
         function editAnnualData(id, key, currentValue) {
-            // ... (Fungsi ini tidak berubah, hanya mengambil nilai dari currentAnnualManualData)
             if (!isLoggedIn) {
                 alert('Anda harus login sebagai Admin untuk mengedit data.');
                 return;
@@ -1546,7 +1564,6 @@
         }
 
         function cancelAnnualEdit() {
-            // ... (Kode ini tidak berubah)
             currentAnnualEditId = null;
             currentAnnualEditKey = null;
             document.getElementById('tahunan-edit-input-area').style.display = 'none';
@@ -1554,7 +1571,6 @@
 
         // 13. Download PDF (Universal)
         async function downloadPDF(moduleName) {
-            // ... (Kode ini tidak berubah)
             const contentId = `${moduleName}-pdf-content`;
             const ttdAreaId = `${moduleName}-ttd-area`;
             const ttdDateId = `${moduleName}-ttd-date`;
@@ -1636,11 +1652,9 @@
                 pdfContent.style.padding = '';
                 pdfContent.style.fontSize = ''; 
                 
-                if (moduleName === 'tahunan') {
-                    document.querySelectorAll('.editable-cell').forEach(el => el.style.borderBottom = isLoggedIn ? '1px dashed #007bff' : 'none');
-                }
-                
-                filterData(moduleName);
+                // Gunakan updateTableActionVisibility untuk mengembalikan tampilan
+                updateTableActionVisibility();
+                filterData(moduleName); 
             }
         }
         
@@ -1650,7 +1664,8 @@
         
         function init() {
             populateFilterOptions();
-            showModule('koin'); 
+            showModule('koin'); // Tampilkan data KOIN NU secara default
+            updateTableActionVisibility(); // Pastikan mode publik aktif (isLoggedIn = false)
         }
 
 
@@ -1658,4 +1673,5 @@
     </script>
 </body>
 </html>
+
 
