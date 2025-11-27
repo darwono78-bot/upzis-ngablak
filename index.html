@@ -455,6 +455,11 @@
         let jurnalData = [
             // Contoh Saldo Akhir Desember 2024 (Agar ada data untuk Saldo Bulan Lalu di Jan 2025)
             { id: 300, tanggal: '2024-12-31', keterangan: 'Saldo Akhir Tahun Lalu', kategori: 'Saldo Bulan Lalu', masuk: 5000000, keluar: 0, type: 'manual' },
+            // Menambahkan entri manual yang seharusnya dijumlahkan ke total masuk, misalnya di Jan 2025
+            { id: 301, tanggal: '2025-01-05', keterangan: 'Donasi Pembangunan Masjid', kategori: 'Donatur', masuk: 2000000, keluar: 0, type: 'manual' },
+            { id: 302, tanggal: '2025-01-10', keterangan: 'Pengeluaran Pembangunan Masjid', kategori: 'Lain-lain', masuk: 0, keluar: 1000000, type: 'manual' },
+            { id: 303, tanggal: '2025-01-15', keterangan: 'Infaq dari Grup Yasin', kategori: 'Infaq', masuk: 5000000, keluar: 0, type: 'manual' },
+            { id: 304, tanggal: '2025-01-20', keterangan: 'Biaya Operasional', kategori: 'Lain-lain', masuk: 0, keluar: 500000, type: 'manual' },
         ];
         
         // Data Baru untuk Laporan Tahunan
@@ -483,8 +488,9 @@
             
             document.getElementById('koin-filter-bulan').value = currentMonth;
             document.getElementById('koin-filter-tahun').value = currentYear;
-            document.getElementById('jurnal-filter-bulan').value = currentMonth;
-            document.getElementById('jurnal-filter-tahun').value = currentYear;
+            // Set default filter Jurnal ke bulan Januari 2025 (agar data dummy terlihat)
+            document.getElementById('jurnal-filter-bulan').value = '1'; 
+            document.getElementById('jurnal-filter-tahun').value = '2025';
             document.getElementById('tahunan-filter-tahun').value = currentYear;
             
             showModule('koin');
@@ -736,11 +742,14 @@
                 const isSaldoBulanLalu = data.type === 'manual_saldo';
                 const isManual = data.type === 'manual';
                 
-                // Jika bukan baris saldo, hitung total
-                if (!isSaldoBulanLalu) {
+                // >>> PERBAIKAN LOGIKA TOTAL FOOTER START <<<
+                // Hanya entri manual yang dijumlahkan ke Total di footer.
+                // Entri KOIN NU Otomatis dan Saldo Bulan Lalu HANYA MEMPENGARUHI RUNNING SALDO.
+                if (isManual) {
                     totalMasuk += data.masuk;
                     totalKeluar += data.keluar;
                 }
+                // >>> PERBAIKAN LOGIKA TOTAL FOOTER END <<<
                 
                 // Penentuan kelas baris (warna latar belakang)
                 let rowClass = isAutoKoin ? 'koin-fixed-entry' : (isSaldoBulanLalu ? 'saldo-entry' : 'manual-entry');
@@ -1049,8 +1058,7 @@
                     // Jika kategori Keluar, Masuk dinonaktifkan jika isinya 0
                     if(masukInput.value == 0) masukInput.disabled = true;
                 }
-                // Jika kategori Masuk/Keluar diubah, user harus meng-nol-kan yang lain
-                // Cek jika kategori berubah
+                // Jika kategori berubah
                 const originalData = jurnalData.find(d => d.id === jurnalEditId);
                 if (originalData) {
                     const originalKategoriMasuk = masukKategori.includes(originalData.kategori);
