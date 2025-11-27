@@ -14,7 +14,7 @@
     <style>
         /* Gaya CSS untuk Tampilan */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f7f6; color: #333; }
-        .container { padding: 20px; max-width: 100%; margin: auto; } /* Lebar Maksimum Disesuaikan */
+        .container { padding: 20px; max-width: 100%; margin: auto; }
         
         /* Gaya Navigasi */
         .navbar { background-color: #006400; color: white; padding: 10px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: space-between; }
@@ -60,6 +60,12 @@
         /* Export Button */
         .export-button { background-color: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin-top: 10px; display: block; width: 100%; text-align: center; transition: background-color 0.3s; }
         .export-button:hover { background-color: #45a049; }
+        
+        /* Tabel Tahunan */
+        .annual-summary { margin-top: 20px; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .annual-summary h3 { color: #006400; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .summary-item { margin-bottom: 10px; font-size: 1.1rem; }
+        .summary-item span { font-weight: bold; float: right; }
 
         /* Media Queries */
         @media (min-width: 768px) {
@@ -81,7 +87,7 @@
         <div class="tab-buttons">
             <button class="tab-button active" onclick="changeTab('koin')">Pembukuan KOIN NU</button>
             <button class="tab-button" onclick="changeTab('jurnal')">Jurnal Umum</button>
-        </div>
+            <button class="tab-button" onclick="changeTab('tahunan')">Laporan Tahunan</button> </div>
 
         <div id="koin-tab" class="tab-content active">
             
@@ -212,6 +218,35 @@
                 </table>
             </div>
         </div>
+        
+        <div id="tahunan-tab" class="tab-content">
+            <div class="annual-summary">
+                <h2>Laporan Ringkasan Tahunan UPZIS</h2>
+                <div class="form-group">
+                    <label for="tahunan-filter-tahun">Filter Tahun</label>
+                    <select id="tahunan-filter-tahun" onchange="updateAnnualTable()"></select>
+                </div>
+
+                <h3>Ringkasan Keuangan</h3>
+                <div class="summary-item">Total Penerimaan (Masuk): <span id="annual-total-debet">Rp 0</span></div>
+                <div class="summary-item">Total Pengeluaran (Keluar): <span id="annual-total-kredit">Rp 0</span></div>
+                <div class="saldo-total" id="annual-saldo-kas">Total Saldo Akhir Kas: <span>Rp 0</span></div>
+
+                <h3>Rincian Pembagian Dana Zakat (berdasarkan Penerimaan Infaq Kotak)</h3>
+                <div class="summary-item">Penerimaan Infaq Kotak Bersih: <span id="annual-infaq-kotak-bersih">Rp 0</span></div>
+                
+                <hr style="margin: 15px 0;">
+                <div class="summary-item" style="color:#006400; font-size:1.2rem;">TOTAL ALOKASI ZAKAT: <span id="annual-total-alokasi">Rp 0</span></div>
+                <hr style="margin: 15px 0;">
+
+                <div class="summary-item">10% untuk Yatim/Piatu: <span id="annual-alokasi-yatim">Rp 0</span></div>
+                <div class="summary-item">60% untuk Fakir Miskin: <span id="annual-alokasi-fakir">Rp 0</span></div>
+                <div class="summary-item">25% untuk Operasional: <span id="annual-alokasi-operasional">Rp 0</span></div>
+                <div class="summary-item">5% untuk Infaq (Diutamakan): <span id="annual-alokasi-infaq">Rp 0</span></div>
+
+                <p style="margin-top: 20px;">*Pembagian dana dihitung berdasarkan persentase dari total penerimaan kategori "Infaq Kotak".</p>
+            </div>
+        </div>
 
     </div>
 
@@ -219,8 +254,9 @@
         // Data Global (sekarang akan diisi dari Firebase)
         let koinData = [];
         let jurnalData = [];
-        let koinEditId = null; // ID dokumen Firebase
-        let jurnalEditId = null; // ID dokumen Firebase
+        let annualData = []; // Dikembalikan
+        let koinEditId = null; // ID dokumen Firebase (string)
+        let jurnalEditId = null; // ID dokumen Firebase (string)
         const categories = [
             'Saldo Bulan Lalu', 'Infaq Kotak', 'Penerimaan Lain', 
             'Penyaluran Santunan', 'Biaya Operasional', 'Pengeluaran Lain'
@@ -267,8 +303,6 @@
             }
         }
         
-        // FUNGSI LAMA (getData): DIHAPUS karena diganti oleh getFirebaseData
-
         // ==========================================================
         // FUNGSI UTAMA (INIT)
         // ==========================================================
@@ -282,7 +316,9 @@
             filterData('koin');
             filterData('jurnal');
             setupFilters();
+            setupAnnualFilter(); // Panggil fungsi setup filter tahunan
             checkInitialSaldo();
+            updateAnnualTable(); // Panggil update laporan tahunan
             
             document.getElementById('koin-form').addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -394,6 +430,7 @@
                 jurnalData = await getFirebaseData('jurnal');
                 filterData('jurnal');
                 checkInitialSaldo();
+                updateAnnualTable(); // PENTING: Update laporan tahunan setelah jurnal diubah
             }
         }
         
@@ -529,7 +566,6 @@
 
         function checkInitialSaldo() {
             const hasInitialSaldo = jurnalData.some(d => d.kategori === 'Saldo Bulan Lalu');
-            const newSaldoButton = `<button class="action-button edit" onclick="editData('jurnal', 'new-saldo-awal')">Tambah Saldo Awal</button>`;
             const table = document.getElementById('jurnal-table');
 
             // Hapus baris peringatan jika ada
@@ -572,6 +608,70 @@
                 select.value = 'all'; // Set default to 'Semua Bulan'
             });
         }
+        
+        // FUNGSI BARU/DIKEMBALIKAN: Setup Filter Tahunan
+        function setupAnnualFilter() {
+            const annualFilter = document.getElementById('tahunan-filter-tahun');
+            const currentYear = new Date().getFullYear();
+            const years = ['Semua Tahun'];
+            for (let i = 0; i < 5; i++) { // Filter 5 tahun ke belakang
+                years.push((currentYear - i).toString());
+            }
+            
+            annualFilter.innerHTML = '';
+            years.forEach((year, index) => {
+                annualFilter.add(new Option(year, index === 0 ? 'all' : year));
+            });
+            annualFilter.value = currentYear.toString(); // Default ke tahun ini
+        }
+        
+        // FUNGSI BARU/DIKEMBALIKAN: Update Laporan Tahunan
+        function updateAnnualTable() {
+            const selectedYear = document.getElementById('tahunan-filter-tahun').value;
+            let filteredData = jurnalData;
+
+            if (selectedYear !== 'all') {
+                filteredData = jurnalData.filter(d => d.tanggal.startsWith(selectedYear));
+            }
+
+            let totalDebet = 0;
+            let totalKredit = 0;
+            let infaqKotak = 0;
+
+            filteredData.forEach(d => {
+                const jumlah = d.jumlah || 0;
+                if (d.jenis === 'masuk') {
+                    totalDebet += jumlah;
+                    if (d.kategori === 'Infaq Kotak') {
+                        infaqKotak += jumlah;
+                    }
+                } else if (d.jenis === 'keluar') {
+                    totalKredit += jumlah;
+                }
+            });
+
+            const saldoKas = totalDebet - totalKredit;
+
+            // --- Logika Pembagian Dana Zakat (berdasarkan Infaq Kotak) ---
+            const alokasiYatim = Math.round(infaqKotak * 0.10); // 10%
+            const alokasiFakir = Math.round(infaqKotak * 0.60); // 60%
+            const alokasiOperasional = Math.round(infaqKotak * 0.25); // 25%
+            const alokasiInfaq = Math.round(infaqKotak * 0.05); // 5%
+            const totalAlokasi = alokasiYatim + alokasiFakir + alokasiOperasional + alokasiInfaq;
+            // -----------------------------------------------------------
+
+            document.getElementById('annual-total-debet').textContent = formatRupiah(totalDebet);
+            document.getElementById('annual-total-kredit').textContent = formatRupiah(totalKredit);
+            document.getElementById('annual-saldo-kas').innerHTML = `Total Saldo Akhir Kas: <span>${formatRupiah(saldoKas)}</span>`;
+
+            document.getElementById('annual-infaq-kotak-bersih').textContent = formatRupiah(infaqKotak);
+            document.getElementById('annual-total-alokasi').textContent = formatRupiah(totalAlokasi);
+            document.getElementById('annual-alokasi-yatim').textContent = formatRupiah(alokasiYatim);
+            document.getElementById('annual-alokasi-fakir').textContent = formatRupiah(alokasiFakir);
+            document.getElementById('annual-alokasi-operasional').textContent = formatRupiah(alokasiOperasional);
+            document.getElementById('annual-alokasi-infaq').textContent = formatRupiah(alokasiInfaq);
+        }
+
 
         function filterData(moduleName) {
             const filterElement = document.getElementById(`${moduleName}-filter-bulan`);
@@ -606,6 +706,7 @@
             data.forEach(d => {
                 totalSaldo += d.jumlah;
                 const row = tableBody.insertRow();
+                // Menggunakan substring(0, 4) untuk ID (untuk tampilan)
                 row.innerHTML = `
                     <td>${d.id.substring(0, 4)}...</td>
                     <td>${d.tanggal}</td>
@@ -642,6 +743,7 @@
                 totalKredit += kredit;
 
                 const row = tableBody.insertRow();
+                // Menggunakan substring(0, 4) untuk ID (untuk tampilan)
                 row.innerHTML = `
                     <td>${d.id.substring(0, 4)}...</td>
                     <td>${d.tanggal}</td>
@@ -674,12 +776,15 @@
 
             document.getElementById(`${tabName}-tab`).classList.add('active');
             document.querySelector(`.tab-button[onclick="changeTab('${tabName}')"]`).classList.add('active');
+            
+            // Khusus tab tahunan, update data
+            if (tabName === 'tahunan') {
+                updateAnnualTable();
+            }
         }
         
         function exportToPDF() {
             alert('Fungsi Export PDF belum diimplementasikan sepenuhnya. Silakan gunakan fungsi cetak browser (Ctrl+P) atau salin data dari tabel.');
-            // Implementasi export PDF yang sebenarnya akan melibatkan html2canvas dan jspdf
-            // dan akan menjadi sangat panjang untuk disertakan di sini.
         }
 
         window.onload = init;
