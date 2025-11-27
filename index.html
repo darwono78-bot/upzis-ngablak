@@ -170,7 +170,7 @@
                             <th rowspan="2" id="koin-alamat-header">ALAMAT (RT/RW)</th> 
                             <th rowspan="2" class="money-col">NOMINAL</th> 
                             <th colspan="4" class="koin-pembagian-header">PEMBAGIAN DANA KOIN</th> 
-                            <th rowspan="2" id="koin-aksi-header" style="display: none;">Aksi</th>
+                            <th rowspan="2" id="koin-aksi-header" style="display: none;">Aksi">Aksi</th>
                         </tr>
                         <tr>
                             <th class="koin-pembagian-header money-col">Petugas (10%)</th> 
@@ -668,26 +668,37 @@
             // Tambahkan running saldo ke entry saldo bulan lalu (untuk start perhitungan)
             saldoBulanLaluEntry.runningSaldo = initialSaldo; // Ini adalah saldo awal sebelum KOIN NU diproses
 
-            // 3. Gabungkan data KOIN NU (4 item Pengeluaran Otomatis + 1 item Pemasukan Ranting Otomatis)
-            let fixedTopFive = [];
-            let koinAutoEntries = [];
+            // 3. Gabungkan data KOIN NU (4 item Otomatis: 1 Masuk Total, 3 Keluar Pembagian)
+            let fixedTopEntries = [];
             
             if(koinTotals.totalNominal > 0) {
-                // Baris 1: Pengeluaran Petugas (Dikosongkan tanggalnya)
-                koinAutoEntries.push({ id: 'auto-koin-1', tanggal: '', keterangan: 'Pembagian Petugas KOIN NU', kategori: 'Petugas (10%)', masuk: 0, keluar: koinTotals.petugas, type: 'auto' });
-                // Baris 2: Pengeluaran MWC (Dikosongkan tanggalnya)
-                koinAutoEntries.push({ id: 'auto-koin-2', tanggal: '', keterangan: 'Pembagian MWC KOIN NU', kategori: 'MWC (25%)', masuk: 0, keluar: koinTotals.mwc, type: 'auto' });
-                // Baris 3: Pengeluaran PC (Dikosongkan tanggalnya)
-                koinAutoEntries.push({ id: 'auto-koin-3', tanggal: '', keterangan: 'Pembagian PC KOIN NU', kategori: 'PC (5%)', masuk: 0, keluar: koinTotals.pc, type: 'auto' });
-                // Baris 4: Pemasukan Ranting (Dikosongkan tanggalnya)
-                koinAutoEntries.push({ id: 'auto-koin-4', tanggal: '', keterangan: 'Sisa Pembagian KOIN NU (Ranting)', kategori: 'Koin NU', masuk: koinTotals.ranting, keluar: 0, type: 'auto' });
+                // Baris 1: Pemasukan Total KOIN NU (100% dari Donatur) - (Permintaan Baru)
+                fixedTopEntries.push({ 
+                    id: 'auto-koin-0', 
+                    tanggal: '', 
+                    keterangan: 'TOTAL PENJUMLAHAN DARI NOMINAL DONATUR (DARI KOIN NU)', 
+                    kategori: 'Koin NU', 
+                    masuk: koinTotals.totalNominal, 
+                    keluar: 0, 
+                    type: 'auto' 
+                });
+                // Baris 2: Pengeluaran Petugas (10%)
+                fixedTopEntries.push({ id: 'auto-koin-1', tanggal: '', keterangan: 'Pembagian Petugas KOIN NU', kategori: 'Petugas (10%)', masuk: 0, keluar: koinTotals.petugas, type: 'auto' });
+                // Baris 3: Pengeluaran MWC (25%)
+                fixedTopEntries.push({ id: 'auto-koin-2', tanggal: '', keterangan: 'Pembagian MWC KOIN NU', kategori: 'MWC (25%)', masuk: 0, keluar: koinTotals.mwc, type: 'auto' });
+                // Baris 4: Pengeluaran PC (5%)
+                fixedTopEntries.push({ id: 'auto-koin-3', tanggal: '', keterangan: 'Pembagian PC KOIN NU', kategori: 'PC (5%)', masuk: 0, keluar: koinTotals.pc, type: 'auto' });
+                
+                // Baris 5: Saldo Bulan Lalu (dipindahkan ke akhir baris tetap)
+                // Tanggal Saldo Bulan Lalu harus akhir bulan sebelumnya
+                saldoBulanLaluEntry.tanggal = saldoBulanLaluDate; 
+                fixedTopEntries.push(saldoBulanLaluEntry);
+
+            } else {
+                // Jika tidak ada transaksi KOIN NU bulan ini, hanya tampilkan Saldo Bulan Lalu
+                 saldoBulanLaluEntry.tanggal = saldoBulanLaluDate; 
+                 fixedTopEntries.push(saldoBulanLaluEntry);
             }
-            
-            // Baris 5: Saldo Bulan Lalu (Punya Tanggal Akhir Bulan Sebelumnya)
-            saldoBulanLaluEntry.tanggal = saldoBulanLaluDate; // Pastikan tanggal akhir bulan sebelumnya
-            
-            // Gabungkan 4 baris KOIN NU + 1 baris Saldo Bulan Lalu (total 5 baris di awal)
-            fixedTopFive = [...koinAutoEntries, saldoBulanLaluEntry];
             
             // 4. Ambil data manual bulan/tahun ini (filter Saldo Bulan Lalu)
             let chronologicalList = manualData.filter(d => 
@@ -697,14 +708,13 @@
 
             // 5. Gabungkan semua dan hitung running saldo
             
-            // Mulai perhitungan saldo dari 0, lalu tambahkan Saldo Bulan Lalu
             let runningSaldo = 0; 
             
-            // List untuk ditampilkan (Termasuk 5 baris awal)
-            let combinedList = [...fixedTopFive];
+            // List untuk ditampilkan (Termasuk fixed entries)
+            let combinedList = [...fixedTopEntries];
             
-            // Hitung saldo untuk 5 baris awal
-            fixedTopFive.forEach(data => {
+            // Hitung saldo untuk fixed entries
+            fixedTopEntries.forEach(data => {
                 runningSaldo += (data.masuk - data.keluar);
                 data.runningSaldo = runningSaldo;
             });
@@ -762,10 +772,10 @@
                 const actionCell = row.querySelector('.action-btns');
 
                 if (isSaldoBulanLalu && isLoggedIn) {
-                    // Baris 5: Saldo Bulan Lalu -> Hanya bisa EDIT
+                    // Baris Saldo Bulan Lalu -> Hanya bisa EDIT
                     actionCell.innerHTML = `<button class="button btn-blue" onclick="editData('jurnal', '${data.id}')">Edit Saldo</button>`;
                 } else if (isManual && isLoggedIn) {
-                    // Baris 6 ke atas: Input Manual -> Bisa EDIT dan HAPUS
+                    // Baris Manual -> Bisa EDIT dan HAPUS
                     actionCell.innerHTML = `
                         <button class="button btn-blue" onclick="editData('jurnal', ${data.id})">Edit</button>
                         <button class="button btn-red" onclick="deleteData('jurnal', ${data.id})">Hapus</button>
@@ -857,7 +867,8 @@
                 
                 // Hitung total koin nu yang masuk ke ranting (60%) di bulan ini
                 const koinTotal = calculateKoinTotals(month.toString(), year);
-                const koinRantingIncome = koinTotal.ranting; // Total uang yang masuk dari Koin NU
+                // Koin Ranting Income = Total Nominal - Petugas - MWC - PC (60%)
+                const koinRantingIncome = koinTotal.totalNominal - koinTotal.petugas - koinTotal.mwc - koinTotal.pc; 
 
                 // Ambil data pengeluaran dari Jurnal Umum
                 const expensePendidikan = calculateJurnalExpense(categories.pendidikan, month, reportYear);
@@ -871,7 +882,7 @@
                     no: month + 2,
                     label: monthName,
                     type: 'monthly',
-                    koinNominal: koinRantingIncome, // Auto
+                    koinNominal: koinRantingIncome, // Auto (60% yang masuk ke Ranting)
                     donatur: monthlyManual.donatur, // Manual
                     pendidikan: { uang: expensePendidikan, penerima: monthlyManual.pendidikan.penerima }, // Auto Uang, Manual Penerima
                     sosial: { uang: expenseSosial, penerima: monthlyManual.sosial.penerima }, // Auto Uang, Manual Penerima
@@ -1599,17 +1610,23 @@
             let showKeterangan = false;
             let keteranganValue = '';
             
+            // Re-render dataToRender (which should be done in filterData, but needed here for context)
+            const currentYear = document.getElementById('tahunan-filter-tahun').value;
+            const dataToRender = generateAnnualReportData(currentYear); 
+            const currentData = dataToRender.find(d => d.id === id);
+
+
             if (key === 'banom.keterangan') {
                 showKeterangan = true;
-                nominal = dataToRender.find(d => d.id === id).banom.uang; // Ambil nominal uang dari data konsolidasi
+                nominal = currentData.banom.uang; // Ambil nominal uang dari data konsolidasi
                 keteranganValue = currentValue;
             } else if (key === 'lain_lain.uraian') {
                 showKeterangan = true;
-                nominal = dataToRender.find(d => d.id === id).lain_lain.uang; // Ambil nominal uang dari data konsolidasi
+                nominal = currentData.lain_lain.uang; // Ambil nominal uang dari data konsolidasi
                 keteranganValue = currentValue;
             } else if (key === 'lain_lain.nominal') {
                  showKeterangan = true;
-                 keteranganValue = dataToRender.find(d => d.id === id).lain_lain.uraian;
+                 keteranganValue = currentData.lain_lain.uraian;
             }
 
 
