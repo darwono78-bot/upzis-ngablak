@@ -1998,6 +1998,303 @@ function downloadPDF(module) {
     loadKoinFromFirebase();
 </script>
 
+
+<!-- ================= FULL FIRESTORE INTEGRATION (OVERRIDE LOCAL STORAGE) ================= -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+// =========== CONFIG - GANTI DENGAN MILIK KAKAK ===========
+const firebaseConfig = {
+    apiKey: "APIKEY_KAKAK",
+    authDomain: "PROJECT.firebaseapp.com",
+    projectId: "PROJECT_ID",
+    storageBucket: "PROJECT.appspot.com",
+    messagingSenderId: "xxxxxx",
+    appId: "xxxxxx",
+};
+// =========================================================
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Collection names (Opsi 1)
+const COL_KOIN = 'laporan_koin_nu';
+const COL_JURNAL = 'jurnal_umum';
+const COL_TAHUNAN = 'laporan_tahunan';
+
+// Override global arrays (will be filled from Firestore)
+koinData = [];
+jurnalData = [];
+annualData = [];
+isLoggedIn = false;
+
+// --- AUTH HANDLING ---
+window.attemptLogin = function(){
+    const emailFixed = "darwono@gmail.com";
+    const password = document.getElementById("password").value;
+    // try sign in
+    signInWithEmailAndPassword(auth, emailFixed, password)
+    .then(() => {
+        isLoggedIn = true;
+        document.getElementById("login-area").style.display = "none";
+        // show admin controls for each module
+        document.getElementById("koin-admin-controls").style.display = "flex";
+        document.getElementById("koin-input-area").style.display = "block";
+        document.getElementById("jurnal-admin-controls").style.display = "flex";
+        document.getElementById("jurnal-input-area").style.display = "block";
+        document.getElementById("tahunan-admin-controls").style.display = "flex";
+        document.getElementById("tahunan-edit-input-area").style.display = "block";
+        loadAllCollections().then(() => filterData(currentModule));
+    })
+    .catch(err => alert('Login gagal: ' + err.message));
+};
+
+window.logout = function(){
+    signOut(auth).then(() => {
+        isLoggedIn = false;
+        location.reload();
+    });
+};
+
+// Listen auth state to set UI correctly
+onAuthStateChanged(auth, user => {
+    if (user && user.email === 'darwono@gmail.com') {
+        isLoggedIn = true;
+        document.getElementById("login-area").style.display = "none";
+        document.getElementById("koin-admin-controls").style.display = "flex";
+        document.getElementById("koin-input-area").style.display = "block";
+        document.getElementById("jurnal-admin-controls").style.display = "flex";
+        document.getElementById("jurnal-input-area").style.display = "block";
+        document.getElementById("tahunan-admin-controls").style.display = "flex";
+        document.getElementById("tahunan-edit-input-area").style.display = "block";
+    } else {
+        // keep logged out
+    }
+});
+
+// ========== FIRESTORE CRUD ==========
+
+async function loadAllCollections(){
+    // load koin
+    try {
+        const qk = query(collection(db, COL_KOIN), orderBy('tanggal', 'asc'));
+        const snapK = await getDocs(qk);
+        koinData = [];
+        snapK.forEach(d => koinData.push({ id: d.id, ...d.data() }));
+    } catch(e){
+        console.error('load koin error', e);
+    }
+
+    // load jurnal
+    try {
+        const qj = query(collection(db, COL_JURNAL), orderBy('tanggal', 'asc'));
+        const snapJ = await getDocs(qj);
+        jurnalData = [];
+        snapJ.forEach(d => jurnalData.push({ id: d.id, ...d.data() }));
+    } catch(e){
+        console.error('load jurnal error', e);
+    }
+
+    // load tahunan
+    try {
+        const qt = query(collection(db, COL_TAHUNAN), orderBy('year', 'asc'));
+        const snapT = await getDocs(qt);
+        annualData = [];
+        snapT.forEach(d => annualData.push({ id: d.id, ...d.data() }));
+    } catch(e){
+        console.error('load tahunan error', e);
+    }
+}
+
+// Save data: will add or update depending on editing flags set in original script
+window.saveData = async function(module){
+    if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
+
+    if (module === 'koin') {
+        // gather fields
+        const tanggal = document.getElementById('koin-input-tanggal').value;
+        const petugas = document.getElementById('koin-input-petugas').value;
+        const hp = document.getElementById('koin-input-hp').value;
+        const donatur = document.getElementById('koin-input-donatur').value;
+        const alamat = document.getElementById('koin-input-alamat').value;
+        const nominal = parseInt(document.getElementById('koin-input-nominal').value) || 0;
+
+        if (!tanggal || !petugas || !donatur || nominal <= 0) {
+            return alert('Mohon lengkapi semua data Koin NU yang diperlukan.');
+        }
+
+        if (koinEditId !== null) {
+            // update existing doc
+            try {
+                const docRef = doc(db, COL_KOIN, String(koinEditId));
+                await updateDoc(docRef, { tanggal, petugas, hp, donatur, alamat, nominal });
+                alert('Data Koin diperbarui di Firestore.');
+            } catch(e){ console.error(e); alert('Gagal update: '+e.message); }
+        } else {
+            try {
+                await addDoc(collection(db, COL_KOIN), { tanggal, petugas, hp, donatur, alamat, nominal, type: 'manual', createdAt: Date.now() });
+                alert('Data Koin tersimpan di Firestore.');
+            } catch(e){ console.error(e); alert('Gagal simpan: '+e.message); }
+        }
+        // reload and refresh view
+        await loadAllCollections();
+        resetForm('koin');
+        filterData('koin');
+        koinEditId = null;
+    } else if (module === 'jurnal') {
+        const tanggal = document.getElementById('jurnal-input-tanggal').value;
+        const keterangan = document.getElementById('jurnal-input-keterangan').value;
+        const kategori = document.getElementById('jurnal-input-kategori').value;
+        const masuk = parseInt(document.getElementById('jurnal-input-masuk').value) || 0;
+        const keluar = parseInt(document.getElementById('jurnal-input-keluar').value) || 0;
+
+        if (!tanggal || !keterangan || !kategori || (masuk <= 0 && keluar <= 0)) {
+            return alert('Mohon lengkapi Tanggal, Keterangan, Kategori, dan setidaknya salah satu Nominal Masuk/Keluar.');
+        }
+        if (masuk > 0 && keluar > 0) {
+            return alert('Input tidak boleh memiliki Dana Masuk dan Dana Keluar secara bersamaan.');
+        }
+
+        if (jurnalEditId !== null) {
+            try {
+                const docRef = doc(db, COL_JURNAL, String(jurnalEditId));
+                await updateDoc(docRef, { tanggal, keterangan, kategori, masuk, keluar });
+                alert('Data Jurnal diperbarui di Firestore.');
+            } catch(e){ console.error(e); alert('Gagal update: '+e.message); }
+        } else {
+            try {
+                await addDoc(collection(db, COL_JURNAL), { tanggal, keterangan, kategori, masuk, keluar, type: 'manual', createdAt: Date.now() });
+                alert('Data Jurnal tersimpan di Firestore.');
+            } catch(e){ console.error(e); alert('Gagal simpan: '+e.message); }
+        }
+
+        await loadAllCollections();
+        resetForm('jurnal');
+        filterData('jurnal');
+        jurnalEditId = null;
+    }
+};
+
+// Edit data: fill form with firestore doc values
+window.editData = async function(module, id, month = null, year = null, currentValue = null){
+    if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
+
+    // handle saldo-bulan-lalu-edit special case (keep existing behavior but store in laporan_tahunan)
+    if (module === 'jurnal' && id === 'saldo-bulan-lalu-edit') {
+        if (!month || !year) return alert('Data bulan/tahun tidak ditemukan.');
+        const newSaldo = prompt(`Edit Saldo Bulan Lalu untuk ${month}/${year}:`, currentValue);
+        if (newSaldo !== null && !isNaN(newSaldo) && newSaldo.trim() !== '') {
+            const newSaldoNum = parseInt(newSaldo);
+            // find if exists in annualData with type 'saldo_bulan_lalu_manual'
+            let target = annualData.find(d => d.type === 'saldo_bulan_lalu_manual' && d.year === parseInt(year) && d.month === parseInt(month));
+            try {
+                if (target && target.id) {
+                    // update doc
+                    await updateDoc(doc(db, COL_TAHUNAN, target.id), { nominal: newSaldoNum });
+                } else {
+                    // add new
+                    await addDoc(collection(db, COL_TAHUNAN), { type: 'saldo_bulan_lalu_manual', year: parseInt(year), month: parseInt(month), nominal: newSaldoNum });
+                }
+                alert('Saldo Bulan Lalu berhasil diperbarui di Firestore.');
+                await loadAllCollections();
+                filterData('jurnal');
+            } catch(e){ console.error(e); alert('Gagal menyimpan: '+e.message); }
+        }
+        return;
+    }
+
+    if (module === 'koin') {
+        // find doc by id and populate form
+        const target = koinData.find(d => d.id === id || d.id === String(id));
+        if (!target) return alert('Data tidak ditemukan.');
+        document.getElementById('koin-input-tanggal').value = target.tanggal;
+        document.getElementById('koin-input-petugas').value = target.petugas;
+        document.getElementById('koin-input-hp').value = target.hp || '';
+        document.getElementById('koin-input-donatur').value = target.donatur;
+        document.getElementById('koin-input-alamat').value = target.alamat || '';
+        document.getElementById('koin-input-nominal').value = target.nominal || 0;
+        koinEditId = target.id;
+        const inputArea = document.getElementById('koin-input-area');
+        if (inputArea) inputArea.scrollIntoView({ behavior: 'smooth' });
+    } else if (module === 'jurnal') {
+        const target = jurnalData.find(d => d.id == id && d.type === 'manual');
+        if (!target) return alert('Data tidak ditemukan atau bukan entri manual yang bisa diedit.');
+        document.getElementById('jurnal-input-tanggal').value = target.tanggal;
+        document.getElementById('jurnal-input-keterangan').value = target.keterangan;
+        document.getElementById('jurnal-input-kategori').value = target.kategori;
+        document.getElementById('jurnal-input-masuk').value = target.masuk || '';
+        document.getElementById('jurnal-input-keluar').value = target.keluar || '';
+        jurnalEditId = target.id;
+        updateMasukKeluarFields && updateMasukKeluarFields();
+        const inputArea = document.getElementById('jurnal-input-area');
+        if (inputArea) inputArea.scrollIntoView({ behavior: 'smooth' });
+    }
+};
+
+// Delete data
+window.deleteData = async function(module, id){
+    if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
+    if (!confirm('Yakin ingin menghapus data ini?')) return;
+
+    try {
+        if (module === 'koin') {
+            await deleteDoc(doc(db, COL_KOIN, String(id)));
+        } else if (module === 'jurnal') {
+            await deleteDoc(doc(db, COL_JURNAL, String(id)));
+        } else if (module === 'tahunan') {
+            await deleteDoc(doc(db, COL_TAHUNAN, String(id)));
+        }
+        alert('Data berhasil dihapus dari Firestore.');
+    } catch(e){ console.error(e); alert('Gagal menghapus: '+e.message); }
+
+    await loadAllCollections();
+    filterData(module === 'koin' ? 'koin' : (module === 'jurnal' ? 'jurnal' : 'tahunan'));
+};
+
+// Delete all data in a collection (dangerous)
+window.deleteAllDataGlobal = async function(module){
+    if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
+    if (!confirm('Yakin ingin menghapus SEMUA DATA pada modul ini? Tindakan ini tidak bisa dibatalkan.')) return;
+
+    try {
+        if (module === 'koin') {
+            // fetch all docs in koin and delete
+            const snap = await getDocs(collection(db, COL_KOIN));
+            const promises = [];
+            snap.forEach(d => promises.push(deleteDoc(doc(db, COL_KOIN, d.id))));
+            await Promise.all(promises);
+        } else if (module === 'jurnal') {
+            const snap = await getDocs(collection(db, COL_JURNAL));
+            const promises = [];
+            snap.forEach(d => promises.push(deleteDoc(doc(db, COL_JURNAL, d.id))));
+            await Promise.all(promises);
+        }
+        alert('Semua data dihapus.');
+        await loadAllCollections();
+        filterData(module);
+    } catch(e){ console.error(e); alert('Gagal menghapus semua data: '+e.message); }
+};
+
+// Load initial data on page ready
+window.addEventListener('DOMContentLoaded', async () => {
+    await loadAllCollections();
+    populateFilterOptions && populateFilterOptions();
+    filterData && filterData('koin');
+});
+
+// Override any remaining save-to-local-storage calls by saving when window unload (keep but not needed)
+window.addEventListener('beforeunload', async () => {
+    // no-op, Firestore is source of truth
+});
+</script>
+<!-- ================= END FIRESTORE INTEGRATION ================= -->
+
 </body>
 </html>
-
