@@ -1903,103 +1903,6 @@ function downloadPDF(module) {
         window.onload = init;
     </script>
 
-<!-- ================= FIREBASE CONFIG & FIRESTORE ================= -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { 
-        getFirestore, collection, addDoc, getDocs, getDoc,
-        doc, updateDoc, deleteDoc, query, orderBy 
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    import {
-        getAuth, signInWithEmailAndPassword, signOut
-    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-    const firebaseConfig = {
-    apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
-    authDomain: "upzis-ngablak.firebaseapp.com",
-    projectId: "upzis-ngablak",
-    storageBucket: "upzis-ngablak.firebasestorage.app",
-    messagingSenderId: "869549648344",
-    appId: "1:869549648344:web:a531a37cce3a87bb672aad"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
-    const auth = getAuth(app);
-
-    window.attemptLogin = function(){
-        const email = "darwono78@gmail.com"; 
-        const username = document.getElementById("username").value;
-        const password = document.getElementById("password").value;
-
-        signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-            isLoggedIn = true;
-            document.getElementById("login-area").style.display = "none";
-            document.getElementById("koin-admin-controls").style.display = "flex";
-            document.getElementById("koin-input-area").style.display = "block";
-            filterData('koin');
-        })
-        .catch((error) => {
-            alert("Login gagal: " + error.message);
-        });
-    };
-
-    window.logout = function(){
-        signOut(auth).then(() => {
-            isLoggedIn = false;
-            location.reload();
-        });
-    };
-
-    window.saveData = async function(module){
-        if (!isLoggedIn) return alert("Harus login");
-
-        if(module === "koin"){
-            const tanggal  = document.getElementById("koin-input-tanggal").value;
-            const petugas  = document.getElementById("koin-input-petugas").value;
-            const hp       = document.getElementById("koin-input-hp").value;
-            const donatur  = document.getElementById("koin-input-donatur").value;
-            const alamat   = document.getElementById("koin-input-alamat").value;
-            const nominal  = parseInt(document.getElementById("koin-input-nominal").value);
-
-            if(!tanggal || !petugas || !donatur || nominal <= 0){
-                return alert("Lengkapi semua data!");
-            }
-
-            await addDoc(collection(db, "laporan_koin_nu"), {
-                tanggal: tanggal,
-                petugas: petugas,
-                hp: hp,
-                donatur: donatur,
-                alamat: alamat,
-                nominal: nominal,
-                type: "manual",
-                createdAt: Date.now()
-            });
-
-            alert("Data berhasil disimpan ke Firebase!");
-            filterData("koin");
-        }
-    };
-
-    async function loadKoinFromFirebase(){
-        const q = query(collection(db, "laporan_koin_nu"), orderBy("tanggal", "asc"));
-        const snap = await getDocs(q);
-
-        koinData = [];
-        snap.forEach(doc => {
-            koinData.push({ id: doc.id, ...doc.data() });
-        });
-
-        filterData("koin");
-    }
-
-    loadKoinFromFirebase();
-</script>
-
-
 <!-- ================= FULL FIRESTORE INTEGRATION (OVERRIDE LOCAL STORAGE) ================= -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -2299,3 +2202,4 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
