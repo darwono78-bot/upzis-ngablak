@@ -1408,7 +1408,7 @@ function formatRupiah(number) {
 
         // --- LOGIC LAPORAN TAHUNAN ---
         
-        function generateAnnualReportData(reportYear) {
+        async function generateAnnualReportData(reportYear) {
             const reportYearNum = parseInt(reportYear);
             let runningBalance = 0;
             const dataToRender = [];
@@ -1426,11 +1426,48 @@ function formatRupiah(number) {
             };
 
             // 1. Ambil Saldo Awal Tahun dari annualData
-            const saldoBank = annualData.find(d => d.id === `saldo_bank_${reportYear}`) || { nominal: 0 };
-            const saldoKas = annualData.find(d => d.id === `saldo_kas_${reportYear}`) || { nominal: 0 };
-            
-            const totalSaldoAwal = saldoBank.nominal + saldoKas.nominal;
-            runningBalance = totalSaldoAwal;
+            // KODE FIREBASE PENGGANTI (GANTIKAN 4 BARIS YANG DIHAPUS DI ATAS)
+
+const totalSaldoAwal = 0; // Akan dihitung ulang
+
+// 1. Ambil/Buat Saldo Kas Bank (Awal Tahun) - LOGIKA FIREBASE
+const bankDocId = `saldo_bank_${reportYear}`;
+// GANTI 'COL_ANNUAL_SETTINGS' DENGAN NAMA KOLEKSI UNTUK DATA TAHUNAN KAKAK
+const saldoBankRef = doc(db, 'COL_ANNUAL_SETTINGS', bankDocId); 
+const saldoBankSnap = await getDoc(saldoBankRef);
+let saldoBank;
+
+if (!saldoBankSnap.exists()) {
+    // Jika dokumen TIDAK DITEMUKAN di Firebase, buat data awal
+    saldoBank = { 
+        id: bankDocId, type: 'saldo_bank', year: reportYearNum, nominal: 0 
+    };
+    await setDoc(saldoBankRef, saldoBank); // <-- WAJIB: Simpan dokumen baru ke Firebase
+} else {
+    // Jika ditemukan, ambil datanya
+    saldoBank = saldoBankSnap.data();
+}
+
+// 2. Ambil/Buat Saldo Kas Tunai (Awal Tahun) - LOGIKA FIREBASE
+const kasDocId = `saldo_kas_${reportYear}`;
+const saldoKasRef = doc(db, 'COL_ANNUAL_SETTINGS', kasDocId); // GANTI NAMA KOLEKSI
+const saldoKasSnap = await getDoc(saldoKasRef);
+let saldoKas;
+
+if (!saldoKasSnap.exists()) {
+    // Jika dokumen TIDAK DITEMUKAN di Firebase, buat data awal
+    saldoKas = { 
+        id: kasDocId, type: 'saldo_kas', year: reportYearNum, nominal: 0 
+    };
+    await setDoc(saldoKasRef, saldoKas); // <-- WAJIB: Simpan dokumen baru ke Firebase
+} else {
+    // Jika ditemukan, ambil datanya
+    saldoKas = saldoKasSnap.data();
+}
+
+// Lanjutkan perhitungan saldo (menggantikan baris yang dihapus sebelumnya)
+const totalSaldoAwal = saldoBank.nominal + saldoKas.nominal;
+runningBalance = totalSaldoAwal;
 
             dataToRender.push({ 
                 id: saldoBank.id, no: 1, label: 'SALDO KAS BANK', type: 'saldo_bank', 
@@ -2202,3 +2239,4 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
