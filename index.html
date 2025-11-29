@@ -1424,7 +1424,13 @@ function formatRupiah(number) {
                 rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0,
                 totalPengeluaran: 0, saldoKasTahunBerjalan: 0
             };
-
+// 🌟 MULAI BLOK TRY UNTUK MENANGANI FIREBASE ERROR
+    try { 
+        // 1. Ambil/Buat Saldo Awal Tahun (Kode Firebase yang sudah kita ganti)
+        // ... (Kode Saldo Kas Bank dan Saldo Kas Tunai Anda) ...
+        
+        const totalSaldoAwal = saldoBank.nominal + saldoKas.nominal;
+        runningBalance = totalSaldoAwal;
             // 1. Ambil Saldo Awal Tahun dari annualData
             // --- KODE FIREBASE PENGGANTI LOGIKA SALDO AWAL ---
 // Menggunakan koleksi 'jurnal umum' sesuai struktur sistem Kakak
@@ -1625,7 +1631,20 @@ runningBalance = totalSaldoAwal;
 
             return { data: dataToRender, total: total };
         }
+// 3. Return data jika sukses
+        return { data: dataToRender, total: total };
 
+    // 🛑 BLOK CATCH JIKA ADA ERROR (Mengembalikan objek kosong agar renderAnnualReportTable tidak error)
+    } catch (e) {
+        console.error("Gagal membuat atau memuat Laporan Tahunan dari Firebase:", e);
+        // Penting: Mengembalikan objek dengan properti 'data' dan 'total' yang kosong
+        // Ini mencegah error 'Cannot read properties of undefined (reading 'data')'
+        return { 
+            data: [], // Mengembalikan array kosong untuk dataToRender
+            total: total // Mengembalikan objek total yang sudah diinisiasi
+        };
+    }
+}
         function renderAnnualReportTable(reportData, reportYear) {
             const tableBody = document.getElementById('annual-data-body');
             tableBody.innerHTML = '';
@@ -2236,6 +2255,7 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
 
 
