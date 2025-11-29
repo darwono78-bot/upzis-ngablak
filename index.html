@@ -1427,39 +1427,38 @@ function formatRupiah(number) {
 
             // 1. Ambil Saldo Awal Tahun dari annualData
             // --- KODE FIREBASE PENGGANTI LOGIKA SALDO AWAL ---
-// Pastikan NAMA_KOLEKSI_TAHUNAN sudah didefinisikan (cth: 'annual_data')
+// Menggunakan koleksi 'jurnal umum' sesuai struktur sistem Kakak
 
 // 1. Ambil/Buat Saldo Kas Bank (Awal Tahun)
 const bankDocId = `saldo_bank_${reportYear}`;
-const saldoBankRef = doc(db, 'NAMA_KOLEKSI_TAHUNAN', bankDocId); 
+// Ganti 'jurnal umum' dengan konstanta yang Kakak gunakan, cth: COL_JURNAL, jika ada.
+const saldoBankRef = doc(db, 'jurnal umum', bankDocId); 
 const saldoBankSnap = await getDoc(saldoBankRef);
 let saldoBank;
 
 if (!saldoBankSnap.exists()) {
-    // Jika dokumen TIDAK DITEMUKAN di Firebase, buat data awal di database
+    // Jika dokumen TIDAK DITEMUKAN di Firebase, buat data awal
     saldoBank = { 
         id: bankDocId, type: 'saldo_bank', year: reportYearNum, nominal: 0 
     };
     await setDoc(saldoBankRef, saldoBank); 
 } else {
-    // Jika ditemukan, ambil datanya
     saldoBank = saldoBankSnap.data();
 }
 
 // 2. Ambil/Buat Saldo Kas Tunai (Awal Tahun)
 const kasDocId = `saldo_kas_${reportYear}`;
-const saldoKasRef = doc(db, 'NAMA_KOLEKSI_TAHUNAN', kasDocId); 
+const saldoKasRef = doc(db, 'jurnal umum', kasDocId); // Menggunakan 'jurnal umum'
 const saldoKasSnap = await getDoc(saldoKasRef);
 let saldoKas;
 
 if (!saldoKasSnap.exists()) {
-    // Jika dokumen TIDAK DITEMUKAN di Firebase, buat data awal di database
+    // Jika dokumen TIDAK DITEMUKAN di Firebase, buat data awal
     saldoKas = { 
         id: kasDocId, type: 'saldo_kas', year: reportYearNum, nominal: 0 
     };
     await setDoc(saldoKasRef, saldoKas); 
 } else {
-    // Jika ditemukan, ambil datanya
     saldoKas = saldoKasSnap.data();
 }
 
@@ -2237,3 +2236,4 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
