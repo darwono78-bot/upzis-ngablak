@@ -463,25 +463,15 @@
             </div>
             
             <div class="input-form" id="tahunan-edit-input-area" style="display: none;">
-    <h3>Edit Data Laporan Tahunan (Saldo Awal / Manual)</h3>
-
-    <label>Pilih Baris yang Diinput:</label>
-    <select id="tahunan-row-selector" class="form-input">
-        <option value="">-- pilih --</option>
-        <option value="saldo_bank">SALDO KAS BANK (Awal Tahun)</option>
-        <option value="saldo_kas">SALDO KAS TUNAI (Awal Tahun)</option>
-        <option value="penerimaan_koin">TOTAL PENERIMAAN KOIN</option>
-        <option value="pengeluaran_total">TOTAL PENGELUARAN</option>
-    </select>
-
-    <label>Nominal:</label>
-    <input type="number" id="tahunan-edit-nominal" class="form-input" placeholder="Masukkan nominal">
-
-    <div style="margin-top:10px; text-align:right;">
-        <button class="button btn-green" onclick="saveAnnualManual()">Simpan Perubahan</button>
-        <button class="button btn-red" onclick="cancelAnnualEdit()">Batal</button>
-    </div>
-</div>
+                <h3>Edit Data Laporan Tahunan (Baris Khusus)</h3>
+                <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <div><label>Baris yang Diedit:</label><input type="text" id="annual-edit-label" disabled></div>
+                    <div><label>Nominal/Penerima:</label><input type="number" id="annual-edit-nominal" required></div>
+                    <div id="annual-edit-keterangan-group" style="display: none;">
+                        <label>Keterangan/Uraian:</label>
+                        <input type="text" id="annual-edit-keterangan">
+                    </div>
+                </div>
                 <div style="float: right; margin-top: 10px;">
                     <button class="button btn-green" onclick="saveAnnualReportData()">Simpan Perubahan</button>
                     <button class="button btn-red" onclick="cancelAnnualEdit()">Batal</button>
@@ -1415,56 +1405,8 @@ function formatRupiah(number) {
             cancelAnnualEdit();
             filterData('tahunan');
         }
-			<script>
-let annualEditId = null;
-let annualEditYear = null;
 
-// DIPANGGIL SAAT KLIK KOLOM EDIT
-window.openAnnualEditor = function(rowKey, nominal, year, docId = null) {
-    document.getElementById("tahunan-edit-input-area").style.display = "block";
-    document.getElementById("tahunan-row-selector").value = rowKey;
-    document.getElementById("tahunan-edit-nominal").value = nominal;
-
-    annualEditId = docId;
-    annualEditYear = year;
-};
-
-window.saveAnnualManual = async function() {
-    const baris = document.getElementById("tahunan-row-selector").value;
-    const nominal = parseInt(document.getElementById("tahunan-edit-nominal").value);
-
-    if (!baris) return alert("Pilih baris terlebih dahulu!");
-    if (!nominal || nominal <= 0) return alert("Nominal tidak boleh kosong!");
-
-    const payload = {
-        type: "manual_annual",
-        row: baris,
-        year: annualEditYear,
-        nominal: nominal,
-        updatedAt: Date.now()
-    };
-
-    try {
-        if (annualEditId) {
-            await updateDoc(doc(db, "laporan_tahunan", annualEditId), payload);
-        } else {
-            await addDoc(collection(db, "laporan_tahunan"), payload);
-        }
-
-        alert("Data berhasil disimpan.");
-        document.getElementById("tahunan-edit-input-area").style.display = "none";
-        loadAllCollections();
-
-    } catch (e) {
-        alert("Gagal menyimpan: " + e.message);
-    }
-};
-
-window.cancelAnnualEdit = function() {
-    document.getElementById("tahunan-edit-input-area").style.display = "none";
-};
-
-	// --- LOGIC LAPORAN TAHUNAN ---
+        // --- LOGIC LAPORAN TAHUNAN ---
         
         function generateAnnualReportData(reportYear) {
             const reportYearNum = parseInt(reportYear);
@@ -2260,11 +2202,3 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
