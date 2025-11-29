@@ -964,7 +964,7 @@ function formatRupiah(number) {
         }
         
         // 6. Filter and Render Data
-        async function filterData(module) { // <-- TAMBAH 'async' DI SINI
+        function filterData(module) {
             let selectedMonth, selectedYear, displayId, ttdId;
             
             if (module === 'koin') {
@@ -1007,7 +1007,7 @@ function formatRupiah(number) {
                 displayId = 'tahunan-pdf-periode-display';
                 ttdId = 'tahunan-ttd-tanggal-output';
                 document.getElementById(displayId).textContent = selectedYear;
-                const annualDataFinal = await generateAnnualReportData(selectedYear); // WAJIB ADA 'await'
+                const annualDataFinal = generateAnnualReportData(selectedYear);
                 renderAnnualReportTable(annualDataFinal, selectedYear);
             }
             document.getElementById(ttdId).textContent = formatTanggalTTD();
@@ -1408,7 +1408,7 @@ function formatRupiah(number) {
 
         // --- LOGIC LAPORAN TAHUNAN ---
         
-        async function generateAnnualReportData(reportYear) { // WAJIB ada 'async'
+        function generateAnnualReportData(reportYear) {
             const reportYearNum = parseInt(reportYear);
             let runningBalance = 0;
             const dataToRender = [];
@@ -1424,53 +1424,13 @@ function formatRupiah(number) {
                 rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0,
                 totalPengeluaran: 0, saldoKasTahunBerjalan: 0
             };
-// 🌟 MULAI BLOK TRY UNTUK MENANGANI FIREBASE ERROR
-    try { 
-        // 1. Ambil/Buat Saldo Awal Tahun (Kode Firebase yang sudah kita ganti)
-        // ... (Kode Saldo Kas Bank dan Saldo Kas Tunai Anda) ...
-        
-        const totalSaldoAwal = saldoBank.nominal + saldoKas.nominal;
-        runningBalance = totalSaldoAwal;
+
             // 1. Ambil Saldo Awal Tahun dari annualData
-            // --- KODE FIREBASE PENGGANTI LOGIKA SALDO AWAL ---
-// Menggunakan koleksi 'jurnal umum' sesuai struktur sistem Kakak
-
-// 1. Ambil/Buat Saldo Kas Bank (Awal Tahun)
-const bankDocId = `saldo_bank_${reportYear}`;
-// Ganti 'jurnal umum' dengan konstanta yang Kakak gunakan, cth: COL_JURNAL, jika ada.
-const saldoBankRef = doc(db, 'jurnal umum', bankDocId); 
-const saldoBankSnap = await getDoc(saldoBankRef);
-let saldoBank;
-
-if (!saldoBankSnap.exists()) {
-    // Jika dokumen TIDAK DITEMUKAN di Firebase, buat data awal
-    saldoBank = { 
-        id: bankDocId, type: 'saldo_bank', year: reportYearNum, nominal: 0 
-    };
-    await setDoc(saldoBankRef, saldoBank); 
-} else {
-    saldoBank = saldoBankSnap.data();
-}
-
-// 2. Ambil/Buat Saldo Kas Tunai (Awal Tahun)
-const kasDocId = `saldo_kas_${reportYear}`;
-const saldoKasRef = doc(db, 'jurnal umum', kasDocId); // Menggunakan 'jurnal umum'
-const saldoKasSnap = await getDoc(saldoKasRef);
-let saldoKas;
-
-if (!saldoKasSnap.exists()) {
-    // Jika dokumen TIDAK DITEMUKAN di Firebase, buat data awal
-    saldoKas = { 
-        id: kasDocId, type: 'saldo_kas', year: reportYearNum, nominal: 0 
-    };
-    await setDoc(saldoKasRef, saldoKas); 
-} else {
-    saldoKas = saldoKasSnap.data();
-}
-
-// Lanjutkan perhitungan saldo
-const totalSaldoAwal = saldoBank.nominal + saldoKas.nominal;
-runningBalance = totalSaldoAwal;
+            const saldoBank = annualData.find(d => d.id === `saldo_bank_${reportYear}`) || { nominal: 0 };
+            const saldoKas = annualData.find(d => d.id === `saldo_kas_${reportYear}`) || { nominal: 0 };
+            
+            const totalSaldoAwal = saldoBank.nominal + saldoKas.nominal;
+            runningBalance = totalSaldoAwal;
 
             dataToRender.push({ 
                 id: saldoBank.id, no: 1, label: 'SALDO KAS BANK', type: 'saldo_bank', 
@@ -1631,20 +1591,7 @@ runningBalance = totalSaldoAwal;
 
             return { data: dataToRender, total: total };
         }
-// 3. Return data jika sukses
-        return { data: dataToRender, total: total };
 
-    // 🛑 BLOK CATCH JIKA ADA ERROR (Mengembalikan objek kosong agar renderAnnualReportTable tidak error)
-    } catch (e) {
-        console.error("Gagal membuat atau memuat Laporan Tahunan dari Firebase:", e);
-        // Penting: Mengembalikan objek dengan properti 'data' dan 'total' yang kosong
-        // Ini mencegah error 'Cannot read properties of undefined (reading 'data')'
-        return { 
-            data: [], // Mengembalikan array kosong untuk dataToRender
-            total: total // Mengembalikan objek total yang sudah diinisiasi
-        };
-    }
-}
         function renderAnnualReportTable(reportData, reportYear) {
             const tableBody = document.getElementById('annual-data-body');
             tableBody.innerHTML = '';
@@ -2255,7 +2202,3 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
-
-
-
-
