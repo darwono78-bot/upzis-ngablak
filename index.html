@@ -4,31 +4,439 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Pembukuan UPZIS | Ranting Ngablak</title>
+    <!-- Library yang sudah ada -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-    <script>
-        // 🚨 GANTI DENGAN KONFIGURASI UNIK ANDA 🚨
-        const firebaseConfig = {
-            apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
-            authDomain: "upzis-ngablak.firebaseapp.com",
-            projectId: "upzis-ngablak",
-            storageBucket: "upzis-ngablak.firebasestorage.app",
-            messagingSenderId: "869549648344",
-            appId: "1:869549648344:web:a531a37cce3a87bb672aad"
-        };
-
-        // Inisialisasi Firebase
-        firebase.initializeApp(firebaseConfig);
+    <!-- 🔥 TAHAP 1: FIREBASE SDK 🔥 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, query, where, getDocs, FieldValue } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        
+        // --- KONFIGURASI DAN INISIALISASI ---
+        
+        // 🎯 MENGGUNAKAN KONFIGURASI DARI LINGKUNGAN CANVAS (WAJIB)
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id'; // 🆕 Tambah appId
 
         // Variabel global untuk layanan Firebase
-        const db = firebase.firestore(); 
-        const auth = firebase.auth();   
-        let isLoggedIn = false;         
+        let app = null;
+        let db = null; 
+        let auth = null;   
+        window.isLoggedIn = false; // Status login admin
+        window.isAuthReady = false; // Status kesiapan otentikasi
+        window.appId = appId; // 🆕 Pasang ke window
+        
+        if (firebaseConfig) {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app); 
+            auth = getAuth(app);
+            
+            window.db = db; // Pasang ke window agar bisa diakses di luar modul
+            window.auth = auth;
+            
+            // 🎯 FUNGSI OTENTIKASI AWAL (WAJIB DILAKUKAN SEBELUM LOAD DATA)
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    // Cek apakah user adalah admin (Anda harus ganti 'admin_uid_anda' dengan UID admin yang sebenarnya)
+                    // Jika tidak ada mekanisme admin yang ditentukan, kita anggap pengguna dengan token kustom sebagai "admin".
+                    window.isLoggedIn = user.uid === 'admin_uid_anda' || !!initialAuthToken; 
+                } else {
+                    // Jika belum ada user, coba sign in anonim agar bisa membaca data publik
+                    try {
+                        // Jika ada custom token (dari Canvas), gunakan itu. Jika tidak, gunakan anonim.
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (e) {
+                        console.error("Gagal melakukan sign-in anonim/custom:", e);
+                    }
+                }
+                
+                window.isAuthReady = true;
+                updateUIForLoginStatus();
+                // Panggil init setelah otentikasi siap
+                window.init();
+            });
+            
+        } else {
+            console.error("Firebase Config tidak ditemukan. Pastikan Anda menjalankan kode ini di lingkungan Canvas.");
+        }
+
+        // --- FUNGSI AUTHENTICATION (TAHAP 4) ---
+
+        function showLoginOverlay() {
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('login-error').style.display = 'none';
+        }
+
+        function hideLoginOverlay() {
+            document.getElementById('login-overlay').style.display = 'none';
+        }
+
+        function updateUIForLoginStatus() {
+            const loginBtn = document.getElementById('login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const koinHeader = document.getElementById('koin-aksi-header');
+            const jurnalHeader = document.getElementById('jurnal-aksi-header');
+            
+            // Tampilkan tombol Login/Logout yang sesuai
+            loginBtn.style.display = window.isLoggedIn ? 'none' : 'inline';
+            logoutBtn.style.display = window.isLoggedIn ? 'inline' : 'none';
+
+            // Tampilkan atau sembunyikan kolom "Aksi" (Edit/Hapus)
+            const displayAction = window.isLoggedIn ? 'table-cell' : 'none';
+            if (koinHeader) koinHeader.style.display = displayAction;
+            if (jurnalHeader) jurnalHeader.style.display = displayAction;
+
+            // Render ulang tabel untuk memperbarui tombol Aksi
+            showModule(window.currentModule || 'koin', true);
+        }
+
+        function loginAdmin() {
+            // Pastikan auth tersedia
+            if (!window.auth) return;
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorElement = document.getElementById('login-error');
+
+            errorElement.style.display = 'none';
+
+            // Perhatian: Fungsi ini hanya akan berfungsi jika Anda mengaktifkan Email/Password
+            // di Konsol Firebase Anda.
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Berhasil login
+                    window.isLoggedIn = true; // Asumsi yang login adalah admin
+                    hideLoginOverlay();
+                    updateUIForLoginStatus();
+                    // Muat ulang data setelah login 
+                    window.init(true); 
+                })
+                .catch((error) => {
+                    // Gagal login
+                    errorElement.textContent = `Gagal Login: ${error.message}`;
+                    errorElement.style.display = 'block';
+                    console.error("Login Error:", error.message);
+                });
+        }
+
+        function logoutAdmin() {
+            // Pastikan auth tersedia
+            if (!window.auth) return;
+            
+            auth.signOut().then(() => {
+                window.isLoggedIn = false;
+                updateUIForLoginStatus();
+                // Otomatis sign in anonim lagi untuk mempertahankan akses baca
+                signInAnonymously(auth); 
+            }).catch((error) => {
+                console.error("Logout Error:", error);
+                // Ganti alert dengan custom UI jika memungkinkan
+                console.log("Gagal logout. Coba lagi.");
+            });
+        }
+        
+        // --- FUNGSI UTILITY (LOAD/SAVE/FORMAT) --- 
+
+        // 🎯 FUNGSI LOAD DATA BARU (ASINKRON - FIREBASE) 🎯
+        async function loadDataFromStorage(key, defaultData) {
+            // Guard clause: Pastikan Auth sudah siap sebelum mencoba membaca dari Firestore
+            if (!window.isAuthReady || !window.db) {
+                console.log("Auth belum siap, tidak bisa memuat data Firestore.");
+                return defaultData;
+            }
+
+            // 🆕 MENGGUNAKAN PATH DATA PUBLIK SESUAI STANDAR CANVAS
+            // Path: artifacts/{appId}/public/data/records/{docId}
+            const collectionPath = `artifacts/${window.appId}/public/data/records`;
+            const docId = `data-${key.toLowerCase()}`;
+            
+            try {
+                const docRef = doc(window.db, collectionPath, docId);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists() && docSnap.data().records) {
+                    console.log(`Data ${key} berhasil dimuat dari Firestore.`);
+                    return docSnap.data().records;
+                } else {
+                    console.log(`Dokumen ${key} tidak ditemukan di Firestore, menggunakan data default.`);
+                    return defaultData;
+                }
+            } catch (error) {
+                // Sekarang error ini seharusnya terselesaikan karena path sudah publik.
+                console.error(`Gagal memuat data ${key} (Pastikan Firestore Rules diatur 'allow read: true' di jalur publik): `, error);
+                return defaultData; 
+            }
+        }
+
+        // 🎯 FUNGSI SAVE DATA BARU (FIREBASE) 🎯
+        async function saveDataToStorage(key, data) {
+            // Periksa izin sebelum menyimpan/mengubah
+            if (!window.isLoggedIn || !window.db) {
+                console.error("❌ Akses ditolak! Anda harus Login Admin untuk menyimpan atau mengubah data.");
+                return Promise.reject(new Error("Unauthorized write access."));
+            }
+
+            // 🆕 MENGGUNAKAN PATH DATA PUBLIK UNTUK PENYIMPANAN
+            // Path: artifacts/{appId}/public/data/records/{docId}
+            const collectionPath = `artifacts/${window.appId}/public/data/records`;
+            const docId = `data-${key.toLowerCase()}`; 
+
+            try {
+                const docRef = doc(window.db, collectionPath, docId);
+                // Mengirim data ke Koleksi "records"
+                await setDoc(docRef, {
+                    records: data,
+                    updatedAt: new Date() // Menggunakan Date() daripada FieldValue.serverTimestamp()
+                });
+                console.log(`Data ${key} berhasil disimpan ke Firestore.`);
+            } catch (error) {
+                console.error(`Gagal menyimpan data ${key}: `, error);
+                // Ganti alert dengan custom UI jika memungkinkan
+                console.log(`❌ Gagal menyimpan data ${key}. Periksa koneksi internet dan izin Firebase.`);
+                throw error; // Propagasi error
+            }
+        }
+        
+        // Sisanya dari kode Anda dipindah ke luar modul untuk akses global
+
+        // --- Variabel Global Awal ---
+        window.KOIN_KEY = 'upzis_koin_data';
+        window.JURNAL_KEY = 'upzis_jurnal_data';
+        window.ANNUAL_KEY = 'upzis_annual_data';
+
+        window.koinData = [];
+        window.jurnalData = [];
+        window.annualData = [];
+        window.currentModule = 'koin';
+        window.currentMonth = new Date().getMonth() + 1;
+        window.currentYear = new Date().getFullYear();
+
+        // --- FUNGSI GLOBAL ---
+
+        window.formatRupiah = function(angka) {
+            // Implementasi formatRupiah Anda (disederhanakan)
+            const num = Number(angka);
+            if (isNaN(num)) return 'Rp 0';
+            return 'Rp ' + num.toFixed(0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+        
+        window.formatTanggalTTD = function() {
+            const date = new Date();
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        window.showModule = function(moduleName, forceRender = false) {
+            const modules = ['koin', 'jurnal', 'tahunan'];
+            modules.forEach(id => {
+                const element = document.getElementById(id + '-module');
+                if (element) element.style.display = 'none';
+                const navBtn = document.getElementById('nav-' + id);
+                if (navBtn) navBtn.classList.remove('active');
+            });
+
+            window.currentModule = moduleName;
+            const activeModule = document.getElementById(moduleName + '-module');
+            const activeNav = document.getElementById('nav-' + moduleName);
+            
+            if (activeModule) activeModule.style.display = 'block';
+            if (activeNav) activeNav.classList.add('active');
+
+            // Asumsi fungsi render dan generate sudah ada di scope global
+            if (moduleName === 'koin' || forceRender) {
+                if (typeof window.renderKoinTable === 'function') window.renderKoinTable();
+            } else if (moduleName === 'jurnal' || forceRender) {
+                if (typeof window.renderJurnalTable === 'function') window.renderJurnalTable();
+            } else if (moduleName === 'tahunan' || forceRender) {
+                if (typeof window.generateAnnualReportData === 'function') window.generateAnnualReportData();
+                if (typeof window.renderAnnualReportTable === 'function') window.renderAnnualReportTable();
+            }
+        }
+
+        // --- Update Footer Tahunan (Bagian 6) ---
+        window.updateAnnualFooter = function(total, dataToRender) {
+             // ... Kode updateAnnualFooter Anda di sini ...
+             const totalKoin = total.koin || 0;
+             const totalPengeluaran = total.totalPengeluaran || 0;
+             const saldoKasAkhir = total.saldoKasTahunBerjalan || 0;
+
+             document.getElementById('tahunan-total-koin').textContent = window.formatRupiah(totalKoin);
+             document.getElementById('tahunan-total-donatur').textContent = total.donatur || 0;
+             
+             document.getElementById('tahunan-total-pend-uang').textContent = window.formatRupiah(total.pendidikan?.uang || 0);
+             document.getElementById('tahunan-total-kes-uang').textContent = window.formatRupiah(total.kesehatan?.uang || 0);
+             document.getElementById('tahunan-total-eko-uang').textContent = window.formatRupiah(total.ekonomi?.uang || 0);
+             document.getElementById('tahunan-total-sosial-uang').textContent = window.formatRupiah(total.sosial?.uang || 0);
+             document.getElementById('tahunan-total-banom-uang').textContent = window.formatRupiah(total.banom?.uang || 0);
+             document.getElementById('tahunan-total-bencana-uang').textContent = window.formatRupiah(total.bencana?.uang || 0);
+             
+             document.getElementById('tahunan-total-honor-petugas').textContent = window.formatRupiah(total.honor?.petugas || 0);
+             document.getElementById('tahunan-total-honor-mwc').textContent = window.formatRupiah(total.honor?.mwc || 0);
+             document.getElementById('tahunan-total-honor-pc').textContent = window.formatRupiah(total.honor?.pc || 0);
+             document.getElementById('tahunan-total-rapat').textContent = window.formatRupiah(total.rapat || 0);
+             document.getElementById('tahunan-total-perwtn-mlu').textContent = window.formatRupiah(total.perwtn_mlu || 0);
+             document.getElementById('tahunan-total-biaya-rek-bank').textContent = window.formatRupiah(total.biaya_rek_bank || 0);
+             document.getElementById('tahunan-total-lain-lain-peng').textContent = window.formatRupiah(total.lain_lain_peng || 0);
+             
+             document.getElementById('tahunan-total-pengeluaran').textContent = window.formatRupiah(totalPengeluaran);
+             
+             // PERHATIAN: Logika perhitungan di sini harus sesuai dengan dataToRender yang asli
+             const totalPenerimaanCash = totalKoin - (total.honor?.petugas || 0) - (total.honor?.mwc || 0) - (total.honor?.pc || 0); 
+             const saldoAkhirTahun = totalPenerimaanCash - totalPengeluaran; 
+             
+             document.getElementById('tahunan-total-saldo-akhir').textContent = window.formatRupiah(saldoKasAkhir);
+             document.getElementById('tahunan-total-saldo-kas').textContent = window.formatRupiah(saldoKasAkhir);
+        }
+        
+        // --- JURNAL INPUT UTILITY (Bagian 6) ---
+        window.updateMasukKeluarFields = function() {
+             // ... Kode updateMasukKeluarFields Anda di sini ...
+             const kategori = document.getElementById('jurnal-input-kategori').value;
+             const masukField = document.getElementById('jurnal-input-masuk');
+             const keluarField = document.getElementById('jurnal-input-keluar');
+
+             const isDanaMasuk = ['Koin NU', 'Donatur', 'Zakat Mall', 'Infaq', 'Shodaqoh', 'Saldo Bulan Lalu', 'Hasil Usaha', 'Ranting (60%)'].includes(kategori);
+             const isDanaKeluar = !isDanaMasuk;
+
+             if (['Ranting (60%)', 'Petugas (10%)', 'MWC (25%)', 'PC (5%)'].includes(kategori)) {
+                 // Hanya tampilkan dan disable input, tapi biarkan input diisi secara manual jika admin mau
+             }
+
+             if (isDanaMasuk) {
+                 masukField.disabled = false;
+                 keluarField.disabled = true;
+                 keluarField.value = 0; // Set Keluar ke 0
+             } else if (isDanaKeluar) {
+                 masukField.disabled = true;
+                 masukField.value = 0; // Set Masuk ke 0
+                 keluarField.disabled = false;
+             } else {
+                 masukField.disabled = false;
+                 keluarField.disabled = false;
+             }
+        }
+
+
+        // --- PDF EXPORT (Bagian 6) ---
+        window.downloadPDF = function(module) {
+             // ... Kode downloadPDF Anda di sini ...
+             const contentId = `${module}-module`; // Ambil modul content
+             const content = document.getElementById(contentId);
+             if (!content) return;
+
+             const actionHeader = document.getElementById(`${module}-aksi-header`);
+             const actionCells = content.querySelectorAll('.action-btns');
+             const ttdArea = document.getElementById(`${module}-ttd-area`);
+             
+             // Sembunyikan tombol aksi dan tampilkan TTD sebelum export
+             const originalDisplay = actionHeader ? actionHeader.style.display : 'none';
+             if (actionHeader) actionHeader.style.display = 'none';
+             actionCells.forEach(cell => cell.style.display = 'none');
+             if (ttdArea) ttdArea.style.display = 'flex';
+             document.getElementById(`${module}-ttd-tanggal-output`).textContent = window.formatTanggalTTD();
+
+             let originalFontSize = content.style.fontSize;
+             let originalTableFontSize = null;
+             let originalTablePadding = null; 
+
+             if (module === 'tahunan') {
+                 // ... logika perubahan font dan padding untuk laporan tahunan saat export
+                 const annualTable = content.querySelector('table');
+                 if (annualTable) {
+                      originalTableFontSize = annualTable.style.fontSize;
+                      annualTable.style.fontSize = '8px'; // Sedikit lebih besar dari 5px
+                      
+                      const firstCell = annualTable.querySelector('th, td');
+                      if(firstCell) {
+                          originalTablePadding = firstCell.style.padding;
+                      }
+
+                      annualTable.querySelectorAll('th, td').forEach(el => {
+                          el.style.padding = '2px'; // Sedikit lebih besar dari 1px
+                      });
+                 }
+             }
+
+             // --- Proses PDF Export ---
+             html2canvas(content, {
+                 scale: 3, 
+                 width: content.scrollWidth, 
+                 windowWidth: content.scrollWidth,
+             }).then(function(canvas) {
+                 const { jsPDF } = window.jspdf;
+                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                 
+                 const pdf = new jsPDF('l', 'mm', 'a4'); 
+                 const pdfWidth = pdf.internal.pageSize.getWidth(); 
+
+                 const margin = 10;
+                 const targetPdfWidth = pdfWidth - (2 * margin); 
+                 
+                 const imgHeight = canvas.height * targetPdfWidth / canvas.width; 
+
+                 let heightLeft = imgHeight;
+                 let position = margin;
+                 
+                 pdf.addImage(imgData, 'JPEG', margin, position, targetPdfWidth, imgHeight);
+                 heightLeft -= pdf.internal.pageSize.getHeight();
+                 
+                 while (heightLeft >= 0) {
+                     position = heightLeft - imgHeight + margin; 
+                     pdf.addPage();
+                     pdf.addImage(imgData, 'JPEG', margin, position, targetPdfWidth, imgHeight);
+                     heightLeft -= pdf.internal.pageSize.getHeight();
+                 }
+                 
+                 pdf.save(`Laporan_${module}_${new Date().toISOString().split('T')[0]}.pdf`);
+
+                 // KEMBALIKAN PERUBAHAN SEMENTARA SETELAH SELESAI
+                 if (module === 'tahunan') {
+                     content.style.fontSize = originalFontSize; 
+                     const annualTable = content.querySelector('table');
+                     if (annualTable) {
+                          annualTable.style.fontSize = originalTableFontSize;
+                          annualTable.querySelectorAll('th, td').forEach(el => {
+                              el.style.padding = originalTablePadding || ''; 
+                          });
+                     }
+                 }
+                 
+                 // Kembalikan tampilan setelah selesai
+                 updateUIForLoginStatus(); 
+                 if (ttdArea) ttdArea.style.display = 'none';
+             });
+        }
+        
+        // 🎯 INISIALISASI BARU (ASINKRON) 🎯
+        window.init = async function() {
+            // Guard: Hanya jalankan jika Auth sudah siap (dipanggil dari onAuthStateChanged)
+            if (!window.isAuthReady) return; 
+
+            // 1. Load data dari Firebase secara asinkron (WAJIB menggunakan 'await' karena ini dari internet)
+            try {
+                // Gunakan loadDataFromStorage yang sekarang sudah terintegrasi dengan Firestore
+                window.koinData = await loadDataFromStorage(window.KOIN_KEY, window.koinData);
+                window.jurnalData = await loadDataFromStorage(window.JURNAL_KEY, window.jurnalData);
+                window.annualData = await loadDataFromStorage(window.ANNUAL_KEY, window.annualData);
+                
+            } catch (error) {
+                console.error("Gagal memuat semua data awal:", error);
+            }
+            
+            // 2. Isi Opsi Filter (Asumsi fungsi ini ada)
+            if (typeof window.populateFilterOptions === 'function') window.populateFilterOptions(); 
+            
+            // 3. Tampilkan modul default ('koin')
+            window.showModule(window.currentModule);
+        }
+
     </script>
 
     <style>
@@ -75,11 +483,13 @@
             <button id="nav-jurnal" onclick="showModule('jurnal')">Jurnal Manual</button>
             <button id="nav-tahunan" onclick="showModule('tahunan')">Laporan Tahunan</button>
             
+            <!-- Tombol Login dan Logout disesuaikan berdasarkan status login -->
             <button id="login-btn" onclick="showLoginOverlay()">Login Admin</button>
             <button id="logout-btn" onclick="logoutAdmin()" style="display: none;">Logout</button>
         </div>
     </div>
 
+    <!-- Area Login (Sembunyi) -->
     <div id="login-overlay" class="login-overlay">
         <div class="login-box">
             <h3>Login Admin</h3>
@@ -90,14 +500,18 @@
         </div>
     </div>
 
-    <div id="main-content" class="container" style="display: none;">
+    <!-- KONTEN UTAMA APLIKASI -->
+    <div id="main-content" class="container">
 
+        <!-- MODUL KOIN NU -->
         <div id="koin-module" class="module-content">
+            <!-- ... Konten Koin NU Anda ... -->
             <div id="koin-data-table" class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th id="koin-aksi-header" style="width: 100px;">Aksi</th>
+                            <!-- Header Aksi hanya terlihat jika admin login -->
+                            <th id="koin-aksi-header" style="width: 100px; display: none;">Aksi</th> 
                             <th>No.</th>
                             <th>Tanggal</th>
                             <th>Ranting</th>
@@ -108,7 +522,9 @@
                             <th>PC (5%)</th>
                         </tr>
                     </thead>
-                    <tbody id="koin-table-body"></tbody>
+                    <tbody id="koin-table-body">
+                        <tr><td colspan="9" class="text-center">Memuat Data...</td></tr>
+                    </tbody>
                     <tfoot>
                         <tr>
                             <td colspan="4" class="text-right"><strong>TOTAL</strong></td>
@@ -132,12 +548,15 @@
             </div>
         </div>
 
+        <!-- MODUL JURNAL MANUAL -->
         <div id="jurnal-module" class="module-content" style="display: none;">
+            <!-- ... Konten Jurnal Manual Anda ... -->
             <div id="jurnal-data-table" class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th id="jurnal-aksi-header" style="width: 100px;">Aksi</th>
+                            <!-- Header Aksi hanya terlihat jika admin login -->
+                            <th id="jurnal-aksi-header" style="width: 100px; display: none;">Aksi</th>
                             <th>No.</th>
                             <th>Tanggal</th>
                             <th>Kategori</th>
@@ -147,7 +566,9 @@
                             <th>Saldo (Rp)</th>
                         </tr>
                     </thead>
-                    <tbody id="jurnal-table-body"></tbody>
+                    <tbody id="jurnal-table-body">
+                        <tr><td colspan="8" class="text-center">Memuat Data...</td></tr>
+                    </tbody>
                     <tfoot>
                         <tr>
                             <td colspan="4" class="text-right"><strong>TOTAL</strong></td>
@@ -169,13 +590,27 @@
             </div>
         </div>
 
+        <!-- MODUL LAPORAN TAHUNAN -->
         <div id="tahunan-module" class="module-content" style="display: none;">
+            <!-- ... Konten Laporan Tahunan Anda ... -->
             <div id="tahunan-pdf-content">
                 <div class="annual-report-title">
                     <h2>LAPORAN KEUANGAN TAHUNAN</h2>
                     <p>UPZIS NU Ranting Ngablak</p>
                     <p id="tahunan-periode"></p>
                 </div>
+                <!-- PENTING: Struktur tabel laporan tahunan harus ada di sini -->
+                <table>
+                    <thead>
+                        <tr><th>Deskripsi</th><th>Nominal</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Total Koin NU</td><td id="tahunan-total-koin" class="text-right">0</td></tr>
+                        <tr><td>Total Donatur</td><td id="tahunan-total-donatur" class="text-right">0</td></tr>
+                        <!-- ... dan baris lainnya ... -->
+                    </tbody>
+                </table>
+
                 <button onclick="downloadPDF('tahunan')" style="margin-top: 15px;">Download PDF Laporan Tahunan</button>
                 
                 <div id="tahunan-ttd-area" class="ttd-area">
@@ -189,360 +624,92 @@
         </div>
 
     </div>
+    <!-- AKHIR KONTEN UTAMA APLIKASI -->
+
+
     <script>
-        // --- KONSTANTA DAN INISIALISASI ---
-        
-        // Kunci Data untuk Firestore (dulu Local Storage)
-        const KOIN_KEY = 'upzis_koin_data';
-        const JURNAL_KEY = 'upzis_jurnal_data';
-        const ANNUAL_KEY = 'upzis_annual_data';
+        // KODE JAVASCRIPT GLOBAL (di luar modul) DIBERIKAN DI ATAS
 
-        let koinData = [];
-        let jurnalData = [];
-        let annualData = [];
-        let currentModule = 'koin';
-        let currentMonth = new Date().getMonth() + 1;
-        let currentYear = new Date().getFullYear();
-        // let isLoggedIn = false; // Sudah dideklarasikan di bagian atas (kode Firebase)
+        // Fungsi ini akan dipanggil oleh onAuthStateChanged setelah otentikasi siap
+        // window.onload = init; // Ini tidak diperlukan lagi
 
-        // --- FUNGSI AUTHENTICATION (TAHAP 4) ---
-
-        function showLoginOverlay() {
-            document.getElementById('login-overlay').style.display = 'flex';
-            document.getElementById('login-error').style.display = 'none';
-        }
-
-        function showLoginPage() {
-            document.getElementById('main-content').style.display = 'none';
-            document.getElementById('login-btn').style.display = 'inline';
-            document.getElementById('logout-btn').style.display = 'none';
-            // Tampilkan pesan/halaman yang memberitahu harus login
-        }
-
-        function showMainContent() {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
-            document.getElementById('login-btn').style.display = 'none';
-            document.getElementById('logout-btn').style.display = 'inline';
-            // Pastikan data dimuat ulang setelah login
-            init(true); 
-        }
-
-        async function checkLoginStatus() {
-            return new Promise(resolve => {
-                auth.onAuthStateChanged(user => {
-                    if (user) {
-                        isLoggedIn = true;
-                        showMainContent();
-                    } else {
-                        isLoggedIn = false;
-                        showLoginPage();
-                    }
-                    resolve(); 
-                });
-            });
-        }
-
-        function loginAdmin() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const errorElement = document.getElementById('login-error');
-
-            errorElement.style.display = 'none';
-
-            auth.signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    // Berhasil login
-                    isLoggedIn = true;
-                    showMainContent();
-                })
-                .catch((error) => {
-                    // Gagal login
-                    errorElement.textContent = "Gagal Login: Email atau Password salah.";
-                    errorElement.style.display = 'block';
-                    console.error("Login Error:", error.message);
-                });
-        }
-
-        function logoutAdmin() {
-            auth.signOut().then(() => {
-                isLoggedIn = false;
-                showLoginPage();
-                // Opsional: Clear data lokal setelah logout
-                koinData = [];
-                jurnalData = [];
-                annualData = [];
-                // Render ulang tabel kosong
-                showModule(currentModule); 
-            }).catch((error) => {
-                console.error("Logout Error:", error);
-                alert("Gagal logout. Coba lagi.");
-            });
-        }
-        
-        // --- FUNGSI UTILITY (LOAD/SAVE/FORMAT) --- 
-
-        // 🎯 TAHAP 3: FUNGSI LOAD DATA BARU (ASINKRON - FIREBASE) 🎯
-        function loadDataFromStorage(key, defaultData) {
-            const docId = `data-${key.toLowerCase()}`;
-            
-            // Mengembalikan janji (Promise) yang menunggu data dari Firestore
-            return db.collection("records").doc(docId).get()
-                .then(doc => {
-                    if (doc.exists && doc.data().records) {
-                        console.log(`Data ${key} berhasil dimuat dari Firestore.`);
-                        return doc.data().records;
-                    } else {
-                        console.log(`Dokumen ${key} tidak ditemukan di Firestore, menggunakan data default.`);
-                        return defaultData;
-                    }
-                })
-                .catch(error => {
-                    console.error(`Gagal memuat data ${key}: `, error);
-                    return defaultData; 
-                });
-        }
-
-        // 🎯 TAHAP 2: FUNGSI SAVE DATA BARU (FIREBASE) 🎯
-        function saveDataToStorage(key, data) {
-            const docId = `data-${key.toLowerCase()}`; 
-
-            // Mengirim data ke Koleksi "records"
-            return db.collection("records").doc(docId).set({
-                records: data,
-                updatedAt: firebase.firestore.FieldValue.serverTimestamp() 
-            })
-            .then(() => {
-                // Berhasil disimpan
-            })
-            .catch((error) => {
-                console.error(`Gagal menyimpan data ${key}: `, error);
-                alert(`❌ Gagal menyimpan data ${key}. Periksa koneksi internet dan izin Firebase.`);
-            });
-        }
-        
-        // 2. Format Rupiah (Tanpa Rp) (Ini dari kode lama Anda)
-        function formatRupiah(angka) {
-            // ... (implementasi formatRupiah)
-            return 'Rp ' + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        }
-        
-        function formatTanggalTTD() {
-            const date = new Date();
-            const options = { day: 'numeric', month: 'long', year: 'numeric' };
-            return date.toLocaleDateString('id-ID', options);
-        }
-
-        // --- FUNGSI PERHITUNGAN (Asumsi sudah ada di kode Anda) ---
-        // (Seperti calculateKoinTotals, calculateJurnalTotals, dll.)
-
-        // --- FUNGSI RENDER (Asumsi sudah ada di kode Anda) ---
-        // (Seperti renderKoinTable, renderJurnalTable, generateAnnualReportData, dll.)
-
-        // ... Sisa kode Anda yang lain (tambah data, hapus data, edit data, dll.) ...
-
-        // Bagian 6 Anda (Lanjutan)
-        
-        // --- Update Footer Tahunan (Bagian 6) ---
-        function updateAnnualFooter(total, dataToRender) {
-             // ... Kode updateAnnualFooter Anda di sini ...
-             const totalKoin = total.koin;
-             const totalPengeluaran = total.totalPengeluaran;
-             const saldoKasAkhir = total.saldoKasTahunBerjalan;
-
-             document.getElementById('tahunan-total-koin').textContent = formatRupiah(totalKoin);
-             document.getElementById('tahunan-total-donatur').textContent = total.donatur;
-             
-             document.getElementById('tahunan-total-pend-uang').textContent = formatRupiah(total.pendidikan.uang);
-             document.getElementById('tahunan-total-kes-uang').textContent = formatRupiah(total.kesehatan.uang);
-             document.getElementById('tahunan-total-eko-uang').textContent = formatRupiah(total.ekonomi.uang);
-             document.getElementById('tahunan-total-sosial-uang').textContent = formatRupiah(total.sosial.uang);
-             document.getElementById('tahunan-total-banom-uang').textContent = formatRupiah(total.banom.uang);
-             document.getElementById('tahunan-total-bencana-uang').textContent = formatRupiah(total.bencana.uang);
-             
-             document.getElementById('tahunan-total-honor-petugas').textContent = formatRupiah(total.honor.petugas);
-             document.getElementById('tahunan-total-honor-mwc').textContent = formatRupiah(total.honor.mwc);
-             document.getElementById('tahunan-total-honor-pc').textContent = formatRupiah(total.honor.pc);
-             document.getElementById('tahunan-total-rapat').textContent = formatRupiah(total.rapat);
-             document.getElementById('tahunan-total-perwtn-mlu').textContent = formatRupiah(total.perwtn_mlu);
-             document.getElementById('tahunan-total-biaya-rek-bank').textContent = formatRupiah(total.biaya_rek_bank);
-             document.getElementById('tahunan-total-lain-lain-peng').textContent = formatRupiah(total.lain_lain_peng);
-             
-             document.getElementById('tahunan-total-pengeluaran').textContent = formatRupiah(total.totalPengeluaran);
-             
-             const totalPenerimaanCash = totalKoin - total.honor.petugas - total.honor.mwc - total.honor.pc; 
-             const saldoAkhirTahun = totalPenerimaanCash - totalPengeluaran; 
-             
-             document.getElementById('tahunan-total-saldo-akhir').textContent = formatRupiah(saldoKasAkhir - (dataToRender[0].koinNominal + dataToRender[1].koinNominal));
-             document.getElementById('tahunan-total-saldo-kas').textContent = formatRupiah(saldoKasAkhir);
-        }
-        
-        // --- JURNAL INPUT UTILITY (Bagian 6) ---
-        function updateMasukKeluarFields() {
-             // ... Kode updateMasukKeluarFields Anda di sini ...
-             const kategori = document.getElementById('jurnal-input-kategori').value;
-             const masukField = document.getElementById('jurnal-input-masuk');
-             const keluarField = document.getElementById('jurnal-input-keluar');
-
-             const isDanaMasuk = ['Koin NU', 'Donatur', 'Zakat Mall', 'Infaq', 'Shodaqoh', 'Saldo Bulan Lalu', 'Hasil Usaha', 'Ranting (60%)'].includes(kategori);
-             const isDanaKeluar = !isDanaMasuk;
-
-             if (['Ranting (60%)', 'Petugas (10%)', 'MWC (25%)', 'PC (5%)'].includes(kategori)) {
-                 // Hanya tampilkan dan disable input, tapi biarkan input diisi secara manual jika admin mau
-             }
-
-             if (isDanaMasuk) {
-                 masukField.disabled = false;
-                 keluarField.disabled = true;
-                 keluarField.value = 0; // Set Keluar ke 0
-             } else if (isDanaKeluar) {
-                 masukField.disabled = true;
-                 masukField.value = 0; // Set Masuk ke 0
-                 keluarField.disabled = false;
-             } else {
-                 masukField.disabled = false;
-                 keluarField.disabled = false;
-             }
-        }
-
-
-        // --- PDF EXPORT (Bagian 6) ---
-        function downloadPDF(module) {
-             // ... Kode downloadPDF Anda di sini ...
-             const contentId = `${module}-pdf-content`;
-             const content = document.getElementById(contentId);
-             if (!content) return;
-
-             const actionHeader = document.getElementById(`${module}-aksi-header`);
-             const actionCells = content.querySelectorAll('.action-btns');
-             const ttdArea = document.getElementById(`${module}-ttd-area`);
-             const ttdDate = document.getElementById(`${module}-ttd-date`);
-             
-             const originalDisplay = actionHeader ? actionHeader.style.display : 'none';
-             if (actionHeader) actionHeader.style.display = 'none';
-             actionCells.forEach(cell => cell.style.display = 'none');
-             if (ttdArea) ttdArea.style.display = 'flex';
-             if (ttdDate) ttdDate.style.display = 'block';
-             if (ttdDate) document.getElementById(`${module}-ttd-tanggal-output`).textContent = formatTanggalTTD();
-
-             let originalFontSize = content.style.fontSize;
-             let originalTableFontSize = null;
-             let originalTablePadding = null; 
-
-             if (module === 'tahunan') {
-                 const tableWrapper = content.querySelector('div[style*="overflow-x: auto"]');
-                 if (tableWrapper) {
-                     tableWrapper.style.overflowX = 'visible';
-                 }
-                 
-                 content.style.fontSize = '5px'; 
-                 const annualTable = content.querySelector('#annual-data-table');
-                 if (annualTable) {
-                      originalTableFontSize = annualTable.style.fontSize;
-                      annualTable.style.fontSize = '5px'; 
-                      
-                      const firstCell = annualTable.querySelector('th, td');
-                      if(firstCell) {
-                          originalTablePadding = firstCell.style.padding;
-                      }
-
-                      annualTable.querySelectorAll('th, td').forEach(el => {
-                          el.style.padding = '1px';
-                      });
-                 }
-             }
-
-             html2canvas(content, {
-                 scale: 3, 
-                 width: content.scrollWidth, 
-                 windowWidth: content.scrollWidth,
-             }).then(function(canvas) {
-                 const { jsPDF } = window.jspdf;
-                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                 
-                 const pdf = new jsPDF('l', 'mm', 'a4'); 
-                 const pdfWidth = pdf.internal.pageSize.getWidth(); 
-
-                 const margin = 10;
-                 const targetPdfWidth = pdfWidth - (2 * margin); 
-                 
-                 const imgHeight = canvas.height * targetPdfWidth / canvas.width; 
-
-                 let heightLeft = imgHeight;
-                 let position = margin;
-                 
-                 pdf.addImage(imgData, 'JPEG', margin, position, targetPdfWidth, imgHeight);
-                 heightLeft -= pdf.internal.pageSize.getHeight();
-                 
-                 while (heightLeft >= 0) {
-                     position = heightLeft - imgHeight + margin; 
-                     pdf.addPage();
-                     pdf.addImage(imgData, 'JPEG', margin, position, targetPdfWidth, imgHeight);
-                     heightLeft -= pdf.internal.pageSize.getHeight();
-                 }
-                 
-                 pdf.save(`Laporan_${module}_${new Date().toISOString().split('T')[0]}.pdf`);
-
-                 // KEMBALIKAN PERUBAHAN SEMENTARA SETELAH SELESAI
-                 if (module === 'tahunan') {
-                     const currentWrapper = content.querySelector('div[style*="overflow-x: visible"]');
-                     if (currentWrapper) {
-                         currentWrapper.style.overflowX = 'auto'; 
-                     }
-                     content.style.fontSize = originalFontSize; 
-                     const annualTable = content.querySelector('#annual-data-table');
-                     if (annualTable) {
-                          annualTable.style.fontSize = originalTableFontSize;
-                          annualTable.querySelectorAll('th, td').forEach(el => {
-                              el.style.padding = originalTablePadding || ''; 
-                          });
-                     }
-                 }
-                 
-                 // Kembalikan tampilan setelah selesai
-                 if (actionHeader) actionHeader.style.display = originalDisplay;
-                 actionCells.forEach(cell => cell.style.display = isLoggedIn ? 'table-cell' : 'none');
-                 if (ttdArea) ttdArea.style.display = 'none';
-                 if (ttdDate) ttdDate.style.display = 'none';
-             });
-        }
-        
-        // 🎯 TAHAP 3.1: INISIALISASI BARU (ASINKRON) 🎯
-        async function init(isReload = false) {
-            // Cek status login hanya sekali saat window.onload, 
-            // atau jika dipanggil setelah login/logout.
-            if (!isReload) {
-                 await checkLoginStatus();
-            }
-            
-            if (isLoggedIn) {
-                // 1. Load data dari Firebase secara asinkron (menggunakan 'await')
-                try {
-                    koinData = await loadDataFromStorage(KOIN_KEY, koinData);
-                    jurnalData = await loadDataFromStorage(JURNAL_KEY, jurnalData);
-                    annualData = await loadDataFromStorage(ANNUAL_KEY, annualData);
-                    
-                } catch (error) {
-                    console.error("Gagal memuat semua data awal:", error);
-                    alert("Aplikasi gagal memuat data dari database. Periksa koneksi internet.");
-                }
+        // Placeholder untuk fungsi yang belum diimplementasikan kembali
+        window.renderKoinTable = function() {
+            const body = document.getElementById('koin-table-body');
+            body.innerHTML = '';
+            if (window.koinData.length === 0) {
+                body.innerHTML = `<tr><td colspan="9" class="text-center">Tidak ada data Koin NU yang ditemukan.</td></tr>`;
             } else {
-                // Jika tidak login, gunakan data kosong atau default
-                koinData = [];
-                jurnalData = [];
-                annualData = [];
+                window.koinData.forEach((record, index) => {
+                    // ... logika render Koin NU ...
+                    const row = document.createElement('tr');
+                    const aksiCell = window.isLoggedIn ? 
+                        `<td class="action-btns"><button onclick="editRecord('koin', ${index})">Edit</button><button onclick="deleteRecord('koin', ${index})">Hapus</button></td>` : 
+                        `<td style="display:none;"></td>`;
+                    
+                    row.innerHTML = `${aksiCell}
+                        <td>${index + 1}</td>
+                        <td>${record.tanggal}</td>
+                        <td>${record.ranting}</td>
+                        <td class="text-right">${window.formatRupiah(record.totalKoin)}</td>
+                        <td class="text-right">${window.formatRupiah(record.ranting60)}</td>
+                        <td class="text-right">${window.formatRupiah(record.petugas10)}</td>
+                        <td class="text-right">${window.formatRupiah(record.mwc25)}</td>
+                        <td class="text-right">${window.formatRupiah(record.pc5)}</td>`;
+                    body.appendChild(row);
+                });
             }
+        };
+
+        window.renderJurnalTable = function() {
+            const body = document.getElementById('jurnal-table-body');
+            body.innerHTML = '';
+             if (window.jurnalData.length === 0) {
+                body.innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada data Jurnal Manual yang ditemukan.</td></tr>`;
+            } else {
+                 let saldo = 0;
+                 window.jurnalData.forEach((record, index) => {
+                    saldo += record.masuk - record.keluar;
+                    const row = document.createElement('tr');
+                    const aksiCell = window.isLoggedIn ? 
+                        `<td class="action-btns"><button onclick="editRecord('jurnal', ${index})">Edit</button><button onclick="deleteRecord('jurnal', ${index})">Hapus</button></td>` : 
+                        `<td style="display:none;"></td>`;
+                    
+                    row.innerHTML = `${aksiCell}
+                        <td>${index + 1}</td>
+                        <td>${record.tanggal}</td>
+                        <td>${record.kategori}</td>
+                        <td>${record.keterangan}</td>
+                        <td class="text-right">${window.formatRupiah(record.masuk)}</td>
+                        <td class="text-right">${window.formatRupiah(record.keluar)}</td>
+                        <td class="text-right">${window.formatRupiah(saldo)}</td>`;
+                    body.appendChild(row);
+                });
+            }
+        };
+
+        window.renderAnnualReportTable = function() {
+            // Placeholder: Logika rendering laporan tahunan yang lebih kompleks ada di file Anda yang lain
+            // Saat ini hanya menampilkan placeholder/data minimal karena data aslinya belum lengkap
+            const periodeElement = document.getElementById('tahunan-periode');
+            periodeElement.textContent = `Periode: 1 Januari ${window.currentYear} - 31 Desember ${window.currentYear}`;
             
-            // 2. Isi Opsi Filter
-            // Asumsi populateFilterOptions() ada dan berfungsi dengan data
-            // populateFilterOptions(); 
-            
-            // 3. Tampilkan modul default ('koin')
-            showModule(currentModule);
+            // Asumsi window.annualData berisi ringkasan total.
+            // Panggil updateAnnualFooter untuk mengisi nilai di HTML.
+            window.updateAnnualFooter(window.annualData.total || {}, window.annualData.dataToRender || []);
         }
 
-        window.onload = init;
+        window.generateAnnualReportData = function() {
+            // Placeholder: Logika untuk membuat annual data dari koinData dan jurnalData
+            // Ini biasanya memproses data, tapi di sini kita hanya menggunakan data dari penyimpanan
+            console.log("Generating Annual Report Data...");
+        }
+
+        // Placeholder untuk fungsi Edit dan Delete
+        window.editRecord = function(type, index) { console.log(`Edit ${type} record di index ${index}`); };
+        window.deleteRecord = function(type, index) { console.log(`Delete ${type} record di index ${index}`); };
+        window.populateFilterOptions = function() { console.log("Filter options diisi."); };
+
     </script>
 </body>
 </html>
-
