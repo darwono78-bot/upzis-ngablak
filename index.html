@@ -1415,6 +1415,55 @@ function formatRupiah(number) {
             cancelAnnualEdit();
             filterData('tahunan');
         }
+			<script>
+let annualEditId = null;
+let annualEditYear = null;
+
+// DIPANGGIL SAAT KLIK KOLOM EDIT
+window.openAnnualEditor = function(rowKey, nominal, year, docId = null) {
+    document.getElementById("tahunan-edit-input-area").style.display = "block";
+    document.getElementById("tahunan-row-selector").value = rowKey;
+    document.getElementById("tahunan-edit-nominal").value = nominal;
+
+    annualEditId = docId;
+    annualEditYear = year;
+};
+
+window.saveAnnualManual = async function() {
+    const baris = document.getElementById("tahunan-row-selector").value;
+    const nominal = parseInt(document.getElementById("tahunan-edit-nominal").value);
+
+    if (!baris) return alert("Pilih baris terlebih dahulu!");
+    if (!nominal || nominal <= 0) return alert("Nominal tidak boleh kosong!");
+
+    const payload = {
+        type: "manual_annual",
+        row: baris,
+        year: annualEditYear,
+        nominal: nominal,
+        updatedAt: Date.now()
+    };
+
+    try {
+        if (annualEditId) {
+            await updateDoc(doc(db, "laporan_tahunan", annualEditId), payload);
+        } else {
+            await addDoc(collection(db, "laporan_tahunan"), payload);
+        }
+
+        alert("Data berhasil disimpan.");
+        document.getElementById("tahunan-edit-input-area").style.display = "none";
+        loadAllCollections();
+
+    } catch (e) {
+        alert("Gagal menyimpan: " + e.message);
+    }
+};
+
+window.cancelAnnualEdit = function() {
+    document.getElementById("tahunan-edit-input-area").style.display = "none";
+};
+</script>
 
         // --- LOGIC LAPORAN TAHUNAN ---
         
@@ -2212,6 +2261,7 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
 
 
