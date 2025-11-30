@@ -389,7 +389,14 @@
         }
 
         function getCurrentDate() {
+            // Mengembalikan tanggal dalam format YYYY-MM-DD
             return new Date().toISOString().split('T')[0];
+        }
+
+        function getCurrentDateIndonesian() {
+            // Mengembalikan tanggal hari ini dalam format Indonesia (misal: 30 November 2025)
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            return new Date().toLocaleDateString('id-ID', options);
         }
 
         function showToast(message, type = 'info') {
@@ -853,7 +860,7 @@
             
             doc.setFontSize(8);
             doc.setFont('helvetica', 'italic');
-            doc.text(`Dicetak pada: ${formatDate(getCurrentDate(), false)}`, margin, 30);
+            doc.text(`Dicetak pada: ${getCurrentDateIndonesian()}`, margin, 30);
             
             doc.setFontSize(11);
             doc.setFont('helvetica', 'normal');
@@ -896,14 +903,29 @@
             
             // Akhir LOGIKA PENYESUAIAN HEADER UNTUK PDF
 
+            // --- FIX ERROR: Append tableClone to a hidden DOM element before calling html2canvas ---
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'fixed';
+            tempDiv.style.top = '0';
+            tempDiv.style.left = '0';
+            tempDiv.style.zIndex = '-9999';
+            tempDiv.style.opacity = '0'; // Hide the element
+            tempDiv.style.width = '297mm'; // Set width for A4 Landscape
+            tempDiv.appendChild(tableClone);
+            document.body.appendChild(tempDiv);
+            // --- END FIX ---
+
+
             window.html2canvas(tableClone, { scale: 2 }).then(canvas => {
+                // Remove the temporary element after canvas is generated
+                document.body.removeChild(tempDiv);
+                
                 const imgData = canvas.toDataURL('image/png');
                 const imgWidth = 277; // Lebar gambar di PDF (sesuai A4 landscape minus margin)
                 const pageHeight = 190; // Area efektif per halaman (210 - 20)
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
                 let pageNum = 1;
-                let finalPageY = 0; // Y position where the content ends on the final page.
                 
                 doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
                 heightLeft -= (pageHeight - 20); // 20mm margin/header space on first page
@@ -916,49 +938,32 @@
                     doc.setFontSize(8);
                     doc.text(`Halaman ${pageNum}`, pageWidth - margin, 5, null, null, 'right');
                     
-                    position = imgHeight - (imgHeight - heightLeft);
-                    
-                    // Adjust Y offset for the next image chunk, accounting for the new page
+                    // Adjust Y offset for the next image chunk
                     const yOffset = -(imgHeight - heightLeft);
                     
                     doc.addImage(imgData, 'PNG', 10, yOffset + 10, imgWidth, imgHeight); // 10mm top margin on new pages
-                    
-                    // Track the end position on the current page for signature placement
-                    finalPageY = 10 + (pageHeight - (heightLeft + 5)); // A rough estimation of where the chunk ends
                     
                     heightLeft -= (pageHeight - 15); // 15mm for top/bottom margin on subsequent pages
                 }
 
                 // --- Tanda Tangan Block ---
-                let signatureY = 0;
+                let signatureY;
                 const signatureBlockHeight = 40; 
                 
-                // Set signatureY. If single page, use calculated end. If multi-page, use a fixed point (170mm) 
-                // and check for overlap to decide if new page is needed.
-                if (pageNum === 1) {
-                    signatureY = position + imgHeight + 10;
+                // Calculate where the content ends on the final page
+                let lastChunkHeight = imgHeight - ((pageNum - 1) * pageHeight);
+                if (pageNum > 1) {
+                    lastChunkHeight = imgHeight - (imgHeight + heightLeft - (10 - margin)); // Rough calculation of remaining height
+                }
+                
+                // Calculate the end of the last table chunk relative to the page top
+                let tableEnd = (pageHeightA4 - 10) + heightLeft + 10; // Simple approximation
+                
+                if (tableEnd > pageHeightA4 - signatureBlockHeight - 10) {
+                    doc.addPage();
+                    signatureY = 20;
                 } else {
-                    // For multi-page, the last chunk is on the final page. 
-                    // Calculate the position of the last chunk end.
-                    const lastChunkStart = 10; // New page top margin
-                    const lastChunkHeight = (imgHeight * imgWidth / canvas.width) - (pageNum - 1) * (pageHeight - 15) - 5; // A very rough estimation
-                    
-                    const tableEnd = lastChunkStart + lastChunkHeight;
-                    
-                    // Simple logic: if table ends too low or too high for a clean signature, use a new page.
-                    if (tableEnd > (pageHeightA4 - signatureBlockHeight - 20) || tableEnd < 50) {
-                        doc.addPage();
-                        pageNum++;
-                        doc.text(`Halaman ${pageNum}`, pageWidth - margin, 5, null, null, 'right');
-                        signatureY = 20;
-                    } else {
-                        signatureY = tableEnd + 10;
-                    }
-
-                    // Fallback: If calculation fails, place fixed Y and hope it works.
-                    if(signatureY < 20 || signatureY > pageHeightA4 - signatureBlockHeight - 10) {
-                        signatureY = 170; // Fixed comfortable spot near the bottom
-                    }
+                    signatureY = tableEnd + 10;
                 }
                 
                 const separation = 40; // Spacing from left/right edge to the center of the text block
@@ -970,8 +975,8 @@
                 // Tanggal (Rata Kanan)
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'normal');
-                // TANDA TANGAN NGABLAK TANGGAL DIBUAT RATA KANAN
-                doc.text(`Ngablak, ${formatDate(getCurrentDate(), false)}`, pageWidth - margin, signatureY, { align: 'right' }); 
+                // PENTING: Ngablak, [Tanggal Saat Ini] RATA KANAN
+                doc.text(`Ngablak, ${getCurrentDateIndonesian()}`, pageWidth - margin, signatureY, { align: 'right' }); 
 
                 // Posisi Tanda Tangan
                 let currentSignY = signatureY + lineHeight;
@@ -982,7 +987,7 @@
                 // Posisi 2: Bendahara (Rata Kanan Tengah)
                 doc.text('Dibuat Oleh,', rightXCenter, currentSignY, { align: 'center' });
                 
-                currentSignY += 2 * lineHeight; // Space for signature line
+                currentSignY += 4 * lineHeight; // Space for signature line
 
                 // Nama Ketua/Bendahara (Bold)
                 doc.setFont('helvetica', 'bold');
@@ -998,6 +1003,13 @@
                 // --- END Tanda Tangan Block ---
                 
                 doc.save(filename);
+            }).catch(error => {
+                // Ensure the tempDiv is removed even if html2canvas fails
+                if (document.body.contains(tempDiv)) {
+                    document.body.removeChild(tempDiv);
+                }
+                console.error("Error generating canvas:", error);
+                showToast(`Gagal mengekspor PDF: ${error.message}. Cek konsol untuk detail.`, 'error');
             });
         };
         
