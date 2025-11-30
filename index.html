@@ -1399,31 +1399,33 @@
 
         // GENERATE ANNUAL REPORT DATA (Inferred/Fixed)
         function generateAnnualReportData(year) {
-            const annualReport = [];
-            const yearStr = String(year);
+    const annualReport = [];
+    const yearStr = String(year);
 
-            // 1. Get Saldo Awal (Baris 1 & 2) - **FIX APPLIED HERE**
-            const saldoBank = getAnnualManualEntry(yearStr, 'saldo_bank');
-            const saldoKas = getAnnualManualEntry(yearStr, 'saldo_kas');
-            
-            annualReport.push(saldoBank);
-            annualReport.push(saldoKas);
+    // 1. Get Saldo Awal (Baris 1 & 2) - **FIX APPLIED HERE**
+    const saldoBank = getAnnualManualEntry(yearStr, 'saldo_bank');
+    const saldoKas = getAnnualManualEntry(yearStr, 'saldo_kas');
+    
+    annualReport.push(saldoBank);
+    annualReport.push(saldoKas);
 
-            // 2. Generate Monthly Data (Baris 3 s/d 14)
-            for (let i = 0; i < 12; i++) {
-                const monthStr = String(i + 1).padStart(2, '0');
-                
-                // Get Koin Totals for the month
-                const koinTotals = calculateKoinTotals(monthStr, yearStr);
-                
-                // Get Jurnal data for the month
-                const jurnal = calculateJurnalExpense(monthStr, yearStr);
-                
-                // Group Jurnal data by category
-                const monthlyJurnal = jurnal.data.filter(d => d.type !== 'calculated' && d.kategori !== categories.saldo_bln_lalu');
-                const expenseByCat = monthlyJurnal.reduce((acc, d) => {
-                    const catKey = Object.keys(categories).find(key => categories[key] === d.kategori);
-                    if (!catKey) return acc;
+    // 2. Generate Monthly Data (Baris 3 s/d 14)
+    for (let i = 0; i < 12; i++) {
+        const monthStr = String(i + 1).padStart(2, '0');
+        
+        // Get Koin Totals for the month
+        const koinTotals = calculateKoinTotals(monthStr, yearStr);
+        
+        // Get Jurnal data for the month
+        const jurnal = calculateJurnalExpense(monthStr, yearStr);
+        
+        // Group Jurnal data by category
+        // *** BAGIAN INI YANG DIKOREKSI SINTAKSNYA ***
+        const monthlyJurnal = jurnal.data.filter(d => d.type !== 'calculated' && d.kategori !== categories.saldo_bln_lalu);
+        
+        const expenseByCat = monthlyJurnal.reduce((acc, d) => {
+            const catKey = Object.keys(categories).find(key => categories[key] === d.kategori);
+            if (!catKey) return acc;
                     
                     const uang = (d.masuk || 0) + (d.keluar || 0); // Total uang (for expenditure tracking)
                     
@@ -1857,3 +1859,4 @@
     </script>
 </body>
 </html>
+
