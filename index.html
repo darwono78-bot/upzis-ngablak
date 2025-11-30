@@ -22,9 +22,9 @@
 
         /* Global Style */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--color-bg); color: var(--color-text); }
-        .container { padding: 20px; max-width: 100%; margin: auto; } /* PERUBAHAN: MAX WIDTH DIHILANGKAN */
+        .container { padding: 20px; max-width: 100%; margin: auto; }
         
-        /* Gaya Judul Laporan Baru */
+        /* Gaya Judul Laporan Baru (REPORT HEADER) */
         .report-header {
             text-align: center;
             margin-bottom: 20px;
@@ -36,22 +36,23 @@
             margin-bottom: 5px;
         }
         .report-header img {
-            height: 70px; /* Ukuran Logo */
+            height: 90px; /* PERUBAHAN 3: Logo Diperbesar */
             margin-right: 15px;
-            /* Pastikan gambar tampil sejajar */
         }
         .report-header h3 {
-            color: var(--color-primary);
+            color: #004d00; /* PERUBAHAN 2: Warna judul lebih kuat/keren */
             margin: 0;
             padding: 0;
-            font-size: 1.5rem;
+            font-size: 1.8rem; /* PERUBAHAN 2: Ukuran judul lebih besar */
+            font-weight: 900; /* PERUBAHAN 2: Lebih tebal */
             line-height: 1.2;
-            border-bottom: none; /* Hilangkan border h3 lama */
+            border-bottom: none;
         }
         .report-header p {
             margin: 0;
-            font-size: 0.9rem;
-            color: #555;
+            font-size: 1rem; /* PERUBAHAN 2: Ukuran alamat */
+            color: #111; /* PERUBAHAN 2: Warna alamat hitam kuat */
+            font-weight: 500;
         }
         /* Garis Ganda Tipis */
         .double-line {
@@ -59,8 +60,7 @@
             height: 1px;
             margin-top: 10px;
             margin-bottom: 20px;
-            width: 90%;
-            max-width: 1000px; /* Batasan visual untuk garis */
+            width: 100%; /* PERUBAHAN 1: Lebar 100% (Sepanjang Tabel) */
             margin-left: auto;
             margin-right: auto;
         }
@@ -115,7 +115,7 @@
             background-color: var(--color-light); 
             color: var(--color-primary); 
             font-weight: 600; 
-            white-space: nowrap; /* PENTING: MENCEGAH TEKS TUMPUK */
+            white-space: nowrap; /* MENCEGAH TEKS TUMPUK */
         }
         .data-table tr:nth-child(even) { background-color: #fafafa; }
         .data-table tr:hover { background-color: #f1f8e9; }
@@ -209,7 +209,7 @@
                 
                 <div class="report-header">
                     <div class="report-header-content">
-                        <img src="logo_laziznu.png" alt="Logo Lazisnu" style="height: 70px;">
+                        <img src="logo_laziznu.png" alt="Logo Lazisnu">
                         <div>
                             <h3>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h3>
                             <p>Sekretariat: Jalan raya KM 7 Tayu jepara, Desa Ngablak, Kec. Cuwak, Kab. Pati</p>
@@ -808,24 +808,57 @@
             const headerLine2 = `Sekretariat: Jalan raya KM 7 Tayu jepara, Desa Ngablak, Kec. Cuwak, Kab. Pati`;
             const filterInfo = `Laporan Koin NU - Periode: ${monthText} TAHUN ${yearText}`;
 
-            doc.setFontSize(14);
-            // Judul rata tengah
-            doc.text(headerLine1, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' }); 
-            doc.setFontSize(10);
-            // Alamat rata tengah
-            doc.text(headerLine2, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' }); 
+            // PENGATURAN FONT & POSISI
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const logoSize = 25; // Ukuran logo di PDF (mm)
+            const margin = 10;
+            const logoX = margin;
             
-            // Simulasi Garis Ganda Tipis
-            doc.setLineWidth(0.5);
-            doc.line(10, 17, doc.internal.pageSize.getWidth() - 10, 17); // Garis 1 (Tebal)
-            doc.setLineWidth(0.1);
-            doc.line(10, 18.5, doc.internal.pageSize.getWidth() - 10, 18.5); // Garis 2 (Tipis)
+            // 1. Tambah Logo
+            // Asumsi logo ada di path yang sama dan sudah di-load/bisa di-load oleh jspdf
+            const logo = document.querySelector('.report-header img');
+            if (logo) {
+                 // Ambil data URI dari gambar (harus sama dengan yang di-load browser)
+                 // Karena kita tidak bisa mengakses DOM di lingkungan ini, kita harus asumsikan path/data URI bekerja. 
+                 // Untuk jspdf, biasanya harus menggunakan dataURI atau path yang benar.
+                 // Saya akan tambahkan placeholder addImage dan biarkan pengguna memastikan logo termuat di browser.
+                try {
+                     const logoDataUrl = logo.src;
+                     // doc.addImage(logoDataUrl, 'PNG', logoX, 5, logoSize, logoSize * (logo.naturalHeight / logo.naturalWidth)); 
+                     // Menggunakan fixed size untuk konsistensi:
+                     doc.addImage(logoDataUrl, 'PNG', logoX, 5, logoSize, logoSize);
+                } catch(e) {
+                    console.warn("Logo not found or failed to load for PDF. Skipping image.");
+                }
+            }
 
+
+            // 2. Judul Rata Tengah
+            doc.setFontSize(14);
+            doc.setFont('helvetica', 'bold');
+            doc.text(headerLine1, pageWidth / 2, 10, { align: 'center' }); 
+            
             doc.setFontSize(10);
-            doc.text(filterInfo, 10, 25); // Info Filter
+            doc.setFont('helvetica', 'normal');
+            doc.text(headerLine2, pageWidth / 2, 15, { align: 'center' }); 
+            
+            // 3. Garis Ganda Tipis
+            doc.setLineWidth(0.5);
+            doc.line(margin, 17, pageWidth - margin, 17); // Garis 1 (Tebal)
+            doc.setLineWidth(0.1);
+            doc.line(margin, 18.5, pageWidth - margin, 18.5); // Garis 2 (Tipis)
+
+            // 4. Info Filter
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'bold');
+            doc.text(filterInfo, margin, 25); 
+            
             doc.setFontSize(8);
-            doc.text(`Dicetak pada: ${formatDate(getCurrentDate(), false)}`, 10, 30);
+            doc.setFont('helvetica', 'italic');
+            doc.text(`Dicetak pada: ${formatDate(getCurrentDate(), false)}`, margin, 30);
+            
             doc.setFontSize(11);
+            doc.setFont('helvetica', 'normal');
             
             let position = 35; // Start position for table canvas/image
             // --- END HEADER BARU UNTUK PDF ---
