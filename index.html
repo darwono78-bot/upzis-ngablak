@@ -60,6 +60,8 @@
         /* Khusus Kolom Aksi (Disembunyikan saat LOGOUT) */
         .col-aksi { display: none; } 
         .col-aksi.visible { display: table-cell !important; }
+        .data-table thead tr:first-child th { border-bottom: none; }
+        .data-table thead tr:last-child th { border-top: none; }
 
         /* Login Card */
         #auth-controls-card input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 10px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
@@ -91,18 +93,31 @@
                 <div class="card" id="koin-controls-card" style="display: none;">
                     <h4>Input dan Filter Data</h4>
                     <div class="input-form">
+                        <input type="hidden" id="koin-id" value="">
                         <div class="form-group">
                             <label for="koin-tanggal">Tanggal:</label>
                             <input type="date" id="koin-tanggal">
                         </div>
                         <div class="form-group">
-                            <label for="koin-keterangan">Keterangan/Asal:</label>
-                            <input type="text" id="koin-keterangan" placeholder="Asal/Nama Ranting/Keterangan">
+                            <label for="koin-nama-petugas">Nama Petugas:</label>
+                            <input type="text" id="koin-nama-petugas" placeholder="Nama Petugas">
+                        </div>
+                        <div class="form-group">
+                            <label for="koin-no-hp">No HP:</label>
+                            <input type="text" id="koin-no-hp" placeholder="No HP Petugas/Donatur">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="koin-donatur">Donatur/Kelompok:</label>
+                            <input type="text" id="koin-donatur" placeholder="Nama Donatur atau Kelompok">
+                        </div>
+                        <div class="form-group">
+                            <label for="koin-alamat">Alamat (RT/RW):</label>
+                            <input type="text" id="koin-alamat" placeholder="Alamat (RT/RW)">
                         </div>
                         <div class="form-group">
                             <label for="koin-nominal">Nominal (Rp):</label>
-                            <input type="number" id="koin-nominal" placeholder="Nominal Koin">
-                            <input type="hidden" id="koin-id" value="">
+                            <input type="number" id="koin-nominal" placeholder="Total Nominal Koin">
                         </div>
                         
                         <div class="form-group">
@@ -132,17 +147,34 @@
                     <table class="data-table" id="table-koin">
                         <thead>
                             <tr>
-                                <th style="width: 15%;">Tanggal</th>
-                                <th style="width: 55%;">Keterangan</th>
-                                <th style="width: 20%; text-align: right;">Masuk (Rp)</th>
-                                <th class="col-aksi" style="width: 10%;">Aksi</th> </tr>
+                                <th style="width: 5%;">No</th>
+                                <th style="width: 7%;">Tanggal</th>
+                                <th style="width: 15%;">Nama Petugas</th>
+                                <th style="width: 8%;">No HP</th>
+                                <th style="width: 15%;">Donatur/Kelompok</th>
+                                <th style="width: 8%;">Alamat (RT/RW)</th>
+                                <th style="width: 9%; text-align: right;">Nominal</th>
+                                <th colspan="4" style="text-align: center;">Pembagian Koin (100%)</th>
+                                <th class="col-aksi" style="width: 5%;">Aksi</th> </tr>
+                            <tr>
+                                <th colspan="7" style="border-right: 1px solid var(--color-border);"></th>
+                                <th style="width: 8%; text-align: right;">Petugas (10%)</th>
+                                <th style="width: 8%; text-align: right;">Ranting (60%)</th>
+                                <th style="width: 8%; text-align: right;">MWC (25%)</th>
+                                <th style="width: 8%; text-align: right; border-right: 1px solid var(--color-border);">PC (5%)</th>
+                                <th class="col-aksi"></th>
+                            </tr>
                         </thead>
                         <tbody>
                             </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="2">TOTAL KESELURUHAN (Di Filter)</td>
+                                <td colspan="6">TOTAL KESELURUHAN (Di Filter)</td>
                                 <td id="koin-total-masuk-footer" style="text-align: right;">Rp 0</td>
+                                <td id="koin-total-petugas" style="text-align: right;">Rp 0</td>
+                                <td id="koin-total-ranting" style="text-align: right;">Rp 0</td>
+                                <td id="koin-total-mwc" style="text-align: right;">Rp 0</td>
+                                <td id="koin-total-pc" style="text-align: right;">Rp 0</td>
                                 <td class="col-aksi"></td>
                             </tr>
                         </tfoot>
@@ -496,7 +528,6 @@
 
         // --- FUNGSI UTAMA: PENGAMBILAN DATA (FIREBASE) ---
         window.loadAllCollections = async function() {
-            // (Logika Load Data Tetap Sama)
             try {
                 const koinSnapshot = await getDocs(collection(db, COL_KOIN));
                 KoinData = koinSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -520,7 +551,6 @@
         // --- FUNGSI UTAMA: PENYIMPANAN DATA (FIREBASE) ---
         window.saveData = async function(module) {
             if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk menyimpan data.', 'error'); return; }
-            // (Logika Save Data Tetap Sama)
             const isEdit = module === 'koin' ? !!document.getElementById('koin-id').value : !!document.getElementById('jurnal-id').value;
             let data = {};
             let id = isEdit ? (module === 'koin' ? document.getElementById('koin-id').value : document.getElementById('jurnal-id').value) : doc(collection(db, module === 'koin' ? COL_KOIN : COL_JURNAL)).id;
@@ -529,8 +559,13 @@
             if (module === 'koin') {
                 data = {
                     tanggal: document.getElementById('koin-tanggal').value || getCurrentDate(),
-                    keterangan: document.getElementById('koin-keterangan').value,
-                    masuk: Number(document.getElementById('koin-nominal').value),
+                    // NEW FIELDS
+                    namaPetugas: document.getElementById('koin-nama-petugas').value,
+                    noHp: document.getElementById('koin-no-hp').value,
+                    donatur: document.getElementById('koin-donatur').value,
+                    alamat: document.getElementById('koin-alamat').value,
+                    // END NEW FIELDS
+                    nominal: Number(document.getElementById('koin-nominal').value),
                     tipe: 'KOIN',
                     createdAt: new Date().toISOString()
                 };
@@ -545,8 +580,8 @@
                 };
             }
 
-            if (!data.keterangan || data.nominal <= 0) {
-                showToast('Keterangan/Uraian dan Nominal wajib diisi (Nominal > 0).', 'error');
+            if ((module === 'koin' && (!data.donatur || data.nominal <= 0)) || (module === 'jurnal' && (!data.keterangan || data.nominal <= 0))) {
+                showToast('Field penting dan Nominal wajib diisi (Nominal > 0).', 'error');
                 return;
             }
 
@@ -564,7 +599,6 @@
 
         window.deleteData = async function(module, id) {
             if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk menghapus data.', 'error'); return; }
-            // (Logika Delete Data Tetap Sama)
             if (!confirm('Yakin ingin menghapus data ini?')) return;
             const collectionName = module === 'koin' ? COL_KOIN : COL_JURNAL;
 
@@ -581,7 +615,6 @@
 
         window.deleteAllDataGlobal = async function(module) {
             if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk menghapus SEMUA data.', 'error'); return; }
-            // (Logika Delete All Data Tetap Sama)
             if (!confirm(`Yakin ingin menghapus SEMUA DATA ${module.toUpperCase()}? Tindakan ini tidak bisa dibatalkan!`)) return;
 
             try {
@@ -624,7 +657,6 @@
         };
 
         window.populateFilterOptions = function() {
-            // (Logika Populate Filter Tetap Sama)
             const koinDates = KoinData.map(d => new Date(d.tanggal));
             const jurnalDates = JurnalData.map(d => new Date(d.tanggal));
             const allDates = [...koinDates, ...jurnalDates].filter(d => !isNaN(d.getTime()));
@@ -657,7 +689,6 @@
         };
 
         window.filterData = function(module) {
-            // (Logika Filter Data Tetap Sama)
             if (module === 'koin') {
                 const filterValue = document.getElementById('filter-koin-bulan').value;
                 const [filterMonth, filterYear] = filterValue === 'all' ? [null, null] : filterValue.split('-').map(Number);
@@ -686,24 +717,61 @@
             const isLoggedIn = !!auth.currentUser;
 
             if (module === 'koin') {
-                let totalMasuk = 0;
-                data.forEach(d => {
-                    totalMasuk += d.masuk;
+                let totalNominal = 0;
+                let totalPetugas = 0;
+                let totalRanting = 0;
+                let totalMWC = 0;
+                let totalPC = 0;
+
+                data.forEach((d, index) => {
+                    // Gunakan d.nominal (untuk data baru) atau d.masuk (untuk data lama)
+                    const nominal = d.nominal || d.masuk || 0;
+                    
+                    // Hitung Distribusi
+                    const petugas = nominal * 0.10;
+                    const ranting = nominal * 0.60;
+                    const mwc = nominal * 0.25;
+                    const pc = nominal * 0.05;
+
+                    // Update Totals
+                    totalNominal += nominal;
+                    totalPetugas += petugas;
+                    totalRanting += ranting;
+                    totalMWC += mwc;
+                    totalPC += pc;
+
+                    // Tentukan keterangan, jika data lama masih menggunakan field keterangan
+                    const donaturKeterangan = d.donatur || d.keterangan || '-';
+                    
                     const row = tbody.insertRow();
                     row.innerHTML = `
+                        <td>${index + 1}</td>
                         <td>${formatDate(d.tanggal, true)}</td>
-                        <td>${d.keterangan}</td>
-                        <td style="text-align: right;">${formatRupiah(d.masuk)}</td>
+                        <td>${d.namaPetugas || '-'}</td>
+                        <td>${d.noHp || '-'}</td>
+                        <td>${donaturKeterangan}</td>
+                        <td>${d.alamat || '-'}</td>
+                        <td style="text-align: right;">${formatRupiah(nominal)}</td>
+                        <td style="text-align: right;">${formatRupiah(petugas)}</td>
+                        <td style="text-align: right;">${formatRupiah(ranting)}</td>
+                        <td style="text-align: right;">${formatRupiah(mwc)}</td>
+                        <td style="text-align: right;">${formatRupiah(pc)}</td>
                         <td class="col-aksi ${isLoggedIn ? 'visible' : ''}">
                             <button class="edit" onclick="editForm('koin', '${d.id}')">Edit</button>
                             <button class="delete" onclick="deleteData('koin', '${d.id}')">Hapus</button>
                         </td>
                     `;
                 });
-                document.getElementById('koin-total-masuk').textContent = formatRupiah(totalMasuk);
-                const koinFooter = document.getElementById('koin-total-masuk-footer');
-                if(koinFooter) koinFooter.textContent = formatRupiah(totalMasuk);
-
+                
+                // Update footer
+                document.getElementById('koin-total-masuk').textContent = formatRupiah(totalNominal);
+                document.getElementById('koin-total-masuk-footer').textContent = formatRupiah(totalNominal);
+                
+                // Update new footer totals
+                document.getElementById('koin-total-petugas').textContent = formatRupiah(totalPetugas);
+                document.getElementById('koin-total-ranting').textContent = formatRupiah(totalRanting);
+                document.getElementById('koin-total-mwc').textContent = formatRupiah(totalMWC);
+                document.getElementById('koin-total-pc').textContent = formatRupiah(totalPC);
 
             } else if (module === 'jurnal') {
                 let currentBalance = 0;
@@ -744,7 +812,6 @@
                 });
 
             } else if (module === 'tahunan') {
-                // (Logika Populate Tabel Tahunan Tetap Sama)
                 const selectedYear = data;
                 const saldoAwalDoc = LaporanTahunanData.find(d => d.id === 'saldo_awal_tahun');
                 const annualDoc = LaporanTahunanData.find(d => d.id === `laporan_${selectedYear}`);
@@ -752,7 +819,7 @@
 
                 const totalKoinMasuk = KoinData
                     .filter(d => new Date(d.tanggal).getFullYear() === selectedYear)
-                    .reduce((sum, d) => sum + d.masuk, 0);
+                    .reduce((sum, d) => sum + (d.nominal || d.masuk || 0), 0); // Kompatibilitas d.nominal / d.masuk
 
                 const totalJurnalKeluar = JurnalData
                     .filter(d => new Date(d.tanggal).getFullYear() === selectedYear && d.jenis === 'KELUAR')
@@ -795,14 +862,21 @@
         
         window.editForm = function(module, id) {
             if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk mengedit data.', 'error'); return; }
-            // (Logika Edit Form Tetap Sama)
             let data;
             if (module === 'koin') {
                 data = KoinData.find(d => d.id === id);
                 document.getElementById('koin-id').value = data.id;
                 document.getElementById('koin-tanggal').value = data.tanggal;
-                document.getElementById('koin-keterangan').value = data.keterangan;
-                document.getElementById('koin-nominal').value = data.masuk;
+                
+                // New fields
+                document.getElementById('koin-nama-petugas').value = data.namaPetugas || '';
+                document.getElementById('koin-no-hp').value = data.noHp || '';
+                document.getElementById('koin-donatur').value = data.donatur || data.keterangan || ''; // Fallback for old data
+                document.getElementById('koin-alamat').value = data.alamat || '';
+                
+                // Updated Nominal field (used to be 'masuk')
+                document.getElementById('koin-nominal').value = data.nominal || data.masuk || ''; 
+                
                 document.querySelector('#koin-controls-card button:first-of-type').textContent = 'Update Data';
             } else if (module === 'jurnal') {
                 data = JurnalData.find(d => d.id === id);
@@ -816,12 +890,19 @@
         };
 
         window.resetForm = function(module) {
-            // (Logika Reset Form Tetap Sama)
             if (module === 'koin') {
                 document.getElementById('koin-id').value = '';
                 document.getElementById('koin-tanggal').value = getCurrentDate();
-                document.getElementById('koin-keterangan').value = '';
+                
+                // New fields
+                document.getElementById('koin-nama-petugas').value = '';
+                document.getElementById('koin-no-hp').value = '';
+                document.getElementById('koin-donatur').value = '';
+                document.getElementById('koin-alamat').value = '';
+                
+                // Updated Nominal field
                 document.getElementById('koin-nominal').value = '';
+                
                 document.querySelector('#koin-controls-card button:first-of-type').textContent = 'Simpan Data';
             } else if (module === 'jurnal') {
                 document.getElementById('jurnal-id').value = '';
@@ -837,7 +918,6 @@
 
         window.editData = async function(dataType, key) {
             if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk mengedit data tahunan.', 'error'); return; }
-            // (Logika Edit Data Tahunan Tetap Sama)
             const currentYear = Number(document.getElementById('filter-tahunan-tahun')?.value) || new Date().getFullYear();
             let docId, dataToSave = {};
 
@@ -879,31 +959,56 @@
         // --- FUNGSI UTAMA: EKSPOR PDF ---
 
         window.exportToPDF = function(module) {
-            // (Logika Export PDF Tetap Sama)
             const currentYear = new Date().getFullYear();
             const filename = `Laporan_${module.toUpperCase()}_${module === 'tahunan' ? document.getElementById('filter-tahunan-tahun').value : currentYear}.pdf`;
-            const doc = new window.jspdf.jsPDF('p', 'mm', 'a4');
-            const element = document.getElementById(`table-${module}`);
+            const doc = new window.jspdf.jsPDF('l', 'mm', 'a4'); // Mengubah ke landscape untuk Koin
+
+            const tableId = `table-${module}`;
+            const element = document.getElementById(tableId);
             
             const tableClone = element.cloneNode(true);
             
-            // Logika untuk menghilangkan kolom Aksi saat ekspor (karena ini export public)
-            const actionIndex = Array.from(tableClone.querySelector('thead tr').children).findIndex(th => th.textContent.includes('Aksi'));
-            
-            if (actionIndex !== -1) {
-                tableClone.querySelectorAll('tr').forEach(row => {
-                    if (row.children.length > actionIndex && row.children[actionIndex].classList.contains('col-aksi')) {
-                        row.children[actionIndex].remove();
+            // Logika untuk menghilangkan kolom Aksi saat ekspor
+            const aksiHeaders = tableClone.querySelectorAll('th.col-aksi');
+            aksiHeaders.forEach(th => th.remove());
+            const aksiCells = tableClone.querySelectorAll('td.col-aksi');
+            aksiCells.forEach(td => td.remove());
+
+            // Hilangkan header kosong di baris pertama tabel koin agar tidak double
+            if (module === 'koin') {
+                const firstRow = tableClone.querySelector('thead tr:first-child');
+                const secondRow = tableClone.querySelector('thead tr:last-child');
+                
+                if (firstRow) {
+                    // Pindahkan teks dari baris kedua ke baris pertama (menyatukan header)
+                    const nominalHeader = firstRow.querySelector('th:nth-child(7)');
+                    if (nominalHeader) {
+                        nominalHeader.setAttribute('rowspan', '2');
                     }
-                });
-                tableClone.querySelector('th.col-aksi').remove();
+                    
+                    const cellsToMove = Array.from(secondRow.children).filter(cell => cell.textContent.trim() !== '');
+                    const placeholder = tableClone.querySelector('thead tr:first-child th:nth-child(8)');
+                    if(placeholder) placeholder.remove(); // Remove old colspan cell
+
+                    cellsToMove.forEach(cell => {
+                        const newTh = document.createElement('th');
+                        newTh.textContent = cell.textContent;
+                        newTh.style.textAlign = 'right';
+                        newTh.style.width = cell.style.width;
+                        newTh.style.border = '1px solid var(--color-border)';
+                        firstRow.appendChild(newTh);
+                        cell.remove();
+                    });
+                    secondRow.remove();
+                }
             }
+
 
             // Juga hilangkan input manual di laporan tahunan saat ekspor
             if (module === 'tahunan') {
                 tableClone.querySelectorAll('.annual-table input').forEach(input => {
                     const span = document.createElement('span');
-                    span.textContent = input.value;
+                    span.textContent = formatRupiah(Number(input.value));
                     input.parentNode.replaceChild(span, input);
                 });
                 tableClone.querySelectorAll('.annual-table button').forEach(btn => btn.remove());
@@ -920,10 +1025,11 @@
             doc.text(`Dicetak pada: ${formatDate(getCurrentDate(), false)}`, 10, 15);
             doc.setFontSize(11);
 
+            // Export to PDF using html2canvas and jspdf
             window.html2canvas(tableClone, { scale: 2 }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 190;
-                const pageHeight = 295;
+                const imgWidth = 277; // Width for landscape A4 (297 - 20 margin)
+                const pageHeight = 190; // Height for landscape A4 (210 - 20 margin)
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
                 let position = 20;
@@ -935,7 +1041,7 @@
                 while (heightLeft >= 0) {
                     position = heightLeft - imgHeight + 20;
                     doc.addPage();
-                    doc.text(`Halaman ${++pageNum}`, 190, 5, null, null, 'right');
+                    doc.text(`Halaman ${++pageNum}`, 277, 5, null, null, 'right');
                     doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
                     heightLeft -= (pageHeight - 5);
                 }
