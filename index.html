@@ -24,30 +24,12 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--color-bg); color: var(--color-text); }
         .container { padding: 20px; max-width: 100%; margin: auto; }
         
-        /* Gaya Judul Laporan Baru (REPORT HEADER) */
+        /* Gaya Judul Laporan Baru (REPORT HEADER) - Untuk Tampilan WEB */
         .report-header {
             text-align: center;
             margin-bottom: 20px;
         }
-        .report-header-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 5px;
-        }
-        /* Menggunakan file korps-laziznu.png sebagai header utama */
-        .report-header img.korp-header {
-            height: auto; 
-            width: 100%; /* Lebar 100% */
-            max-width: 900px;
-            margin: 0 auto 5px auto;
-            display: block;
-        }
-        /* Menghilangkan Logo kecil dan Judul di Halaman HTML */
-        .report-header img, .report-header h3, .report-header p {
-            display: none; 
-        }
-
+        
         /* Garis Ganda Tipis */
         .double-line {
             border-bottom: 3px double var(--color-primary); /* Garis Ganda */
@@ -206,15 +188,8 @@
             <div id="module-koin" class="module-content">
                 
                 <div class="report-header">
-                    <div class="report-header-content">
-                        <img class="korp-header" src="korps-laziznu.png" alt="Korp Header Lazisnu">
-                        <img src="logo_laziznu.png" alt="Logo Lazisnu">
-                        <div>
-                            <h3>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h3>
-                            <p>Sekretariat: Jalan raya KM 7 Tayu jepara, Desa Ngablak, Kec. Cuwak, Kab. Pati</p>
-                        </div>
-                    </div>
                     <div class="double-line"></div>
+                    <h4 style="text-align: center; margin: 0 0 20px 0; color: var(--color-primary);">LAPORAN KOIN NU</h4>
                 </div>
 
                 <div style="overflow-x: auto;">
@@ -785,6 +760,7 @@
             const tableId = `table-${module}`;
             const element = document.getElementById(tableId);
             
+            // KLONING TABEL UNTUK DIPROSES
             const tableClone = element.cloneNode(true);
             
             // Logika untuk menghilangkan kolom Aksi saat ekspor
@@ -797,11 +773,13 @@
             const footerAksi = tableClone.querySelector('tfoot .col-aksi');
             if(footerAksi) footerAksi.remove();
             
+            // Set style untuk kloningan tabel
             tableClone.style.width = '100%';
             tableClone.style.borderCollapse = 'collapse';
             tableClone.style.fontSize = '8pt';
             tableClone.style.tableLayout = 'auto';
 
+            // Dapatkan Info Filter
             const filterMonth = document.getElementById('filter-koin-bulan').value;
             const filterYear = document.getElementById('filter-koin-tahun').value;
             
@@ -866,7 +844,40 @@
             
             doc.setFontSize(11);
             doc.setFont('helvetica', 'normal');
-            // --- END HEADER KORPS BARU UNTUK PDF ---
+            
+            // --- LOGIKA PENYESUAIAN HEADER TABEL UNTUK CANVAS PDF (menjadi 1 baris) ---
+            const thead = tableClone.querySelector('thead');
+            const newThead = document.createElement('thead');
+            
+            const finalHeaderRow = newThead.insertRow();
+            
+            // Ambil semua header kolom yang memiliki rowspan="2" (No s/d Nominal)
+            const topRow = thead.rows[0];
+            for (let i = 0; i < 7; i++) {
+                const headerCell = topRow.cells[i];
+                const newCell = document.createElement('th');
+                newCell.textContent = headerCell.textContent;
+                newCell.style.textAlign = headerCell.style.textAlign;
+                newCell.style.whiteSpace = 'nowrap';
+                finalHeaderRow.appendChild(newCell);
+            }
+
+            // Ambil header Pembagian Dana Koin (Detailnya)
+            const bottomRow = thead.rows[1];
+            for (let i = 0; i < 4; i++) {
+                const headerCell = bottomRow.cells[i];
+                const newCell = document.createElement('th');
+                newCell.textContent = headerCell.textContent.replace(' (', ' (');
+                newCell.style.textAlign = headerCell.style.textAlign;
+                newCell.style.whiteSpace = 'nowrap';
+                finalHeaderRow.appendChild(newCell);
+            }
+            
+            // Gantikan thead lama dengan thead baru yang 1 baris untuk ekspor
+            tableClone.removeChild(thead);
+            tableClone.insertBefore(newThead, tableClone.firstChild);
+            // --- Akhir LOGIKA PENYESUAIAN HEADER UNTUK PDF ---
+
 
             // --- FIX ERROR: Append tableClone to a hidden DOM element before calling html2canvas ---
             const tempDiv = document.createElement('div');
@@ -886,7 +897,6 @@
                 document.body.removeChild(tempDiv);
                 
                 const imgData = canvas.toDataURL('image/png');
-                const pageHeight = 190; // Area efektif per halaman (210 - 20)
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
                 let pageNum = 1;
