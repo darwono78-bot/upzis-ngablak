@@ -1049,7 +1049,7 @@
             // Simpan status overflow awal
             const originalOverflow = tableWrapper.style.overflowX;
             
-            // FIX: Hapus overflow-x sementara agar html2canvas menangkap seluruh tabel
+            // FIX 1: Hapus overflow-x sementara agar html2canvas menangkap seluruh tabel
             tableWrapper.style.overflowX = 'visible';
 
             // Nama file PDF
@@ -1103,26 +1103,31 @@
                 // 7. Unduh (Save) dokumen
                 doc.save(filename);
 
-                // 8. Sembunyikan kembali elemen print-only setelah diunduh
-                headerEl.style.display = 'none';
-                titleEl.style.display = 'none';
-                // Sembunyikan tanda tangan kembali (sesuai inline style di HTML)
-                signatureEl.style.display = 'none !important'; 
-                
-                // FIX: Kembalikan status overflow semula
-                tableWrapper.style.overflowX = originalOverflow;
-                
-                showToast(`Laporan ${filename} berhasil diunduh.`, 'success');
+                // 8. FIX FOKUS: Sembunyikan kembali elemen print-only setelah diunduh
+                // Dibungkus dengan setTimeout untuk memaksa browser segera me-repaint (menghilangkan tanda tangan)
+                setTimeout(() => {
+                    headerEl.style.display = 'none';
+                    titleEl.style.display = 'none';
+                    // Sembunyikan tanda tangan kembali (sesuai inline style di HTML)
+                    signatureEl.style.display = 'none !important'; 
+                    
+                    // FIX 1: Kembalikan status overflow semula
+                    tableWrapper.style.overflowX = originalOverflow;
+                    
+                    showToast(`Laporan ${filename} berhasil diunduh.`, 'success');
+                }, 50); // Delay 50ms (cukup kecil)
                 
             }).catch(error => {
                 console.error("Error generating canvas/PDF:", error);
                 showToast(`Gagal mengekspor PDF: ${error.message}. Cek konsol untuk detail.`, 'error');
 
                 // Pastikan elemen kembali disembunyikan dan overflow dikembalikan jika terjadi error
-                headerEl.style.display = 'none';
-                titleEl.style.display = 'none';
-                signatureEl.style.display = 'none !important'; // Sembunyikan tanda tangan kembali
-                tableWrapper.style.overflowX = originalOverflow;
+                setTimeout(() => {
+                    headerEl.style.display = 'none';
+                    titleEl.style.display = 'none';
+                    signatureEl.style.display = 'none !important'; // Sembunyikan tanda tangan kembali
+                    tableWrapper.style.overflowX = originalOverflow;
+                }, 0);
             });
         };
         
