@@ -152,6 +152,7 @@
             border-radius: 6px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
             text-align: center;
+            margin-top: 40px; /* Jarak atas saat muncul */
         }
         #auth-controls h4 {
             margin-top: 0;
@@ -307,20 +308,21 @@
                             <input type="number" id="koin-nominal" placeholder="Total Nominal Koin">
                         </div>
                         
-                        <div class="form-group-full" style="text-align: right;">
-                            <button onclick="saveData('koin')">Simpan Data</button>
-                            <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
-                        </div>
-                    </div>
+                        <div class="form-group-full" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                            <div class="control-buttons-left">
+                                <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
+                            </div>
 
-                    <div class="control-buttons" style="margin-top: 20px;">
-                        <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
+                            <div class="control-buttons-right">
+                                <button onclick="saveData('koin')">Simpan Data</button>
+                                <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
             </div>
-
-            <hr style="margin: 40px 0;">
 
             <div id="auth-controls" style="text-align: center;">
                 <div class="inline-form">
@@ -452,15 +454,15 @@
 
             // Kontrol Auth Card di bawah (Form Login/Info Logout)
             const authCard = document.getElementById('auth-controls');
+            
+            // PERBAIKAN #2: Sembunyikan blok login di bawah jika sudah login (karena logout sudah ada di navbar)
             if (isLoggedIn) {
-                authCard.innerHTML = `
-                    <h4>Status Login</h4>
-                    <p>Anda login sebagai **${auth.currentUser.email}**. Semua fitur input, edit, dan hapus aktif.</p>
-                    <button onclick="logout()">Logout</button>
-                `;
+                authCard.style.display = 'none'; 
             } else {
-                // HAPUS TEKS INFO LOGIN DAN JUDUL H4
-                authCard.innerHTML = `
+                authCard.style.display = 'block'; // Tampilkan form login saat belum login
+                
+                // Pastikan input form login ada dan dikosongkan
+                const loginFormContent = `
                     <div class="inline-form">
                         <div class="form-group-login">
                             <label for="username">Email:</label>
@@ -473,6 +475,16 @@
                         <button onclick="login()">Login Admin</button>
                     </div>
                 `;
+                // Hanya perbarui innerHTML jika belum ada isinya atau berbeda (opsional)
+                if(authCard.innerHTML.trim() === '' || authCard.querySelector('#username') === null) {
+                    authCard.innerHTML = loginFormContent;
+                }
+                
+                // Reset nilai input
+                const usernameInput = document.getElementById('username');
+                const passwordInput = document.getElementById('password');
+                if(usernameInput) usernameInput.value = '';
+                if(passwordInput) passwordInput.value = '';
             }
         }
         
@@ -753,7 +765,8 @@
                 document.getElementById('koin-donatur').value = data.donatur || data.keterangan || '';
                 document.getElementById('koin-alamat').value = data.alamat || '';
                 document.getElementById('koin-nominal').value = data.nominal || data.masuk || ''; 
-                document.querySelector('#koin-input-card button:first-of-type').textContent = 'Update Data';
+                // Mengubah teks tombol Simpan
+                document.querySelector('#koin-input-card .control-buttons-right button:first-of-type').textContent = 'Update Data';
             }
         };
 
@@ -766,7 +779,8 @@
                 document.getElementById('koin-donatur').value = '';
                 document.getElementById('koin-alamat').value = '';
                 document.getElementById('koin-nominal').value = '';
-                document.querySelector('#koin-input-card button:first-of-type').textContent = 'Simpan Data';
+                // Mengubah teks tombol Simpan
+                document.querySelector('#koin-input-card .control-buttons-right button:first-of-type').textContent = 'Simpan Data';
             }
         };
 
@@ -830,8 +844,8 @@
             
             // --- HEADER KORPS BARU UNTUK PDF ---
             try {
-                 // 1. Tambah Korps Header Image (korps-laziznu.png)
-                 const korpLogoUrl = 'korps-laziznu.png'; // Nama file sesuai permintaan user
+                 // 1. Tambah Korps Header Image (korps-lazisnu.png)
+                 const korpLogoUrl = 'korps-lazisnu.png'; // Nama file sesuai permintaan user
                  doc.addImage(korpLogoUrl, 'PNG', margin, currentY, imgWidth, korpHeaderHeight);
             } catch(e) {
                 console.warn("Korp Header not found or failed to load for PDF. Using text header fallback.");
@@ -852,9 +866,6 @@
             }
             
             currentY += korpHeaderHeight; // Pindah ke bawah gambar/fallback (sekitar Y=30)
-
-            // ** PERBAIKAN: HAPUS GARIS MANUAL AGAR TIDAK TUMPUK DENGAN GARIS DI GAMBAR KORPS **
-            // currentY += 5; // Jarak bawah korps
             
             // Beri jarak setelah Header (Image)
             currentY += 5; // Pindah ke Y=30
@@ -927,6 +938,7 @@
                 document.body.removeChild(tempDiv);
                 
                 const imgData = canvas.toDataURL('image/png');
+                const imgWidth = pageWidth - 2 * margin;
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
                 let pageNum = 1;
