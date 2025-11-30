@@ -45,30 +45,25 @@
         .input-form button:hover { background-color: #004d00; }
         .input-form .btn-secondary { background-color: #6c757d; margin-left: 10px; }
 
-        /* --- STYLING KHUSUS FILTER KOIN (Menyesuaikan Gambar) --- */
+        /* --- STYLING KHUSUS FILTER KOIN --- */
         #koin-filter-form {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr 0.5fr; /* Disesuaikan untuk 3 kolom filter + 1 kolom tombol */
             gap: 20px; 
         }
         
         #koin-filter-form .form-group {
             display: flex;
             flex-direction: column;
-            justify-content: space-between; 
+            justify-content: flex-start; /* Disesuaikan */
         }
         
-        #koin-total-masuk {
-            font-weight: bold; 
-            font-size: 1.8rem !important; 
-            color: var(--color-primary);
-            margin-top: 5px; 
-            display: block;
-        }
+        /* Hapus style total nominal yang tidak digunakan lagi */
+        /* #koin-total-masuk { display: none; } */
 
-        #koin-filter-form .form-group button {
-            align-self: flex-end; 
-            margin-top: auto; 
+        #koin-filter-form .form-group-button {
+            display: flex;
+            align-items: flex-end; /* Memastikan tombol rata bawah */
         }
         /* ----------------------------------------------------------- */
         
@@ -116,17 +111,21 @@
                 <h3>Laporan Koin NU</h3>
                 
                 <div class="card" id="koin-filter-card">
-                    <h4>Filter Data dan Total</h4>
+                    <h4>Filter Data</h4>
                     <div class="input-form" id="koin-filter-form">
                          <div class="form-group">
-                            <label for="filter-koin-bulan">Filter Bulan & Tahun:</label>
+                            <label for="filter-koin-bulan">Filter Bulan:</label>
                             <select id="filter-koin-bulan" onchange="filterData('koin')"></select>
                         </div>
                         <div class="form-group">
-                            <p>Total Nominal Masuk (Filter):</p>
-                            <p id="koin-total-masuk">Rp 0</p>
+                            <label for="filter-koin-tahun">Filter Tahun:</label>
+                            <select id="filter-koin-tahun" onchange="filterData('koin')"></select>
                         </div>
                         <div class="form-group">
+                            <p>Total Nominal Masuk (Filter):</p>
+                            <p id="koin-total-masuk" style="font-weight: bold; font-size: 1.2rem; color: var(--color-primary); margin-top: 5px;">Rp 0</p>
+                        </div>
+                        <div class="form-group form-group-button">
                             <button class="btn-export" onclick="exportToPDF('koin')">Ekspor PDF</button>
                         </div>
                     </div>
@@ -400,8 +399,7 @@
                 setActionControlsVisibility(false);
             }
             loadAllCollections();
-            populateFilterOptions();
-            filterData(currentModule);
+            // populateFilterOptions dipanggil di dalam loadAllCollections
             setActiveNav();
         });
 
@@ -446,7 +444,7 @@
                     createdAt: new Date().toISOString()
                 };
             } else if (module === 'jurnal') {
-                data = { /* Logic di file jurnal.html */ };
+                // Logic di file jurnal.html
             }
 
             if ((module === 'koin' && (!data.donatur || data.nominal <= 0))) {
@@ -516,33 +514,41 @@
             const currentYear = new Date().getFullYear();
             if (!years.includes(currentYear)) years.unshift(currentYear);
 
-            const filterKoin = document.getElementById('filter-koin-bulan');
-            if (filterKoin) {
-                filterKoin.innerHTML = '<option value="all">Semua Bulan & Tahun</option>';
-                const monthMap = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-                
-                years.forEach(year => {
-                    monthMap.forEach((monthName, monthIndex) => {
-                        const monthKey = `${monthIndex + 1}-${year}`;
-                        filterKoin.innerHTML += `<option value="${monthKey}">${monthName} ${year}</option>`;
-                    });
+            const filterKoinBulan = document.getElementById('filter-koin-bulan');
+            const filterKoinTahun = document.getElementById('filter-koin-tahun');
+            
+            const monthMap = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            
+            if (filterKoinBulan) {
+                filterKoinBulan.innerHTML = '<option value="all">Semua Bulan</option>';
+                monthMap.forEach((monthName, monthIndex) => {
+                    filterKoinBulan.innerHTML += `<option value="${monthIndex + 1}">${monthName}</option>`;
                 });
-
-                // Set default filter to current month/year
+                // Set default filter to current month
                 const currentMonth = new Date().getMonth() + 1;
-                filterKoin.value = `${currentMonth}-${currentYear}`;
+                filterKoinBulan.value = currentMonth;
+            }
+
+            if (filterKoinTahun) {
+                filterKoinTahun.innerHTML = '<option value="all">Semua Tahun</option>';
+                years.forEach(year => {
+                    filterKoinTahun.innerHTML += `<option value="${year}">${year}</option>`;
+                });
+                // Set default filter to current year
+                filterKoinTahun.value = currentYear;
             }
         };
 
         window.filterData = function(module) {
             if (module === 'koin') {
-                const filterValue = document.getElementById('filter-koin-bulan').value;
-                const [filterMonth, filterYear] = filterValue === 'all' ? [null, null] : filterValue.split('-').map(Number);
+                const filterMonth = document.getElementById('filter-koin-bulan').value;
+                const filterYear = document.getElementById('filter-koin-tahun').value;
                 
                 const filtered = KoinData.filter(d => {
-                    if (filterValue === 'all') return true;
                     const dDate = new Date(d.tanggal);
-                    return dDate.getMonth() + 1 === filterMonth && dDate.getFullYear() === filterYear;
+                    const isMonthMatch = filterMonth === 'all' || dDate.getMonth() + 1 === Number(filterMonth);
+                    const isYearMatch = filterYear === 'all' || dDate.getFullYear() === Number(filterYear);
+                    return isMonthMatch && isYearMatch;
                 })
                 .sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
 
@@ -603,6 +609,7 @@
                     `;
                 });
                 
+                // Update Total Nominal Masuk di Filter dan Footer
                 document.getElementById('koin-total-masuk').textContent = formatRupiah(totalNominal);
                 document.getElementById('koin-total-masuk-footer').textContent = formatRupiah(totalNominal);
                 
