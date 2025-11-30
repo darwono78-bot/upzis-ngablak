@@ -218,15 +218,12 @@
         /* Perubahan: Header Aksi di Tengah */
         .data-table th.col-aksi { 
             text-align: center; 
-            width: 60px;
+            width: 80px; /* Diperlebar untuk dua tombol sejajar */
         }
         
-        /* Menghindari header Nominal dan Pembagian Koin terpotong */
-        .data-table th:nth-child(7), /* Nominal */
-        .data-table th:nth-child(8), /* Petugas */
-        .data-table th:nth-child(9), /* Ranting */
-        .data-table th:nth-child(10), /* MWC */
-        .data-table th:nth-child(11) /* PC */
+        /* Hanya Donatur/Kelompok dan Alamat yang boleh membungkus (white-space: normal) jika diperlukan */
+        .data-table th:nth-child(5), /* Donatur/Kelompok */
+        .data-table th:nth-child(6) /* Alamat (RT/RW) */
         {
             white-space: normal;
         }
@@ -236,19 +233,20 @@
         
         /* Tombol Aksi Umum di Tabel (Diperkecil) */
         .data-table td button { 
-            margin-right: 3px; 
+            margin: 0 1px; /* Disesuaikan agar sejajar */
             padding: 3px 5px; 
             cursor: pointer; 
             border: none; 
             border-radius: 3px; 
             font-size: 0.7rem; 
             transition: background-color 0.3s; 
+            display: inline-block; /* FIX: Tombol dibuat sejajar */
         }
         
         /* Tombol Aksi Berjajar (Tidak Tumpuk) */
         .data-table .col-aksi {
             white-space: nowrap; 
-            width: 60px; /* Lebar tetap untuk kolom aksi */
+            width: 80px; /* Lebar tetap untuk kolom aksi */
             text-align: center;
         }
         
@@ -256,8 +254,7 @@
         .data-table button.edit {
             background-color: #28a745; 
             color: white;
-            display: block;
-            margin: 2px auto;
+            /* display: block; -> Dihapus/Diganti inline-block di atas */
         }
         .data-table button.edit:hover {
             background-color: #1e7e34;
@@ -267,8 +264,7 @@
         .data-table button.delete {
             background-color: #dc3545; 
             color: white;
-            display: block;
-            margin: 2px auto;
+            /* display: block; -> Dihapus/Diganti inline-block di atas */
         }
         .data-table button.delete:hover {
             background-color: #c82333;
@@ -451,7 +447,7 @@
                         </div>
                     </div>
 
-                    <div style="overflow-x: auto;">
+                    <div id="table-wrapper" style="overflow-x: auto;">
                         <table class="data-table" id="table-koin">
                             <thead>
                                 <tr>
@@ -461,18 +457,12 @@
                                     <th style="width: 7%; text-align: center;" rowspan="2">No HP</th>
                                     <th style="width: 15%; text-align: center;" rowspan="2">Donatur/Kelompok</th>
                                     <th style="width: 10%; text-align: center;" rowspan="2">Alamat (RT/RW)</th>
-                                    <th style="width: 8%; text-align: right;" rowspan="2">Nominal</th>
-                                    
-                                    <th colspan="4" style="text-align: center;">PEMBAGIAN DANA KOIN</th>
+                                    <th style="width: 9%; text-align: right;" rowspan="2">Nominal</th> <th colspan="4" style="text-align: center;">PEMBAGIAN DANA KOIN</th>
                                     
                                     <th class="col-aksi" rowspan="2">Aksi</th>
                                 </tr>
                                 <tr>
-                                    <th style="width: 8%; text-align: right;">Petugas (10%)</th>
-                                    <th style="width: 8%; text-align: right;">Ranting (60%)</th>
-                                    <th style="width: 8%; text-align: right;">MWC (25%)</th>
-                                    <th style="width: 8%; text-align: right;">PC (5%)</th>
-                                </tr>
+                                    <th style="width: 9%; text-align: right;">Petugas (10%)</th> <th style="width: 9%; text-align: right;">Ranting (60%)</th> <th style="width: 9%; text-align: right;">MWC (25%)</th> <th style="width: 9%; text-align: right;">PC (5%)</th> </tr>
                             </thead>
                             <tbody>
                                 </tbody>
@@ -1054,7 +1044,14 @@
 
             // 1. Dapatkan elemen yang akan di-capture
             const input = document.getElementById('print-area');
+            const tableWrapper = document.getElementById('table-wrapper');
             
+            // Simpan status overflow awal
+            const originalOverflow = tableWrapper.style.overflowX;
+            
+            // FIX: Hapus overflow-x sementara agar html2canvas menangkap seluruh tabel
+            tableWrapper.style.overflowX = 'visible';
+
             // Nama file PDF
             const filterMonth = document.getElementById('filter-koin-bulan').value;
             const filterYear = document.getElementById('filter-koin-tahun').value;
@@ -1111,16 +1108,20 @@
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
                 
+                // FIX: Kembalikan status overflow semula
+                tableWrapper.style.overflowX = originalOverflow;
+                
                 showToast(`Laporan ${filename} berhasil diunduh.`, 'success');
                 
             }).catch(error => {
                 console.error("Error generating canvas/PDF:", error);
                 showToast(`Gagal mengekspor PDF: ${error.message}. Cek konsol untuk detail.`, 'error');
 
-                // Pastikan elemen kembali disembunyikan jika terjadi error
+                // Pastikan elemen kembali disembunyikan dan overflow dikembalikan jika terjadi error
                 headerEl.style.display = 'none';
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
+                tableWrapper.style.overflowX = originalOverflow;
             });
         };
         
