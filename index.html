@@ -218,12 +218,15 @@
         /* Perubahan: Header Aksi di Tengah */
         .data-table th.col-aksi { 
             text-align: center; 
-            width: 80px; /* Diperlebar untuk dua tombol sejajar */
+            width: 60px;
         }
         
-        /* Hanya Donatur/Kelompok dan Alamat yang boleh membungkus (white-space: normal) jika diperlukan */
-        .data-table th:nth-child(5), /* Donatur/Kelompok */
-        .data-table th:nth-child(6) /* Alamat (RT/RW) */
+        /* Menghindari header Nominal dan Pembagian Koin terpotong */
+        .data-table th:nth-child(7), /* Nominal */
+        .data-table th:nth-child(8), /* Petugas */
+        .data-table th:nth-child(9), /* Ranting */
+        .data-table th:nth-child(10), /* MWC */
+        .data-table th:nth-child(11) /* PC */
         {
             white-space: normal;
         }
@@ -233,20 +236,19 @@
         
         /* Tombol Aksi Umum di Tabel (Diperkecil) */
         .data-table td button { 
-            margin: 0 1px; /* Disesuaikan agar sejajar */
+            margin-right: 3px; 
             padding: 3px 5px; 
             cursor: pointer; 
             border: none; 
             border-radius: 3px; 
             font-size: 0.7rem; 
             transition: background-color 0.3s; 
-            display: inline-block; /* FIX: Tombol dibuat sejajar */
         }
         
         /* Tombol Aksi Berjajar (Tidak Tumpuk) */
         .data-table .col-aksi {
             white-space: nowrap; 
-            width: 80px; /* Lebar tetap untuk kolom aksi */
+            width: 60px; /* Lebar tetap untuk kolom aksi */
             text-align: center;
         }
         
@@ -254,7 +256,8 @@
         .data-table button.edit {
             background-color: #28a745; 
             color: white;
-            /* display: block; -> Dihapus/Diganti inline-block di atas */
+            display: block;
+            margin: 2px auto;
         }
         .data-table button.edit:hover {
             background-color: #1e7e34;
@@ -264,7 +267,8 @@
         .data-table button.delete {
             background-color: #dc3545; 
             color: white;
-            /* display: block; -> Dihapus/Diganti inline-block di atas */
+            display: block;
+            margin: 2px auto;
         }
         .data-table button.delete:hover {
             background-color: #c82333;
@@ -447,7 +451,7 @@
                         </div>
                     </div>
 
-                    <div id="table-wrapper" style="overflow-x: auto;">
+                    <div style="overflow-x: auto;">
                         <table class="data-table" id="table-koin">
                             <thead>
                                 <tr>
@@ -457,12 +461,18 @@
                                     <th style="width: 7%; text-align: center;" rowspan="2">No HP</th>
                                     <th style="width: 15%; text-align: center;" rowspan="2">Donatur/Kelompok</th>
                                     <th style="width: 10%; text-align: center;" rowspan="2">Alamat (RT/RW)</th>
-                                    <th style="width: 9%; text-align: right;" rowspan="2">Nominal</th> <th colspan="4" style="text-align: center;">PEMBAGIAN DANA KOIN</th>
+                                    <th style="width: 8%; text-align: right;" rowspan="2">Nominal</th>
+                                    
+                                    <th colspan="4" style="text-align: center;">PEMBAGIAN DANA KOIN</th>
                                     
                                     <th class="col-aksi" rowspan="2">Aksi</th>
                                 </tr>
                                 <tr>
-                                    <th style="width: 9%; text-align: right;">Petugas (10%)</th> <th style="width: 9%; text-align: right;">Ranting (60%)</th> <th style="width: 9%; text-align: right;">MWC (25%)</th> <th style="width: 9%; text-align: right;">PC (5%)</th> </tr>
+                                    <th style="width: 8%; text-align: right;">Petugas (10%)</th>
+                                    <th style="width: 8%; text-align: right;">Ranting (60%)</th>
+                                    <th style="width: 8%; text-align: right;">MWC (25%)</th>
+                                    <th style="width: 8%; text-align: right;">PC (5%)</th>
+                                </tr>
                             </thead>
                             <tbody>
                                 </tbody>
@@ -480,7 +490,7 @@
                         </table>
                     </div>
                     
-                    <div id="pdf-signature" style="display: none !important; justify-content: space-between; margin-top: 40px; padding: 0 40px; font-size: 10pt; width: 100%; box-sizing: border-box;">
+                    <div id="pdf-signature" style="justify-content: space-between; margin-top: 40px; padding: 0 40px; font-size: 10pt; width: 100%; box-sizing: border-box;">
                         <div class="signature-box">
                             Mengetahui,
                             <p style="margin-top: 40px; margin-bottom: 0;">( <span id="nama-ketua"></span> )</p>
@@ -1044,14 +1054,7 @@
 
             // 1. Dapatkan elemen yang akan di-capture
             const input = document.getElementById('print-area');
-            const tableWrapper = document.getElementById('table-wrapper');
             
-            // Simpan status overflow awal
-            const originalOverflow = tableWrapper.style.overflowX;
-            
-            // FIX 1: Hapus overflow-x sementara agar html2canvas menangkap seluruh tabel
-            tableWrapper.style.overflowX = 'visible';
-
             // Nama file PDF
             const filterMonth = document.getElementById('filter-koin-bulan').value;
             const filterYear = document.getElementById('filter-koin-tahun').value;
@@ -1064,7 +1067,8 @@
             
             headerEl.style.display = 'block';
             titleEl.style.display = 'block';
-            signatureEl.style.display = 'flex'; // Tampilkan tanda tangan
+            // Khusus signature, kita set display: flex agar layout tanda tangan benar.
+            signatureEl.style.display = 'flex'; 
             
             // 3. Gunakan html2canvas untuk mengubah HTML menjadi Canvas (Gambar)
             html2canvas(input, {
@@ -1103,31 +1107,21 @@
                 // 7. Unduh (Save) dokumen
                 doc.save(filename);
 
-                // 8. FIX FOKUS: Sembunyikan kembali elemen print-only setelah diunduh
-                // Dibungkus dengan setTimeout(0) untuk memastikan repaint terjadi di next event loop cycle
-                setTimeout(() => {
-                    headerEl.style.display = 'none';
-                    titleEl.style.display = 'none';
-                    // Sembunyikan tanda tangan kembali (sesuai inline style di HTML)
-                    signatureEl.style.display = 'none !important'; 
-                    
-                    // FIX 1: Kembalikan status overflow semula
-                    tableWrapper.style.overflowX = originalOverflow;
-                    
-                    showToast(`Laporan ${filename} berhasil diunduh.`, 'success');
-                }, 0); // Delay 0ms
+                // 8. Sembunyikan kembali elemen print-only setelah diunduh (Sukses)
+                headerEl.style.display = 'none';
+                titleEl.style.display = 'none';
+                signatureEl.style.display = 'none';
+                
+                showToast(`Laporan ${filename} berhasil diunduh.`, 'success');
                 
             }).catch(error => {
                 console.error("Error generating canvas/PDF:", error);
                 showToast(`Gagal mengekspor PDF: ${error.message}. Cek konsol untuk detail.`, 'error');
 
-                // Pastikan elemen kembali disembunyikan dan overflow dikembalikan jika terjadi error
-                setTimeout(() => {
-                    headerEl.style.display = 'none';
-                    titleEl.style.display = 'none';
-                    signatureEl.style.display = 'none !important'; // Sembunyikan tanda tangan kembali
-                    tableWrapper.style.overflowX = originalOverflow;
-                }, 0);
+                // Pastikan elemen kembali disembunyikan jika terjadi error
+                headerEl.style.display = 'none';
+                titleEl.style.display = 'none';
+                signatureEl.style.display = 'none';
             });
         };
         
