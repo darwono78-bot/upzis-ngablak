@@ -23,7 +23,47 @@
         /* Global Style */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--color-bg); color: var(--color-text); }
         .container { padding: 20px; max-width: 100%; margin: auto; } /* PERUBAHAN: MAX WIDTH DIHILANGKAN */
-        h3 { color: var(--color-primary); border-bottom: 2px solid var(--color-light); padding-bottom: 5px; margin-top: 0; }
+        
+        /* Gaya Judul Laporan Baru */
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .report-header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+        .report-header img {
+            height: 70px; /* Ukuran Logo */
+            margin-right: 15px;
+            /* Pastikan gambar tampil sejajar */
+        }
+        .report-header h3 {
+            color: var(--color-primary);
+            margin: 0;
+            padding: 0;
+            font-size: 1.5rem;
+            line-height: 1.2;
+            border-bottom: none; /* Hilangkan border h3 lama */
+        }
+        .report-header p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #555;
+        }
+        /* Garis Ganda Tipis */
+        .double-line {
+            border-bottom: 3px double var(--color-primary); /* Garis Ganda */
+            height: 1px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            width: 90%;
+            max-width: 1000px; /* Batasan visual untuk garis */
+            margin-left: auto;
+            margin-right: auto;
+        }
         
         /* Navbar */
         .navbar { background-color: var(--color-primary); color: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: space-between; }
@@ -70,7 +110,6 @@
         
         /* Tabel Data */
         .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        /* PENTING: Mengurangi padding sel agar terlihat ramping (8px) */
         .data-table th, .data-table td { border: 1px solid var(--color-border); padding: 8px; text-align: left; }
         .data-table th { 
             background-color: var(--color-light); 
@@ -87,7 +126,7 @@
         .col-aksi { display: none; } 
         .col-aksi.visible { display: table-cell !important; }
 
-        /* STYLING KHUSUS UNTUK INPUT KOIN (Menggantikan .card) */
+        /* STYLING KHUSUS UNTUK INPUT KOIN */
         #koin-input-card { 
             background-color: var(--color-card-bg); 
             padding: 20px; 
@@ -97,7 +136,7 @@
             margin-bottom: 20px;
         }
 
-        /* STYLING KHUSUS LOGIN ADMIN (Menggantikan .card) */
+        /* STYLING KHUSUS LOGIN ADMIN */
         #auth-controls {
             max-width: 650px; 
             margin-left: auto;
@@ -108,7 +147,6 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
             text-align: center;
         }
-        /* Menghilangkan margin pada h4 agar block tetap ramping saat login */
         #auth-controls h4 {
             margin-top: 0;
             margin-bottom: 10px; 
@@ -168,11 +206,19 @@
             <div id="toast-container" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 999;"></div>
 
             <div id="module-koin" class="module-content">
-                <h3>Laporan Koin NU</h3>
                 
-                <div style="overflow-x: auto;">
-                    <h4>Detail Transaksi Koin</h4>
+                <div class="report-header">
+                    <div class="report-header-content">
+                        <img src="logo_laziznu.png" alt="Logo Lazisnu" style="height: 70px;">
+                        <div>
+                            <h3>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h3>
+                            <p>Sekretariat: Jalan raya KM 7 Tayu jepara, Desa Ngablak, Kec. Cuwak, Kab. Pati</p>
+                        </div>
+                    </div>
+                    <div class="double-line"></div>
+                </div>
 
+                <div style="overflow-x: auto;">
                     <div class="input-form" id="koin-filter-form" style="margin-bottom: 20px;">
                          <div class="form-group">
                             <label for="filter-koin-bulan">Filter Bulan:</label>
@@ -392,7 +438,7 @@
             aksiCells.forEach(td => td.classList.toggle('visible', isLoggedIn));
 
             // Kontrol Auth Card di bawah (Form Login/Info Logout)
-            const authCard = document.getElementById('auth-controls'); // ID telah diubah
+            const authCard = document.getElementById('auth-controls');
             if (isLoggedIn) {
                 authCard.innerHTML = `
                     <h4>Status Login</h4>
@@ -420,7 +466,7 @@
         window.login = async function() {
             const emailInput = document.getElementById('username').value; 
             const passwordInput = document.getElementById('password').value;
-            const loginButton = document.querySelector('#auth-controls .inline-form button'); // ID telah diubah
+            const loginButton = document.querySelector('#auth-controls .inline-form button');
         
             if (!emailInput || !passwordInput) {
                 showToast('Email dan Password wajib diisi.', 'error');
@@ -757,18 +803,35 @@
             const monthText = filterMonth === 'all' ? 'SEMUA BULAN' : monthNames[Number(filterMonth)].toUpperCase();
             const yearText = filterYear === 'all' ? 'SEMUA TAHUN' : filterYear;
 
+            // --- HEADER BARU UNTUK PDF ---
+            const headerLine1 = `NU CARE UPZIS - LAZISNU RANTING NGABLAK`;
+            const headerLine2 = `Sekretariat: Jalan raya KM 7 Tayu jepara, Desa Ngablak, Kec. Cuwak, Kab. Pati`;
+            const filterInfo = `Laporan Koin NU - Periode: ${monthText} TAHUN ${yearText}`;
 
-            const header = `LAPORAN KOIN NU UPZIS RANTING NGABLAK`;
-            const filterInfo = `Periode: ${monthText} TAHUN ${yearText}`;
-
-            doc.text(header, 10, 10);
+            doc.setFontSize(14);
+            // Judul rata tengah
+            doc.text(headerLine1, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' }); 
             doc.setFontSize(10);
-            doc.text(filterInfo, 10, 15);
-            doc.setFontSize(8);
-            doc.text(`Dicetak pada: ${formatDate(getCurrentDate(), false)}`, 10, 20);
-            doc.setFontSize(11);
+            // Alamat rata tengah
+            doc.text(headerLine2, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' }); 
+            
+            // Simulasi Garis Ganda Tipis
+            doc.setLineWidth(0.5);
+            doc.line(10, 17, doc.internal.pageSize.getWidth() - 10, 17); // Garis 1 (Tebal)
+            doc.setLineWidth(0.1);
+            doc.line(10, 18.5, doc.internal.pageSize.getWidth() - 10, 18.5); // Garis 2 (Tipis)
 
-            // LOGIKA PENYESUAIAN HEADER UNTUK PDF: Kembali ke 1 baris header untuk kerapihan PDF
+            doc.setFontSize(10);
+            doc.text(filterInfo, 10, 25); // Info Filter
+            doc.setFontSize(8);
+            doc.text(`Dicetak pada: ${formatDate(getCurrentDate(), false)}`, 10, 30);
+            doc.setFontSize(11);
+            
+            let position = 35; // Start position for table canvas/image
+            // --- END HEADER BARU UNTUK PDF ---
+
+
+            // LOGIKA PENYESUAIAN HEADER TABEL UNTUK CANVAS PDF (menjadi 1 baris)
             const thead = tableClone.querySelector('thead');
             const newThead = document.createElement('thead');
             
@@ -781,7 +844,7 @@
                 const newCell = document.createElement('th');
                 newCell.textContent = headerCell.textContent;
                 newCell.style.textAlign = headerCell.style.textAlign;
-                newCell.style.whiteSpace = 'nowrap'; // Pertahankan no wrap di PDF
+                newCell.style.whiteSpace = 'nowrap';
                 finalHeaderRow.appendChild(newCell);
             }
 
@@ -792,7 +855,7 @@
                 const newCell = document.createElement('th');
                 newCell.textContent = headerCell.textContent.replace(' (', ' (');
                 newCell.style.textAlign = headerCell.style.textAlign;
-                newCell.style.whiteSpace = 'nowrap'; // Pertahankan no wrap di PDF
+                newCell.style.whiteSpace = 'nowrap';
                 finalHeaderRow.appendChild(newCell);
             }
             
@@ -808,8 +871,7 @@
                 const pageHeight = 190; 
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
-                let position = 25; // Mulai dari 25mm setelah header
-
+                
                 doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
                 heightLeft -= (pageHeight - 20);
 
