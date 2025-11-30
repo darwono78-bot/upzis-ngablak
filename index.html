@@ -76,8 +76,7 @@
         .navbar-links button:hover { background-color: #004d00; }
         
         /* Form Input dan Kontrol */
-        .input-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
-        .input-form .form-group-full { grid-column: 1 / -1; } 
+        /* .input-form DIHAPUS, DIGANTI DENGAN Koin-Inline-Form */
         .input-form input, .input-form select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
         .input-form label { display: block; font-weight: 500; }
         
@@ -218,6 +217,31 @@
             margin-top: 20px; 
             margin-bottom: 20px;
         }
+        
+        /* === FORM INPUT KOIN SATU BARIS BARU === */
+        .koin-inline-form { 
+            display: flex; 
+            flex-wrap: wrap; /* Memungkinkan wrap jika layar kecil */
+            gap: 10px 15px; /* Spasi vertikal 10px, horizontal 15px */
+            align-items: flex-end; /* Semua item rata bawah */
+        }
+        .koin-inline-form .form-group-item {
+            display: flex;
+            flex-direction: column;
+            /* Flex-grow dihapus agar lebar input sesuai kebutuhan konten/min-width */
+        }
+        .koin-inline-form input[type="date"] {
+            width: 120px; /* Lebar tetap untuk tanggal */
+        }
+        .koin-inline-form input[type="text"], 
+        .koin-inline-form input[type="number"] {
+             min-width: 150px; /* Lebar minimum untuk teks dan nominal */
+             width: auto; /* Agar lebar menyesuaikan konten */
+        }
+        .koin-inline-form .control-buttons-left,
+        .koin-inline-form .control-buttons-right {
+             margin-top: 10px;
+        }
 
         /* STYLING KHUSUS LOGIN ADMIN */
         #auth-controls {
@@ -293,7 +317,7 @@
                 
                 <div class="report-header">
                     <div class="report-header-content-web">
-                        <img src="logo_laziznu.png" alt="Logo Lazisnu" class="header-logo-web">
+                        <img src="logo_lazisnu.png" alt="Logo Lazisnu" class="header-logo-web">
                         <div>
                             <h3>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h3>
                             <p class="alamat-web">Sekretariat: Jalan [Nama Jalan], Desa Ngablak, Kec. [Kecamatan], Kab. [Kabupaten].</p>
@@ -355,47 +379,46 @@
 
                 <div id="koin-input-card" style="display: none;">
                     <h4>Input Data Baru</h4>
-                    <div class="input-form">
+                    
+                    <div class="koin-inline-form">
                         <input type="hidden" id="koin-id" value="">
-                        <div class="form-group">
+                        
+                        <div class="form-group-item">
                             <label for="koin-tanggal">Tanggal:</label>
                             <input type="date" id="koin-tanggal">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group-item">
                             <label for="koin-nama-petugas">Nama Petugas:</label>
                             <input type="text" id="koin-nama-petugas" placeholder="Nama Petugas">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group-item">
                             <label for="koin-no-hp">No HP:</label>
                             <input type="text" id="koin-no-hp" placeholder="No HP Petugas/Donatur">
                         </div>
-                        
-                        <div class="form-group">
+                        <div class="form-group-item">
                             <label for="koin-donatur">Donatur/Kelompok:</label>
                             <input type="text" id="koin-donatur" placeholder="Nama Donatur atau Kelompok">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group-item">
                             <label for="koin-alamat">Alamat (RT/RW):</label>
                             <input type="text" id="koin-alamat" placeholder="Alamat (RT/RW)">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group-item">
                             <label for="koin-nominal">Nominal (Rp):</label>
                             <input type="number" id="koin-nominal" placeholder="Total Nominal Koin">
                         </div>
                         
-                        <div class="form-group-full" style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
-                            <div class="control-buttons-left">
-                                <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
-                            </div>
-
-                            <div class="control-buttons-right">
-                                <button onclick="saveData('koin')">Simpan Data</button>
-                                <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
-                            </div>
+                        <div class="form-group-item control-buttons-left" style="flex-grow: 1;">
+                            <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
+                        </div>
+                        
+                        <div class="form-group-item control-buttons-right" style="margin-left: auto;">
+                            <button onclick="saveData('koin')">Simpan Data</button>
+                            <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
                         </div>
 
                     </div>
-                </div>
+                    </div>
 
             </div>
 
@@ -913,7 +936,7 @@
             const margin = 10;
             const imgWidth = pageWidth - 2 * margin; // 277mm
             
-            // --- FIXED TEXT HEADER UNTUK PDF (Mengganti Gambar Korps) ---
+            // --- FIXED TEXT HEADER UNTUK PDF ---
             let currentY = 5; 
             
             const headerLine1 = `NU CARE UPZIS - LAZISNU RANTING NGABLAK`;
