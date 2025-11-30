@@ -388,6 +388,20 @@
             margin: 0;
         }
 
+        /* [START: PERBAIKAN UNTUK EKSPOR PDF] */
+        .data-table.for-export {
+            table-layout: auto !important; /* Biarkan lebar kolom dihitung otomatis/sesuai konten */
+            width: 100% !important;
+        }
+        .data-table.for-export th, .data-table.for-export td {
+            /* Pastikan konten tidak merusak layout saat di-capture */
+            white-space: normal !important; 
+        }
+        .data-table-wrapper-export {
+            overflow: visible !important; /* Hilangkan scroll saat export */
+        }
+        /* [END: PERBAIKAN UNTUK EKSPOR PDF] */
+        
         /* Aturan Print Dihapus karena menggunakan jsPDF/html2canvas. */
         /* Hanya menyisakan aturan untuk menghindari print warna latar belakang (jika perlu) */
         @media print {
@@ -490,7 +504,7 @@
                         </table>
                     </div>
                     
-                    <div id="pdf-signature" style="justify-content: space-between; margin-top: 40px; padding: 0 40px; font-size: 10pt; width: 100%; box-sizing: border-box;">
+                    <div id="pdf-signature" style="display: flex; justify-content: space-between; margin-top: 40px; padding: 0 40px; font-size: 10pt; width: 100%; box-sizing: border-box;">
                         <div class="signature-box">
                             Mengetahui,
                             <p style="margin-top: 40px; margin-bottom: 0;">( <span id="nama-ketua"></span> )</p>
@@ -1060,20 +1074,29 @@
             const filterYear = document.getElementById('filter-koin-tahun').value;
             const filename = `Laporan_Koin_NU_${filterMonth}_${filterYear}.pdf`;
 
-            // 2. Tampilkan elemen-elemen khusus cetak agar ikut di-capture
+            // 2. Dapatkan elemen-elemen yang perlu dimanipulasi
             const headerEl = document.getElementById('pdf-header');
             const titleEl = document.getElementById('report-title-print');
             const signatureEl = document.getElementById('pdf-signature');
-            
+            // Dapatkan div pembungkus tabel dengan style="overflow-x: auto;"
+            const tableWrapper = document.querySelector('#print-area > div[style="overflow-x: auto;"]'); 
+            const tableEl = document.getElementById('table-koin');
+
+            // **[PERBAIKAN 1: Terapkan gaya export dan tampilkan elemen cetak]**
             headerEl.style.display = 'block';
             titleEl.style.display = 'block';
-            // Khusus signature, kita set display: flex agar layout tanda tangan benar.
-            signatureEl.style.display = 'flex'; 
+            signatureEl.style.display = 'flex';
+            tableWrapper.classList.add('data-table-wrapper-export'); 
+            tableEl.classList.add('for-export'); 
             
+            // **[PERBAIKAN 2: Gulir ke atas sebelum capture]**
+            const initialScrollY = window.scrollY;
+            window.scrollTo(0, 0);
+
+
             // 3. Gunakan html2canvas untuk mengubah HTML menjadi Canvas (Gambar)
             html2canvas(input, {
                 scale: 2, // Meningkatkan kualitas gambar
-                scrollY: -window.scrollY // Pastikan capture dimulai dari atas
             }).then(canvas => {
                 // 4. Ubah Canvas menjadi Data URL
                 const imgData = canvas.toDataURL('image/jpeg', 1.0); // Gunakan JPEG untuk ukuran file lebih kecil
@@ -1107,10 +1130,13 @@
                 // 7. Unduh (Save) dokumen
                 doc.save(filename);
 
-                // 8. Sembunyikan kembali elemen print-only setelah diunduh (Sukses)
+                // 8. **[Langkah Pembersihan]** Sembunyikan kembali elemen print-only dan kembalikan kelas/scroll.
                 headerEl.style.display = 'none';
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
+                tableWrapper.classList.remove('data-table-wrapper-export'); 
+                tableEl.classList.remove('for-export'); 
+                window.scrollTo(0, initialScrollY); // Kembalikan posisi scroll
                 
                 showToast(`Laporan ${filename} berhasil diunduh.`, 'success');
                 
@@ -1122,6 +1148,9 @@
                 headerEl.style.display = 'none';
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
+                tableWrapper.classList.remove('data-table-wrapper-export'); 
+                tableEl.classList.remove('for-export'); 
+                window.scrollTo(0, initialScrollY); 
             });
         };
         
