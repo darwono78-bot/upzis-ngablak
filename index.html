@@ -174,12 +174,12 @@
             transition: background-color 0.3s; 
         }
         
-        /* *** FIX 3: Tombol Aksi Berjajar (Tidak Tumpuk) *** */
+        /* Tombol Aksi Berjajar (Tidak Tumpuk) */
         .data-table .col-aksi {
             white-space: nowrap; /* Mencegah tombol turun baris */
         }
         
-        /* *** FIX 2 & 3: Tombol Edit (Hijau) - PERBAIKAN SELECTOR & WARNA *** */
+        /* Tombol Edit (Hijau) */
         .data-table button.edit {
             background-color: #28a745; /* Hijau */
             color: white;
@@ -188,7 +188,7 @@
             background-color: #1e7e34;
         }
         
-        /* *** FIX 2 & 3: Tombol Hapus (Merah) - PERBAIKAN SELECTOR & WARNA *** */
+        /* Tombol Hapus (Merah) */
         .data-table button.delete {
             background-color: #dc3545; /* Merah */
             color: white;
@@ -293,7 +293,7 @@
                 
                 <div class="report-header">
                     <div class="report-header-content-web">
-                        <img src="logo_laziznu.png" alt="Logo Lazisnu" class="header-logo-web">
+                        <img src="image_cb0365.png" alt="Logo Lazisnu" class="header-logo-web">
                         <div>
                             <h3>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h3>
                             <p class="alamat-web">Sekretariat: Jalan [Nama Jalan], Desa Ngablak, Kec. [Kecamatan], Kab. [Kabupaten].</p>
@@ -913,23 +913,24 @@
             const margin = 10;
             const imgWidth = pageWidth - 2 * margin; // 277mm
             
-            // Mengatur Korp Header Height otomatis agar proporsional
-            const korpLogoUrl = 'korps-lazisnu.png';
-            let korpHeaderActualHeight = 20; 
-            
+            // --- HEADER KORPS BARU UNTUK PDF ---
+            // MENGGUNAKAN NAMA FILE DARI UPLOAD TERAKHIR ANDA: image_cb0365.png
+            const korpLogoUrl = 'image_cb0365.png'; 
             let currentY = 5; // Posisi Y saat ini, dimulai dari 5mm top margin
             
-            // --- HEADER KORPS BARU UNTUK PDF ---
+            // PENTING: Untuk memastikan gambar diload sebelum addImage
+            // Kode ini bergantung pada ketersediaan file 'image_cb0365.png' di direktori yang sama.
             try {
-                 // 1. Tambah Korps Header Image (korps-lazisnu.png)
+                 // 1. Tambah Korps Header Image 
                  // Menggunakan null sebagai tinggi agar jspdf menghitung tinggi proporsional
                  doc.addImage(korpLogoUrl, 'PNG', margin, currentY, imgWidth, null); 
+                 currentY += 30; // Jarak aman setelah gambar korps (estimasi 25-30mm)
             } catch(e) {
                 console.warn("Korp Header not found or failed to load for PDF. Using text header fallback.");
                 
                 // FALLBACK: Use text header if image fails to load
                 const headerLine1 = `NU CARE UPZIS - LAZISNU RANTING NGABLAK`;
-                const headerLine2 = `Sekretariat: Jalan raya KM 7 Tayu jepara, Desa Ngablak, Kec. Cuwak, Kab. Pati`;
+                const headerLine2 = `Sekretariat: Jalan [Nama Jalan], Desa Ngablak, Kec. [Kecamatan], Kab. [Kabupaten].`;
 
                 doc.setFontSize(14);
                 doc.setFont('helvetica', 'bold');
@@ -939,13 +940,9 @@
                 doc.setFont('helvetica', 'normal');
                 doc.text(headerLine2, pageWidth / 2, currentY + 10, { align: 'center' }); 
                 
-                korpHeaderActualHeight = 15; // Ketinggian untuk teks fallback
+                currentY += 15; // Ketinggian untuk teks fallback
             }
             
-            // Perlu estimasi yang lebih akurat untuk gambar agar penempatan tabel tidak bertabrakan
-            // Mengingat lebar 277mm, tinggi default lazisnu.png (misal 1000px) akan menjadi sekitar 25mm-30mm.
-            // Kita asumsikan 30mm untuk jarak aman.
-            currentY += 30; // Pindah ke bawah gambar/fallback + jarak aman
             
             // 3. Info Filter
             const filterInfo = `LAPORAN KOIN NU - PERIODE: ${monthText} TAHUN ${yearText}`; // Dibuat eksplisit untuk PDF
