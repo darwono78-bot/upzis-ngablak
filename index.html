@@ -464,6 +464,10 @@
             
             <div class="input-form" id="tahunan-edit-input-area" style="display: none;">
                 <h3>Edit Data Laporan Tahunan (Baris Khusus)</h3>
+                <input type="hidden" id="annual-edit-id">
+                <input type="hidden" id="annual-edit-key">
+                <input type="hidden" id="annual-edit-is-text">
+                
                 <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr;">
                     <div><label>Baris yang Diedit:</label><input type="text" id="annual-edit-label" disabled></div>
                     <div><label>Nominal/Penerima:</label><input type="number" id="annual-edit-nominal" required></div>
@@ -536,14 +540,14 @@
                 type: 'monthly', 
                 year: 2025, 
                 month: 1, 
-                donatur: 50, 
-                pendidikan: { penerima: 5 }, 
-                sosial: { penerima: 0 }, 
+                donatur: 20, 
+                pendidikan: { penerima: 2 }, 
+                sosial: { penerima: 1 }, 
                 kesehatan: { penerima: 0 }, 
                 ekonomi: { penerima: 0 }, 
-                banom: { keterangan: '' }, 
-                bencana: { penerima: 0 },
-            },
+                banom: { keterangan: 'Rembug 1' }, 
+                bencana: { penerima: 0 }, 
+            }, 
             // Monthly Manual Data (Contoh Feb 2025)
             { 
                 type: 'monthly', 
@@ -555,8 +559,8 @@
                 kesehatan: { penerima: 1 }, 
                 ekonomi: { penerima: 0 }, 
                 banom: { keterangan: '' }, 
-                bencana: { penerima: 0 },
-            },
+                bencana: { penerima: 0 }, 
+            }, 
         ];
 
         let isLoggedIn = false;
@@ -564,70 +568,132 @@
         let jurnalEditId = null;
         let annualEditData = null; // Menyimpan data yang sedang diedit di Laporan Tahunan
         let currentModule = 'koin';
-        
         const namaBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-        
         const categories = {
             // PENGELUARAN WAJIB
-            pendidikan: 'Untuk Pendidikan', sosial: 'Untuk Sosial', kesehatan: 'Untuk Kesehatan',
-            ekonomi: 'Untuk Ekonomi', banom: 'Subsidi Banom & Lembaga NU', bencana: 'Untuk Bencana',
+            pendidikan: 'Untuk Pendidikan',
+            sosial: 'Untuk Sosial',
+            kesehatan: 'Untuk Kesehatan',
+            ekonomi: 'Untuk Ekonomi',
+            banom: 'Subsidi Banom & Lembaga NU',
+            bencana: 'Untuk Bencana',
             // PENGELUARAN LAIN-LAIN
-            honor_petugas: 'Petugas (10%)', honor_mwc: 'MWC (25%)', honor_pc: 'PC (5%)',
-            ranting_60: 'Ranting (60%)', rapat: 'Rapat-rapat', perwtn_mlu: 'PERWTN MLU',
-            biaya_rek: 'BIAYA REK BANK', lain_lain_peng: 'Lain-lain',
+            honor_petugas: 'Petugas (10%)',
+            honor_mwc: 'MWC (25%)',
+            honor_pc: 'PC (5%)',
+            ranting_60: 'Ranting (60%)', // Pemasukan Ranting dari KOIN NU (60%)
+            rapat: 'Rapat-rapat',
+            perwtn_mlu: 'PERWTN MLU',
+            biaya_rek: 'BIAYA REK BANK',
+            lain_lain_peng: 'Lain-lain',
             // DANA MASUK
-            koin_nu: 'Koin NU', donatur: 'Donatur', zakat_mall: 'Zakat Mall',
-            infaq: 'Infaq', shodaqoh: 'Shodaqoh', saldo_bln_lalu: 'Saldo Bulan Lalu',
-            hasil_usaha: 'Hasil Usaha'
+            koin_nu: 'Koin NU',
+            saldo_bln_lalu: 'Saldo Bulan Lalu'
         };
 
-        // --- FUNGSI UTILITY (LOAD/SAVE/FORMAT) ---
+        // --- FIREBASE CONFIGURATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
+            authDomain: "upzis-ngablak.firebaseapp.com",
+            projectId: "upzis-ngablak",
+            storageBucket: "upzis-ngablak.firebasestorage.app",
+            messagingSenderId: "869549648344",
+            appId: "1:869549648344:web:a531a37cce3a87bb672aad"
+        };
 
-        function loadDataFromStorage(key, defaultData) {
-            const data = localStorage.getItem(key);
-            return data ? JSON.parse(data) : defaultData;
+        // Inisialisasi Firebase (jika ada)
+        let db;
+        let auth;
+        if (typeof firebase !== 'undefined') {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
         }
 
+        const COL_KOIN = "laporan_koin_nu"; // Start colection di firebase
+        const COL_JURNAL = "jurnal_umum"; // Start colection di firebase
+        const COL_TAHUNAN = "laporan_tahunan"; // Koleksi untuk menyimpan data laporan tahunan manual (saldo awal, penerima, dll)
+
+
+        // --- UTILITY FUNCTIONS ---
+        // Load data dari Local Storage atau set data dummy
+        function loadDataFromStorage(key, defaultData) {
+            const storedData = localStorage.getItem(key);
+            if (storedData) {
+                return JSON.parse(storedData);
+            }
+            return defaultData;
+        }
+
+        // Simpan data ke Local Storage
         function saveDataToStorage(key, data) {
             localStorage.setItem(key, JSON.stringify(data));
         }
 
-        // 2. Format Rupiah (Tanpa Rp)
-function formatRupiah(number) {
-    let num = number === undefined || number === null ? 0 : number;
-    let numberString = Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    if (num < 0) 
-    {
-        return `<span style="color: red; font-weight: bold;">(${numberString})</span>`;
-    }
-		return numberString;
-}
-
-        function formatTanggal(dateStr) {
-            if (!dateStr) return '-';
-            const date = new Date(dateStr + 'T00:00:00');
-            return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
+        // Format angka menjadi Rupiah (tanpa simbol Rp)
+        function formatRupiah(angka) {
+            if (typeof angka !== 'number') return '0';
+            return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
 
+        // Format tanggal (YYYY-MM-DD) menjadi DD-MM-YYYY
+        function formatTanggal(tanggal) {
+            if (!tanggal) return '';
+            const [year, month, day] = tanggal.split('-');
+            return `${day}-${month}-${year}`;
+        }
+
+        // Format tanggal untuk TTD (Cth: 20 November 2025)
         function formatTanggalTTD() {
-            return new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            const today = new Date();
+            const day = today.getDate();
+            const monthName = namaBulan[today.getMonth()];
+            const year = today.getFullYear();
+            return `${day} ${monthName} ${year}`;
+        }
+
+        // --- FIREBASE FUNCTIONS ---
+        // Fungsi untuk memuat semua data dari Firestore
+        async function loadAllCollections() {
+            if (!db) return; // Skip if Firebase is not initialized
+
+            try {
+                // Muat KOIN NU
+                const koinSnap = await getDocs(collection(db, COL_KOIN));
+                koinData = koinSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Muat JURNAL UMUM
+                const jurnalSnap = await getDocs(collection(db, COL_JURNAL));
+                jurnalData = jurnalSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Muat LAPORAN TAHUNAN (data manual: Saldo Awal, Jml Penerima, dll.)
+                const annualSnap = await getDocs(collection(db, COL_TAHUNAN));
+                annualData = annualSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                // console.log('Data dari Firestore berhasil dimuat.', { koinData, jurnalData, annualData });
+
+            } catch (e) {
+                console.error("Error loading collections:", e);
+                // alert('Gagal memuat data dari database. Memuat data dummy.');
+                // Jika gagal, gunakan data dummy dari local storage / array
+                koinData = loadDataFromStorage(KOIN_KEY, koinData);
+                jurnalData = loadDataFromStorage(JURNAL_KEY, jurnalData);
+                annualData = loadDataFromStorage(ANNUAL_KEY, annualData);
+            }
         }
         
-        // --- LOGIC PERHITUNGAN KOIN NU ---
-
+        // --- LOGIC FILTER DATA KOIN NU ---
         function calculateKoinTotals(month, year) {
             const monthStr = month.toString().padStart(2, '0');
+            const dataYear = year.toString();
+            
+            // Filter data koin berdasarkan bulan dan tahun
             const filteredData = koinData.filter(d => {
                 const dataDate = new Date(d.tanggal + 'T00:00:00');
                 const dataMonth = (dataDate.getMonth() + 1).toString().padStart(2, '0');
-                const dataYear = dataDate.getFullYear().toString();
-                
-                if (month === 'all') {
-                    return dataYear === year;
-                }
-                return dataMonth === monthStr && dataYear === year;
+                return (month === 'all' || dataMonth === monthStr) && dataDate.getFullYear().toString() === dataYear;
             });
-
+            
             const totalNominal = filteredData.reduce((sum, d) => sum + d.nominal, 0);
 
             // Pembagian Dana Koin (10% Petugas, 60% Ranting, 25% MWC, 5% PC)
@@ -635,13 +701,13 @@ function formatRupiah(number) {
             const ranting = Math.round(totalNominal * 0.60);
             const mwc = Math.round(totalNominal * 0.25);
             const pc = Math.round(totalNominal * 0.05);
+
             // Sisa untuk memastikan total nominal tetap sama
             const totalPembagian = petugas + ranting + mwc + pc;
             const selisih = totalNominal - totalPembagian;
-            
             // Tambahkan selisih ke Ranting agar pembagian genap
-            const rantingFixed = ranting + selisih; 
-
+            const rantingFixed = ranting + selisih;
+            
             return {
                 data: filteredData,
                 totalNominal: totalNominal,
@@ -653,11 +719,10 @@ function formatRupiah(number) {
         }
 
         // --- FUNGSI RENDER TABEL ---
-
         function renderKoinTable(data, total) {
             const tableBody = document.getElementById('koin-data-body');
             tableBody.innerHTML = '';
-            
+
             if (data.length === 0) {
                 const row = tableBody.insertRow();
                 row.innerHTML = `<td colspan="11" style="text-align: center; font-style: italic;">Tidak ada data Koin NU untuk periode ini.</td>`;
@@ -670,15 +735,19 @@ function formatRupiah(number) {
                 const ranting = Math.round(nominal * 0.60);
                 const mwc = Math.round(nominal * 0.25);
                 const pc = Math.round(nominal * 0.05);
+
                 const totalPembagian = petugas + ranting + mwc + pc;
                 const selisih = nominal - totalPembagian;
-                const rantingFixed = ranting + selisih; 
+                const rantingFixed = ranting + selisih; // Pastikan total = nominal
 
-                const actionCells = isLoggedIn ? `<td class="action-btns">
-                    <button class="button btn-blue" onclick="editData('koin', ${d.id})">Edit</button>
-                    <button class="button btn-red" onclick="deleteData('koin', ${d.id})">Hapus</button>
-                </td>` : '';
+                const typeClass = d.type === 'auto' ? 'auto-entry' : 'manual-entry';
+                const idString = `'${d.id}'`;
 
+                // Cek apakah data berasal dari input manual atau otomatis (untuk tombol Aksi)
+                const actionCells = isLoggedIn ? `<td class="action-btns" data-id="${d.id}"> <button class="button btn-blue" onclick="editData('koin', ${idString})">Edit</button> <button class="button btn-red" onclick="deleteData('koin', ${idString})">Hapus</button> </td>` : '';
+                const displayAksi = isLoggedIn ? 'table-cell' : 'none';
+
+                row.classList.add(typeClass);
                 row.innerHTML = `
                     <td style="text-align: center;">${index + 1}</td>
                     <td>${formatTanggal(d.tanggal)}</td>
@@ -693,35 +762,34 @@ function formatRupiah(number) {
                     <td class="money-col koin-pembagian-col">${formatRupiah(pc)}</td>
                     ${actionCells}
                 `;
+                document.getElementById('koin-aksi-header').style.display = displayAksi;
+                document.getElementById('koin-total-aksi').style.display = displayAksi;
             });
 
-            // Update Footer
             document.getElementById('koin-total-nominal').textContent = formatRupiah(total.totalNominal);
             document.getElementById('koin-total-petugas').textContent = formatRupiah(total.petugas);
             document.getElementById('koin-total-ranting').textContent = formatRupiah(total.ranting);
             document.getElementById('koin-total-mwc').textContent = formatRupiah(total.mwc);
             document.getElementById('koin-total-pc').textContent = formatRupiah(total.pc);
-            
-            // Tampilkan/Sembunyikan Aksi
-            document.getElementById('koin-aksi-header').style.display = isLoggedIn ? 'table-cell' : 'none';
-            document.getElementById('koin-total-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
         }
 
-        // 4b. Auto Generate Jurnal Entries from KOIN NU
-        let entryIdCounter = 1000;
-        function generateAutoKoinEntries(month, year) {
-            const koinTotals = calculateKoinTotals(month, year);
+        // --- LOGIC UNTUK JURNAL UMUM ---
+        // 4a. Fungsi untuk menghasilkan entri Jurnal Otomatis dari KOIN NU (40%)
+        function generateAutoJurnalEntries(koinTotals, selectedMonth, selectedYear) {
             const entries = [];
-            const monthStr = month.toString().padStart(2, '0');
+            const monthStr = selectedMonth.toString().padStart(2, '0');
+            const year = selectedYear.toString();
+            // Ambil tanggal 1 di bulan yang dipilih untuk entri otomatis
             const firstDay = `${year}-${monthStr}-01`; 
+            let entryIdCounter = 1;
 
-            // 1. DANA MASUK (RANTING 60% DANA KOIN)
+            // 1. DANA MASUK (RANTING 60%)
             if (koinTotals.ranting > 0) {
                 entries.push({
                     id: `auto-koin-${monthStr}-${year}-${entryIdCounter++}`,
                     tanggal: firstDay,
-                    keterangan: `Penerimaan Dana KOIN NU (Hak Ranting 60%)`,
-                    kategori: categories.ranting_60, 
+                    keterangan: `Penerimaan Dana KOIN NU Bagian Ranting (60%)`,
+                    kategori: categories.ranting_60,
                     masuk: koinTotals.ranting,
                     keluar: 0,
                     type: 'auto'
@@ -740,7 +808,7 @@ function formatRupiah(number) {
                     type: 'auto'
                 });
             }
-
+            
             // 3. DANA KELUAR (MWC 25%)
             if (koinTotals.mwc > 0) {
                 entries.push({
@@ -778,74 +846,72 @@ function formatRupiah(number) {
             
             let total = { masuk: 0, keluar: 0 };
             let saldoBulanLalu = 0;
-            const saldoAwalDate = `${selectedYear}-${selectedMonth}-01`;
+            const saldoAwalDate = `${selectedYear}-${selectedMonth}-01`; 
 
             // 1. Tentukan Saldo Bulan Lalu
-            if (!isFilterAll) {
-                const currentMonthNum = parseInt(selectedMonth);
-                // Cek entri manual untuk bulan/tahun ini
-                const manualSaldoEntry = annualData.find(d => 
-                    d.type === 'saldo_bulan_lalu_manual' && d.year === currentYearNum && d.month === currentMonthNum 
+            if (isFilterAll) {
+                // Jika filter 'Semua Bulan', Saldo Awal diambil dari Saldo Akhir Tahun Lalu
+                const saldoAkhirTahunLalu = jurnalData.find(d => 
+                    d.kategori === categories.saldo_bln_lalu && new Date(d.tanggal).getFullYear() === (currentYearNum - 1)
                 );
-                if (manualSaldoEntry) {
-                    saldoBulanLalu = manualSaldoEntry.nominal;
-                }
+                saldoBulanLalu = saldoAkhirTahunLalu ? saldoAkhirTahunLalu.masuk : 0;
             } else {
-                // Jika filter 'Semua Bulan', gunakan basis Saldo Akhir Tahun Lalu (ID 300)
-                const basisSaldo = data.find(d => d.id === 300);
-                if (basisSaldo) {
-                    saldoBulanLalu = basisSaldo.masuk - basisSaldo.keluar;
-                }
+                // Jika filter bulanan, Saldo Awal diambil dari entri manual di annualData
+                const prevMonth = parseInt(selectedMonth) - 1;
+                const prevYear = prevMonth === 0 ? currentYearNum - 1 : currentYearNum;
+                const targetMonth = prevMonth === 0 ? 12 : prevMonth;
+                
+                // Cari data Saldo Bulan Lalu yang diinput manual
+                const saldoBulanLaluManual = annualData.find(d => 
+                    d.type === 'saldo_bulan_lalu_manual' && d.year === currentYearNum && d.month === parseInt(selectedMonth)
+                );
+                saldoBulanLalu = saldoBulanLaluManual ? saldoBulanLaluManual.nominal : 0;
             }
 
-            // 2. Filter data untuk periode yang dipilih (HANYA MANUAL + AUTO)
-            let filteredManualData = data.filter(d => {
-                const dataDate = new Date(d.tanggal + 'T00:00:00');
-                const dataMonth = (dataDate.getMonth() + 1).toString().padStart(2, '0');
-                const dataYear = dataDate.getFullYear().toString();
-                const monthMatch = isFilterAll || dataMonth === selectedMonth.padStart(2, '0');
-                const yearMatch = dataYear === selectedYear;
-                // Hanya ambil transaksi yang berada di periode filter, dan exclude entri 'Saldo Bulan Lalu'
-                return monthMatch && yearMatch && d.kategori !== categories.saldo_bln_lalu;
-            });
+            // 2. Filter data (Hapus Saldo Awal Tahun Lalu jika bukan filter 'Semua Bulan')
+            const filteredData = data.filter(d => 
+                isFilterAll || d.kategori !== categories.saldo_bln_lalu
+            );
+            
+            // 3. Gabungkan entri Jurnal Umum (Manual + Otomatis KOIN NU)
+            const koinTotals = calculateKoinTotals(selectedMonth, selectedYear);
+            const autoEntries = generateAutoJurnalEntries(koinTotals, selectedMonth, selectedYear);
 
-            let autoEntries = [];
-            // 3. GENERATE AUTO KOIN ENTRIES (Jika bulan SPESIFIK dipilih)
-            if (!isFilterAll) {
-                autoEntries = generateAutoKoinEntries(selectedMonth, selectedYear);
-            }
+            // Gabungkan semua data dan urutkan berdasarkan tanggal
+            let combinedData = [...filteredData, ...autoEntries];
+            combinedData.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
 
-            // 4. Gabungkan Auto dan Manual, lalu urutkan kronologis
-            let filteredData = autoEntries.concat(filteredManualData);
-            filteredData.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
-
-            // --- PERSIAPAN VISUAL ROWS (Pre-calculate for correct Running Saldo) ---
+            // 4. Build HTML Rows (Calculating Running Saldo)
+            tableBody.innerHTML = '';
             let transactionRowsHtml = [];
-            // Running Saldo dimulai dari Saldo Bulan Lalu
             let runningSaldoTransactions = saldoBulanLalu;
             let indexNumber = 1;
-            
-            // NOTE: total.masuk dan total.keluar akan dihitung di loop ini HANYA untuk transaksi
+
+            // Reset total sebelum loop
             total.masuk = 0;
             total.keluar = 0;
 
-            // 5. Build HTML Rows (Calculating Running Saldo)
-            filteredData.forEach(d => {
+            combinedData.forEach(d => {
                 runningSaldoTransactions += d.masuk;
                 runningSaldoTransactions -= d.keluar;
+
                 // Total HANYA untuk transaksi, Saldo Bulan Lalu ditambahkan di langkah berikutnya
-                total.masuk += d.masuk; 
+                total.masuk += d.masuk;
                 total.keluar += d.keluar;
-                
+
                 const typeClass = d.type === 'auto' ? 'auto-entry' : 'manual-entry';
-                
                 // Penting: ID dikirim sebagai string ke fungsi onclick
-                const idString = `'${d.id}'`; 
+                const idString = `'${d.id}'`;
                 
-                const actionCells = isLoggedIn ? `<td class="action-btns" data-id="${d.id}">
-                    <button class="button btn-blue" onclick="editData('jurnal', ${idString})">Edit</button>
-                    <button class="button btn-red" onclick="deleteData('jurnal', ${idString})">Hapus</button>
-                </td>` : '';
+                // Hanya izinkan edit/hapus untuk entri manual yang bukan Saldo Awal tahun lalu
+                const canEdit = isLoggedIn && d.type === 'manual' && d.kategori !== categories.saldo_bln_lalu; 
+                
+                const actionCells = canEdit ? 
+                    `<td class="action-btns" data-id="${d.id}"> 
+                        <button class="button btn-blue" onclick="editData('jurnal', ${idString})">Edit</button> 
+                        <button class="button btn-red" onclick="deleteData('jurnal', ${idString})">Hapus</button> 
+                    </td>` : 
+                    `<td class="action-btns" data-id="${d.id}"></td>`; // Biarkan kosong jika tidak bisa diedit
 
                 transactionRowsHtml.push({
                     html: `
@@ -862,59 +928,44 @@ function formatRupiah(number) {
                 });
             });
 
-            // 6. Define Saldo Awal Row HTML (Akan ditampilkan di baris pertama)
+            // 5. Define Saldo Awal Row HTML (Akan ditampilkan di baris pertama)
             const saldoAwalRowHtml = `
-                <td style="text-align: center;">-</td> 
-                <td>${formatTanggal(saldoAwalDate)}</td> 
-                <td>SALDO BULAN LALU (Input Manual)</td> 
-                <td>-</td> 
-                <td class="money-col">${formatRupiah(saldoBulanLalu > 0 ? saldoBulanLalu : 0)}</td> 
-                <td class="money-col">${formatRupiah(saldoBulanLalu < 0 ? Math.abs(saldoBulanLalu) : 0)}</td> 
-                <td class="money-col" style="font-weight: bold;">${formatRupiah(saldoBulanLalu)}</td> 
-                <td class="action-btns" data-id="saldo-bulan-lalu-edit" style="display: ${isLoggedIn ? 'table-cell' : 'none'};"> 
-                    <button class="button btn-blue" onclick="editData('jurnal', 'saldo-bulan-lalu-edit', '${selectedMonth}', '${selectedYear}', ${saldoBulanLalu})">Edit Saldo Bulan Lalu</button> 
+                <td style="text-align: center;">-</td>
+                <td>${formatTanggal(saldoAwalDate)}</td>
+                <td>SALDO BULAN LALU (Input Manual)</td>
+                <td>-</td>
+                <td class="money-col">${formatRupiah(saldoBulanLalu)}</td>
+                <td class="money-col">0</td>
+                <td class="money-col total-saldo" style="font-weight: bold;">${formatRupiah(saldoBulanLalu)}</td>
+                <td class="action-btns" data-id="saldo-bulan-lalu-edit">
+                    <button class="button btn-blue" onclick="editData('jurnal', 'saldo-bulan-lalu-edit', '${selectedMonth}', '${selectedYear}', ${saldoBulanLalu})">Edit</button>
+                    <button class="button btn-red" disabled>Hapus</button>
                 </td>
             `;
-
-            // 7. Visual Rendering Loop
-            tableBody.innerHTML = '';
-            let visualIndex = 1; // Nomor urut visual
             
-            // **FIX UTAMA: RENDER SALDO BULAN LALU SEBAGAI BARIS PERTAMA (Jika tidak filter 'Semua Bulan')**
-            if (!isFilterAll) {
-                const saldoRow = tableBody.insertRow();
-                saldoRow.classList.add('saldo-entry');
-                saldoRow.innerHTML = saldoAwalRowHtml;
-                
-                // Tambahkan Saldo Bulan Lalu ke Total Masuk/Keluar untuk Footer
-                if (saldoBulanLalu > 0) {
-                    total.masuk += saldoBulanLalu;
-                } else if (saldoBulanLalu < 0) {
-                    total.keluar += Math.abs(saldoBulanLalu);
-                }
-                
-                // Saldo Bulan Lalu tidak mendapatkan nomor urut visual
-            }
-
-            // 8. Render Transaction Rows
-            for(let i = 0; i < transactionRowsHtml.length; i++) {
+            const saldoAwalRow = tableBody.insertRow();
+            saldoAwalRow.classList.add('saldo-entry');
+            saldoAwalRow.innerHTML = saldoAwalRowHtml;
+            
+            // 6. Append transaction rows
+            transactionRowsHtml.forEach(item => {
                 const row = tableBody.insertRow();
-                row.classList.add(transactionRowsHtml[i].type);
-                // Ganti placeholder dengan nomor urut transaksi
-                const txnHtml = transactionRowsHtml[i].html.replace('[INDEX_PLACEHOLDER]', visualIndex++);
-                row.innerHTML = txnHtml;
-            }
+                row.classList.add(item.type);
+                // Ganti [INDEX_PLACEHOLDER] dengan index sebenarnya
+                row.innerHTML = item.html.replace('[INDEX_PLACEHOLDER]', indexNumber++); 
+            });
 
-            // Update Footer
+
+            // Update Footer Total
             document.getElementById('jurnal-total-masuk').textContent = formatRupiah(total.masuk);
             document.getElementById('jurnal-total-keluar').textContent = formatRupiah(total.keluar);
-            // Saldo Akhir adalah runningSaldoTransactions terakhir
-            document.getElementById('jurnal-saldo-akhir').textContent = formatRupiah(runningSaldoTransactions);
-            
-            // Tampilkan/Sembunyikan Aksi
-            document.getElementById('jurnal-aksi-header').style.display = isLoggedIn ? 'table-cell' : 'none';
-            document.getElementById('jurnal-total-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
-        }
+            document.getElementById('jurnal-saldo-akhir').textContent = formatRupiah(runningSaldoTransactions); // Saldo Akhir Sebenarnya
+
+            // Tampilkan/sembunyikan kolom aksi
+            const displayAksi = isLoggedIn ? 'table-cell' : 'none';
+            document.getElementById('jurnal-aksi-header').style.display = displayAksi;
+            document.getElementById('jurnal-total-aksi').style.display = displayAksi;
+        } 
         // --- AKHIR FUNGSI renderJurnalTable (DIPERBAIKI) ---
 
         // 4c. Helper function to get expense from Jurnal Umum
@@ -959,58 +1010,45 @@ function formatRupiah(number) {
                 for (let year = maxYear; year >= minYear; year--) {
                     select.innerHTML += `<option value="${year}">${year}</option>`;
                 }
+                // Set default to current year
                 select.value = currentYear;
             });
         }
-        
-        // 6. Filter and Render Data
-        function filterData(module) {
-            let selectedMonth, selectedYear, displayId, ttdId;
-            
-            if (module === 'koin') {
-                selectedMonth = document.getElementById('koin-filter-bulan').value;
-                selectedYear = document.getElementById('koin-filter-tahun').value;
-                displayId = 'koin-pdf-periode-display';
-                ttdId = 'koin-ttd-tanggal-output';
 
-                let periodeDisplay = "Semua Periode";
-                if (selectedMonth !== 'all' && selectedYear) {
-                    const monthName = namaBulan[parseInt(selectedMonth) - 1];
-                    periodeDisplay = `${monthName} ${selectedYear}`;
-                } else if (selectedYear) {
-                    periodeDisplay = `Tahun ${selectedYear}`;
-                }
-                document.getElementById(displayId).textContent = periodeDisplay;
+        // 6. Filter Data Main Function
+        function filterData(module) {
+            const koinSelectBulan = document.getElementById('koin-filter-bulan');
+            const koinSelectTahun = document.getElementById('koin-filter-tahun');
+            const jurnalSelectBulan = document.getElementById('jurnal-filter-bulan');
+            const jurnalSelectTahun = document.getElementById('jurnal-filter-tahun');
+            const tahunanSelectTahun = document.getElementById('tahunan-filter-tahun');
+
+            let selectedMonth, selectedYear, periodeDisplay;
+
+            if (module === 'koin') {
+                selectedMonth = koinSelectBulan.value;
+                selectedYear = koinSelectTahun.value;
+                periodeDisplay = selectedMonth === 'all' ? selectedYear : `${namaBulan[parseInt(selectedMonth) - 1]} ${selectedYear}`;
                 
-                const koinTotal = calculateKoinTotals(selectedMonth, selectedYear);
-                renderKoinTable(koinTotal.data, koinTotal);
+                const koinTotals = calculateKoinTotals(selectedMonth, selectedYear);
+                renderKoinTable(koinTotals.data, koinTotals);
+                document.getElementById('koin-pdf-periode-display').textContent = periodeDisplay;
 
             } else if (module === 'jurnal') {
-                selectedMonth = document.getElementById('jurnal-filter-bulan').value;
-                selectedYear = document.getElementById('jurnal-filter-tahun').value;
-                displayId = 'jurnal-pdf-periode-display';
-                ttdId = 'jurnal-ttd-tanggal-output';
+                selectedMonth = jurnalSelectBulan.value;
+                selectedYear = jurnalSelectTahun.value;
+                periodeDisplay = selectedMonth === 'all' ? selectedYear : `${namaBulan[parseInt(selectedMonth) - 1]} ${selectedYear}`;
 
-                const isFilterAll = selectedMonth === 'all';
-                let periodeDisplay = "Semua Periode";
-                if (selectedMonth && selectedYear && selectedMonth !== 'all') {
-                    const monthName = namaBulan[parseInt(selectedMonth) - 1];
-                    periodeDisplay = `${monthName} ${selectedYear}`;
-                } else if (selectedYear) {
-                    periodeDisplay = `Tahun ${selectedYear}`;
-                }
-                document.getElementById(displayId).textContent = periodeDisplay;
                 renderJurnalTable(jurnalData, selectedMonth, selectedYear);
-
+                document.getElementById('jurnal-pdf-periode-display').textContent = periodeDisplay;
             } else if (module === 'tahunan') {
-                selectedYear = document.getElementById('tahunan-filter-tahun').value;
-                displayId = 'tahunan-pdf-periode-display';
-                ttdId = 'tahunan-ttd-tanggal-output';
-                document.getElementById(displayId).textContent = selectedYear;
+                selectedYear = tahunanSelectTahun.value;
+                document.getElementById('tahunan-pdf-periode-display').textContent = selectedYear;
+
                 const annualDataFinal = generateAnnualReportData(selectedYear);
                 renderAnnualReportTable(annualDataFinal, selectedYear);
             }
-            document.getElementById(ttdId).textContent = formatTanggalTTD();
+            document.getElementById(`${module}-ttd-tanggal-output`).textContent = formatTanggalTTD();
         }
 
         // --- CRUD DAN INPUT BARU ---
@@ -1042,7 +1080,7 @@ function formatRupiah(number) {
             let dataKey;
             let newData = {};
             let isEditing = false;
-
+            
             if (module === 'koin') {
                 const tanggal = document.getElementById('koin-input-tanggal').value;
                 const petugas = document.getElementById('koin-input-petugas').value;
@@ -1050,20 +1088,21 @@ function formatRupiah(number) {
                 const donatur = document.getElementById('koin-input-donatur').value;
                 const alamat = document.getElementById('koin-input-alamat').value;
                 const nominal = parseInt(document.getElementById('koin-input-nominal').value) || 0;
-                
+
                 if (!tanggal || !petugas || !donatur || nominal <= 0) {
-                    alert('Mohon lengkapi semua data Koin NU yang diperlukan.');
+                    alert('Mohon lengkapi semua data Koin dengan benar.');
                     return;
                 }
 
-                if (koinEditId !== null) {
+                if (koinEditId) {
                     isEditing = true;
                     newData = koinData.find(d => d.id === koinEditId);
                 } else {
-                    const maxId = koinData.length > 0 ? Math.max(...koinData.map(d => d.id)) : 0;
-                    newData.id = maxId + 1;
+                    const existingIds = koinData.map(d => typeof d.id === 'number' ? d.id : 0);
+                    const maxId = existingIds.length > 0 ? Math.max(...existingIds) : 0;
+                    newData.id = maxId + 1; 
                 }
-                
+
                 newData.tanggal = tanggal;
                 newData.petugas = petugas;
                 newData.hp = hp;
@@ -1078,7 +1117,6 @@ function formatRupiah(number) {
                     dataArray.push(newData);
                 }
                 resetForm('koin');
-
             } else if (module === 'jurnal') {
                 const tanggal = document.getElementById('jurnal-input-tanggal').value;
                 const keterangan = document.getElementById('jurnal-input-keterangan').value;
@@ -1087,29 +1125,15 @@ function formatRupiah(number) {
                 const keluar = parseInt(document.getElementById('jurnal-input-keluar').value) || 0;
 
                 if (!tanggal || !keterangan || !kategori || (masuk <= 0 && keluar <= 0)) {
-                    alert('Mohon lengkapi Tanggal, Keterangan, Kategori, dan setidaknya salah satu Nominal Masuk/Keluar.');
-                    return;
-                }
-                if (masuk > 0 && keluar > 0) {
-                    alert('Input tidak boleh memiliki Dana Masuk dan Dana Keluar secara bersamaan.');
+                    alert('Mohon lengkapi semua data Jurnal dengan benar (minimal Masuk atau Keluar harus terisi).');
                     return;
                 }
 
-                // Cek kategori khusus
-                if ([categories.ranting_60, categories.honor_petugas, categories.honor_mwc, categories.honor_pc].includes(kategori)) {
-                    alert(`Kategori "${kategori}" adalah otomatis dari KOIN NU dan tidak disarankan diinput manual.`);
-                    // Lanjutkan, tetapi beri peringatan
-                }
-                if (kategori === categories.saldo_bln_lalu) {
-                    alert(`Kategori "${kategori}" digunakan sebagai basis Saldo Awal Tahun dan tidak dapat diinput manual di sini.`);
-                    return;
-                }
-                
-                if (jurnalEditId !== null) {
+                if (jurnalEditId) {
                     isEditing = true;
-                    // FIX: Gunakan perbandingan longgar (==) karena jurnalEditId adalah string dari tombol, 
+                    // FIX: Gunakan perbandingan longgar (==) karena jurnalEditId adalah string dari tombol,
                     // sedangkan d.id bisa berupa number.
-                    newData = jurnalData.find(d => d.id == jurnalEditId); 
+                    newData = jurnalData.find(d => d.id == jurnalEditId);
                 } else {
                     // Pastikan ID tidak bentrok dengan ID dummy Saldo Awal (300)
                     const existingIds = jurnalData.map(d => typeof d.id === 'number' ? d.id : 0);
@@ -1117,7 +1141,7 @@ function formatRupiah(number) {
                     const newId = maxId >= 300 ? maxId + 1 : 301;
                     newData.id = newId;
                 }
-                
+
                 newData.tanggal = tanggal;
                 newData.keterangan = keterangan;
                 newData.kategori = kategori;
@@ -1133,22 +1157,90 @@ function formatRupiah(number) {
                 resetForm('jurnal');
             }
 
+            // Simpan ke Firestore dan Local Storage
             saveDataToStorage(dataKey, dataArray);
-            alert(`Data ${module.toUpperCase()} berhasil ${isEditing ? 'diperbarui' : 'disimpan'}!`);
+            if (db) {
+                saveDataToFirestore(module, newData, isEditing);
+            } else {
+                alert(`Data ${module.toUpperCase()} berhasil ${isEditing ? 'diperbarui' : 'disimpan'}!`);
+            }
             filterData(module);
         }
+
+        // Simpan Data ke Firestore
+        async function saveDataToFirestore(module, data, isEditing) {
+            const colName = module === 'koin' ? COL_KOIN : COL_JURNAL;
+            const docRef = data.id.toString();
+
+            try {
+                if (isEditing) {
+                    // Update
+                    await updateDoc(doc(db, colName, docRef), data);
+                } else {
+                    // Add
+                    await setDoc(doc(db, colName, docRef), data);
+                }
+                alert(`Data ${module.toUpperCase()} berhasil ${isEditing ? 'diperbarui' : 'disimpan'} di Firestore!`);
+            } catch(e) {
+                console.error(`Error saving data to Firestore (${module}):`, e);
+                alert(`Gagal menyimpan data ${module} ke Firestore: ${e.message}`);
+            }
+        }
+
 
         function editData(module, id, month = null, year = null, currentValue = null) {
             if (!isLoggedIn) {
                 alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
                 return;
             }
-            let dataToEdit;
 
+            // handle saldo-bulan-lalu-edit special case
+            if (module === 'jurnal' && id === 'saldo-bulan-lalu-edit') {
+                if (!month || !year) return alert('Data bulan/tahun tidak ditemukan.');
+                
+                const newSaldo = prompt(`Edit Saldo Bulan Lalu untuk ${namaBulan[parseInt(month) - 1]} ${year}:\nMasukkan nominal Saldo Awal (contoh: 3000000)`, currentValue);
+                
+                if (newSaldo !== null && !isNaN(newSaldo) && newSaldo.trim() !== '') {
+                    const nominalValue = parseInt(newSaldo.replace(/\./g, ''));
+                    if (isNaN(nominalValue)) {
+                        alert('Input tidak valid. Harap masukkan angka.');
+                        return;
+                    }
+                    
+                    // Cari atau buat objek saldo_bulan_lalu_manual
+                    let targetData = annualData.find(d => 
+                        d.type === 'saldo_bulan_lalu_manual' && d.year == year && d.month == month
+                    );
+                    
+                    if (!targetData) {
+                         targetData = {
+                            id: `saldo_bln_lalu_${year}_${month}`,
+                            type: 'saldo_bulan_lalu_manual',
+                            year: parseInt(year),
+                            month: parseInt(month),
+                            nominal: nominalValue,
+                            createdAt: Date.now()
+                        };
+                        annualData.push(targetData);
+                    } else {
+                        targetData.nominal = nominalValue;
+                    }
+
+                    saveDataToStorage(ANNUAL_KEY, annualData);
+                    if (db) {
+                        saveDataToFirestore(COL_TAHUNAN, targetData, targetData.id !== undefined); // Simpan ke Firestore
+                    }
+                    alert(`Saldo Bulan Lalu untuk ${namaBulan[parseInt(month) - 1]} ${year} berhasil diperbarui.`);
+                    filterData('jurnal');
+                }
+                return;
+            }
+
+            let dataToEdit;
             if (module === 'koin') {
                 dataToEdit = koinData.find(d => d.id === id);
                 if (!dataToEdit) return;
-
+                
                 document.getElementById('koin-input-tanggal').value = dataToEdit.tanggal;
                 document.getElementById('koin-input-petugas').value = dataToEdit.petugas;
                 document.getElementById('koin-input-hp').value = dataToEdit.hp;
@@ -1157,46 +1249,8 @@ function formatRupiah(number) {
                 document.getElementById('koin-input-nominal').value = dataToEdit.nominal;
                 koinEditId = id;
             } else if (module === 'jurnal') {
-                // LOGIKA BARU: Edit Saldo Bulan Lalu (Khusus di Laporan Jurnal)
-                if (id === 'saldo-bulan-lalu-edit') {
-                    if (!month || !year) {
-                        alert("Data bulan/tahun tidak ditemukan untuk Saldo Bulan Lalu.");
-                        return;
-                    }
-                    const newSaldo = prompt(`Edit Saldo Bulan Lalu untuk ${namaBulan[parseInt(month) - 1]} ${year}:`, currentValue);
-                    if (newSaldo !== null && !isNaN(newSaldo) && newSaldo.trim() !== "") {
-                        const newSaldoNum = parseInt(newSaldo);
-                        // Cari atau buat entri Saldo Bulan Lalu di annualData
-                        let targetData = annualData.find(d => 
-                            d.type === 'saldo_bulan_lalu_manual' && d.year === parseInt(year) && d.month === parseInt(month) 
-                        );
-                        
-                        if (!targetData) {
-                            targetData = { 
-                                type: 'saldo_bulan_lalu_manual', 
-                                year: parseInt(year), 
-                                month: parseInt(month), 
-                                nominal: newSaldoNum 
-                            };
-                            annualData.push(targetData);
-                        } else {
-                            targetData.nominal = newSaldoNum;
-                        }
-
-                        saveDataToStorage(ANNUAL_KEY, annualData);
-                        alert(`Saldo Bulan Lalu untuk ${namaBulan[parseInt(month) - 1]} ${year} berhasil diperbarui.`);
-                        // Setelah mengedit saldo awal (karena ini metadata bulanan)
-                        filterData('jurnal');
-                    } else if (newSaldo !== null) {
-                        alert("Input dibatalkan atau tidak valid.");
-                    }
-                    return;
-                }
-
-                // LOGIKA LAMA: Edit entri Jurnal Manual
                 // FIX: Gunakan perbandingan longgar (==) untuk mengatasi perbedaan tipe data (number vs string)
                 dataToEdit = jurnalData.find(d => d.id == id && d.type === 'manual');
-                
                 if (!dataToEdit) {
                     alert("Data tidak ditemukan atau bukan entri manual yang bisa diedit.");
                     return;
@@ -1222,6 +1276,7 @@ function formatRupiah(number) {
                 alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
                 return;
             }
+
             if (module === 'jurnal') {
                 // FIX: Gunakan perbandingan longgar (==) untuk mengatasi perbedaan tipe data (number vs string)
                 const dataToDelete = jurnalData.find(d => d.id == id);
@@ -1230,58 +1285,84 @@ function formatRupiah(number) {
                     return;
                 }
             }
+
             if (!confirm("Yakin ingin menghapus data ini?")) return;
 
+            if (db) {
+                deleteDataFromFirestore(module, id);
+            } else {
+                performLocalDelete(module, id);
+            }
+        }
+
+        function performLocalDelete(module, id) {
             if (module === 'koin') {
                 koinData = koinData.filter(d => d.id !== id);
                 saveDataToStorage(KOIN_KEY, koinData);
             } else if (module === 'jurnal') {
                 // FIX: Gunakan perbandingan longgar (!=) untuk mengatasi perbedaan tipe data (number vs string)
-                jurnalData = jurnalData.filter(d => d.id != id);
+                jurnalData = jurnalData.filter(d => d.id != id); 
                 saveDataToStorage(JURNAL_KEY, jurnalData);
             }
-
-            alert(`Data ${module.toUpperCase()} berhasil dihapus.`);
+            alert('Data berhasil dihapus.');
             filterData(module);
         }
 
-        function deleteAllDataGlobal(moduleName) {
-            if (!isLoggedIn) {
-                alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
-                return;
-            }
-            let dataName = (moduleName === 'koin') ? 'KOIN NU' : 'Jurnal Umum';
-            if (confirm(`PERINGATAN! Anda yakin ingin MENGHAPUS SEMUA DATA ${dataName}? Aksi ini TIDAK DAPAT DIBATALKAN.`)) {
-                if (moduleName === 'koin') {
-                    koinData = [];
-                    saveDataToStorage(KOIN_KEY, koinData);
-                    alert('Semua data KOIN NU telah dihapus.');
-                } else if (moduleName === 'jurnal') {
-                    // Hapus semua kecuali satu entri saldo awal tahun lalu (untuk jaga-jaga)
-                    jurnalData = jurnalData.filter(d => d.kategori === categories.saldo_bln_lalu);
-                    saveDataToStorage(JURNAL_KEY, jurnalData);
-                    alert('Semua data Jurnal Umum telah dihapus (kecuali Saldo Awal).');
-                }
-                filterData(moduleName);
+        async function deleteDataFromFirestore(module, id) {
+            const colName = module === 'koin' ? COL_KOIN : COL_JURNAL;
+            try {
+                await deleteDoc(doc(db, colName, id.toString()));
+                alert('Data berhasil dihapus dari Firestore.');
+                await loadAllCollections();
+                filterData(module);
+            } catch(e) {
+                console.error("Error deleting document:", e);
+                alert(`Gagal menghapus data dari Firestore: ${e.message}`);
             }
         }
+        
+        async function deleteAllDataGlobal(module) {
+            if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
+            if (!confirm('Yakin ingin menghapus SEMUA DATA pada modul ini? Tindakan ini tidak bisa dibatalkan.')) return;
 
-        // --- LOGIN/LOGOUT ---
-        function attemptLogin() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            try {
+                if (module === 'koin') {
+                    // fetch all docs in koin and delete
+                    const snap = await getDocs(collection(db, COL_KOIN));
+                    const promises = [];
+                    snap.forEach(d => promises.push(deleteDoc(doc(db, COL_KOIN, d.id))));
+                    await Promise.all(promises);
+                } else if (module === 'jurnal') {
+                    const snap = await getDocs(collection(db, COL_JURNAL));
+                    const promises = [];
+                    snap.forEach(d => promises.push(deleteDoc(doc(db, COL_JURNAL, d.id))));
+                    await Promise.all(promises);
+                }
+                alert('Semua data dihapus.');
+                await loadAllCollections();
+                filterData(module);
+            } catch(e){ console.error(e); alert('Gagal menghapus semua data: '+e.message); }
+        }
 
-            // Ganti dengan username dan password yang sebenarnya
-            if (username === 'adminupzis' && password === 'admin123') { 
+        // --- LOGIN / LOGOUT ---
+        const attemptLogin = () => {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            
+            // Cek kredensial
+            if (user === 'admin' && pass === 'upzisngablak2025') {
                 isLoggedIn = true;
-                showModule(currentModule); 
                 alert('Login Berhasil!');
+                document.getElementById('login-area').style.display = 'none';
+                showModule(currentModule); 
             } else {
                 alert('Username atau Password salah.');
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
             }
-        }
+        };
 
-        function logout() {
+        const logout = () => {
             isLoggedIn = false;
             showModule(currentModule);
             alert('Anda telah Log Out.');
@@ -1292,7 +1373,6 @@ function formatRupiah(number) {
             currentModule = moduleName;
             const modules = ['koin-nu-module', 'jurnal-umum-module', 'laporan-tahunan-module'];
             modules.forEach(id => document.getElementById(id).style.display = 'none');
-
             const navLinks = ['nav-koin', 'nav-jurnal', 'nav-tahunan'];
             navLinks.forEach(id => document.getElementById(id).classList.remove('active'));
 
@@ -1310,10 +1390,8 @@ function formatRupiah(number) {
 
             // Atur tampilan login/admin controls
             document.getElementById('login-area').style.display = isLoggedIn ? 'none' : 'block';
-            
             const controls = document.getElementById(`${moduleName}-admin-controls`);
             const inputArea = document.getElementById(`${moduleName}-input-area`);
-
             if (controls) controls.style.display = isLoggedIn ? 'flex' : 'none';
             if (inputArea) inputArea.style.display = isLoggedIn ? 'block' : 'none';
 
@@ -1321,143 +1399,200 @@ function formatRupiah(number) {
             filterData(moduleName);
         }
 
-        // --- ANNUAL REPORT EDITING ---
+        // --- ANNUAL REPORT EDITING --- 
         function editAnnualData(id, key, currentValue, isText = false) {
             if (!isLoggedIn) {
                 alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
                 return;
             }
-            annualEditData = { id, key, currentValue, isText };
+
+            // 1. Tentukan target data dan label
+            let targetData;
+            let labelToDisplay = '';
+            let isSaldoAwal = id.startsWith('saldo_bank') || id.startsWith('saldo_kas');
             
-            const parts = id.split(/_|_/);
-            const type = parts[0];
-            let label = '';
+            if (isSaldoAwal) {
+                // PERBAIKAN: Handle Saldo Awal (Baris 1 & 2 Kolom 3)
+                // Cari data Saldo Awal di annualData
+                targetData = annualData.find(d => d.id === id);
+                if (!targetData) {
+                    alert('Data Saldo Awal tidak ditemukan. Mohon coba muat ulang laporan.');
+                    return;
+                }
+                // FIX UTAMA: Menampilkan nama baris
+                labelToDisplay = id.startsWith('saldo_bank') ? 'SALDO KAS BANK (Awal Tahun)' : 'SALDO KAS TUNAI (Awal Tahun)';
+            } else {
+                // Logika untuk data bulanan (Penerima, Keterangan)
+                targetData = annualData.find(d => d.id === id);
+                
+                if (!targetData) {
+                    alert('Data bulanan tidak ditemukan untuk diedit.');
+                    return;
+                }
+                // Tentukan label berdasarkan key yang diklik (contoh: donatur, pendidikan.penerima)
+                labelToDisplay = key.replace('.', ' ').toUpperCase(); 
+                labelToDisplay = labelToDisplay.replace('_', ' '); // Untuk honor_petugas, dll
+                
+                // Untuk data bulanan, tambahkan nama bulan
+                const month = targetData.month;
+                if(month && targetData.type === 'monthly') {
+                    labelToDisplay = `${namaBulan[month - 1]} - ${labelToDisplay}`;
+                }
+            }
             
-            if (type.startsWith('saldo')) {
-                label = id.includes('bank') ? 'SALDO KAS BANK (Awal Tahun)' : 'SALDO KAS TUNAI (Awal Tahun)';
-            } else if (type === 'monthly') {
-                label = `${namaBulan[parseInt(parts[parts.length - 1]) - 1]} - ${key}`;
+            // Pengecekan data
+            if (!targetData) {
+                // Ini adalah pop-up "data tidak di temukan" yang dilaporkan user
+                alert('Data tidak ditemukan.'); 
+                return;
             }
 
-            document.getElementById('annual-edit-label').value = label;
+            // 2. Set form values
+            document.getElementById('annual-edit-label').value = labelToDisplay; // <--- FIX UTAMA: Menampilkan nama baris
             document.getElementById('annual-edit-nominal').value = isText ? '' : currentValue;
-            
-            // Atur tampilan field Keterangan
+            document.getElementById('annual-edit-id').value = id;
+            document.getElementById('annual-edit-key').value = key;
+            document.getElementById('annual-edit-is-text').value = isText;
+
+            // Tampilkan/sembunyikan field keterangan jika isText
             const ketGroup = document.getElementById('annual-edit-keterangan-group');
             if (isText) {
                 ketGroup.style.display = 'block';
-                document.getElementById('annual-edit-nominal').style.display = 'none';
                 document.getElementById('annual-edit-keterangan').value = currentValue;
+                document.getElementById('annual-edit-nominal').style.display = 'none';
+                document.getElementById('annual-edit-nominal').removeAttribute('required');
+                document.getElementById('annual-edit-keterangan').setAttribute('required', 'required');
             } else {
                 ketGroup.style.display = 'none';
                 document.getElementById('annual-edit-nominal').style.display = 'block';
+                document.getElementById('annual-edit-nominal').setAttribute('required', 'required');
+                document.getElementById('annual-edit-keterangan').removeAttribute('required');
             }
 
+            annualEditData = targetData;
             document.getElementById('tahunan-edit-input-area').style.display = 'block';
+            document.getElementById('tahunan-edit-input-area').scrollIntoView({ behavior: 'smooth' });
         }
 
         function cancelAnnualEdit() {
             annualEditData = null;
             document.getElementById('tahunan-edit-input-area').style.display = 'none';
         }
-        
-        function saveAnnualReportData() {
+
+        async function saveAnnualReportData() {
             if (!annualEditData) return;
 
+            const id = document.getElementById('annual-edit-id').value;
+            const key = document.getElementById('annual-edit-key').value;
+            const isText = document.getElementById('annual-edit-is-text').value === 'true';
+            
             let newValue;
-            if (annualEditData.isText) {
+            if (isText) {
                 newValue = document.getElementById('annual-edit-keterangan').value;
             } else {
-                newValue = parseInt(document.getElementById('annual-edit-nominal').value);
-                if (isNaN(newValue)) {
-                    alert('Nominal harus berupa angka.');
-                    return;
-                }
+                newValue = parseInt(document.getElementById('annual-edit-nominal').value) || 0;
             }
 
-            const { id, key, isText } = annualEditData;
-            const type = id.split(/_|_/)[0];
-
-            // FIX: Gunakan perbandingan longgar (==) atau id == id (untuk string) saat mencari objek annualData
-            const targetData = annualData.find(d => d.id == id || (d.type === 'monthly' && d.year.toString() === id.split('_')[1] && d.month.toString() === id.split('_')[2]) );
-            
+            const targetData = annualData.find(d => d.id === id);
             if (!targetData) {
-                alert('Data tidak ditemukan!');
+                alert('Error: Data asal tidak ditemukan.');
                 return;
             }
-            
-            // Update data berdasarkan key (contoh: 'pendidikan.penerima' atau 'nominal')
-            let keys = key.split('.');
-            let obj = targetData;
 
+            // Update nested property based on key string (e.g., 'pendidikan.penerima')
+            const keys = key.split('.');
+            let obj = targetData;
             for (let i = 0; i < keys.length - 1; i++) {
                 obj = obj[keys[i]];
             }
             obj[keys[keys.length - 1]] = newValue;
 
             // Khusus untuk Saldo Awal, update properti 'nominal' di objek utama
-            if (type.startsWith('saldo')) {
+            if (targetData.type.startsWith('saldo')) {
                 targetData.nominal = newValue;
             }
-            
+
             saveDataToStorage(ANNUAL_KEY, annualData);
+
+            // Simpan ke Firestore
+            if (db) {
+                 const docRef = targetData.id.toString();
+                 try {
+                     await updateDoc(doc(db, COL_TAHUNAN, docRef), targetData);
+                 } catch (e) {
+                      // Jika dokumen belum ada (misal data dummy yang diubah), buat dokumen baru
+                     await setDoc(doc(db, COL_TAHUNAN, docRef), targetData);
+                 }
+            }
+
             alert('Data tahunan berhasil disimpan!');
             cancelAnnualEdit();
             filterData('tahunan');
         }
 
         // --- LOGIC LAPORAN TAHUNAN ---
-        
         function generateAnnualReportData(reportYear) {
             const reportYearNum = parseInt(reportYear);
             let runningBalance = 0;
             const dataToRender = [];
             let total = {
-                koin: 0, donatur: 0, 
-                pendidikan: { uang: 0, penerima: 0 }, 
-                sosial: { uang: 0, penerima: 0 }, 
-                kesehatan: { uang: 0, penerima: 0 }, 
-                ekonomi: { uang: 0, penerima: 0 }, 
-                banom: { uang: 0, keterangan: '' }, 
-                bencana: { uang: 0, penerima: 0 }, 
-                honor: { petugas: 0, mwc: 0, pc: 0 }, 
-                rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0,
-                totalPengeluaran: 0, saldoKasTahunBerjalan: 0
+                koin: 0,
+                donatur: 0,
+                pendidikan: { uang: 0, penerima: 0 },
+                sosial: { uang: 0, penerima: 0 },
+                kesehatan: { uang: 0, penerima: 0 },
+                ekonomi: { uang: 0, penerima: 0 },
+                banom: { uang: 0, keterangan: '' },
+                bencana: { uang: 0, penerima: 0 },
+                honor: { petugas: 0, mwc: 0, pc: 0 },
+                rapat: 0,
+                perwtn_mlu: 0,
+                biaya_rek_bank: 0,
+                lain_lain_peng: 0,
+                totalPengeluaran: 0,
+                saldoKasTahunBerjalan: 0
             };
 
             // 1. Ambil Saldo Awal Tahun dari annualData
             const saldoBank = annualData.find(d => d.id === `saldo_bank_${reportYear}`) || { nominal: 0 };
             const saldoKas = annualData.find(d => d.id === `saldo_kas_${reportYear}`) || { nominal: 0 };
             
-            const totalSaldoAwal = saldoBank.nominal + saldoKas.nominal;
-            runningBalance = totalSaldoAwal;
-
+            // Tambahkan baris Saldo Awal ke dataToRender (Baris 1 dan 2)
             dataToRender.push({ 
-                id: saldoBank.id, no: 1, label: 'SALDO KAS BANK', type: 'saldo_bank', 
-                koinNominal: saldoBank.nominal, 
-                totalPengeluaran: 0, saldoAkhirBulanIni: saldoBank.nominal, 
+                id: `saldo_bank_${reportYear}`, 
+                no: 1, 
+                label: 'SALDO KAS BANK', 
+                type: 'saldo_bank', 
+                koinNominal: saldoBank.nominal, // Kolom 3
+                totalPengeluaran: 0,
+                saldoAkhirBulanIni: 0,
                 saldoKasTahunBerjalan: saldoBank.nominal,
-                // Tambahkan placeholder agar tidak error saat rendering
-                donatur: 0, pendidikan: { uang: 0, penerima: 0 }, sosial: { uang: 0, penerima: 0 }, kesehatan: { uang: 0, penerima: 0 }, ekonomi: { uang: 0, penerima: 0 }, banom: { uang: 0, keterangan: '' }, bencana: { uang: 0, penerima: 0 }, honor: { petugas: 0, mwc: 0, pc: 0 }, rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0
+            });
+             dataToRender.push({ 
+                id: `saldo_kas_${reportYear}`, 
+                no: 2, 
+                label: 'SALDO KAS TUNAI', 
+                type: 'saldo_kas', 
+                koinNominal: saldoKas.nominal, // Kolom 3
+                totalPengeluaran: 0,
+                saldoAkhirBulanIni: 0,
+                saldoKasTahunBerjalan: saldoBank.nominal + saldoKas.nominal, // Total Kas Awal Tahun
             });
             
-            dataToRender.push({ 
-                id: saldoKas.id, no: 2, label: 'SALDO KAS TUNAI', type: 'saldo_kas', 
-                koinNominal: saldoKas.nominal, 
-                totalPengeluaran: 0, saldoAkhirBulanIni: saldoKas.nominal, 
-                saldoKasTahunBerjalan: totalSaldoAwal,
-                donatur: 0, pendidikan: { uang: 0, penerima: 0 }, sosial: { uang: 0, penerima: 0 }, kesehatan: { uang: 0, penerima: 0 }, ekonomi: { uang: 0, penerima: 0 }, banom: { uang: 0, keterangan: '' }, bencana: { uang: 0, penerima: 0 }, honor: { petugas: 0, mwc: 0, pc: 0 }, rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0
-            });
+            // Inisialisasi running balance dengan Total Saldo Kas Awal Tahun
+            runningBalance = saldoBank.nominal + saldoKas.nominal;
 
-            // 2. Loop per bulan (no urut 3-14)
+            // 2. Loop per bulan (Baris 3 s.d 14)
             for (let month = 1; month <= 12; month++) {
                 const monthName = namaBulan[month - 1];
-                // FIX: Gunakan perbandingan longgar (==) atau d.year == reportYearNum (untuk string/number)
+                
+                // Cari atau inisiasi data manual bulanan (Jumlah Donatur, Penerima, Keterangan)
                 let monthlyManual = annualData.find(d => d.type === 'monthly' && d.year == reportYearNum && d.month === month);
                 
-                // Pastikan data bulanan manual ada (jika tidak, inisiasi)
+                // Pastikan data bulanan manual ada (jika tidak, inisiasi dan simpan)
                 if (!monthlyManual) {
                     monthlyManual = { 
+                        id: `monthly_${reportYear}_${month}`,
                         type: 'monthly', 
                         year: reportYearNum, 
                         month: month, 
@@ -1467,7 +1602,7 @@ function formatRupiah(number) {
                         kesehatan: { penerima: 0 }, 
                         ekonomi: { penerima: 0 }, 
                         banom: { keterangan: '' }, 
-                        bencana: { penerima: 0 },
+                        bencana: { penerima: 0 }, 
                     };
                     annualData.push(monthlyManual);
                     saveDataToStorage(ANNUAL_KEY, annualData);
@@ -1475,45 +1610,31 @@ function formatRupiah(number) {
 
                 // 2a. HITUNG KOIN NU BULAN INI
                 const koinTotal = calculateKoinTotals(month.toString(), reportYear);
-                const totalCollectedKoin = koinTotal.totalNominal; // 100% dari KOIN
-                const koinRantingIncome = koinTotal.ranting; // 60% (BAGIAN YANG MASUK KAS)
-                const autoKoinExpense = koinTotal.petugas + koinTotal.mwc + koinTotal.pc; // 10% + 25% + 5%
-
-                // 2b. HITUNG DANA MASUK MANUAL JURNAL (Manual Masuk, selain Saldo Bulan Lalu)
+                const totalCollectedKoin = koinTotal.totalNominal; // Total Penerimaan Koin (Kolom 3)
+                const koinRantingIncome = koinTotal.ranting; // 60% yang masuk ke kas/jurnal
+                
+                // 2b. HITUNG TOTAL DANA MASUK KAS (Dana Ranting + Dana Masuk Manual Jurnal lainnya)
                 const totalDanaMasukJurnalManual = jurnalData.filter(d => {
                     const dataDate = new Date(d.tanggal + 'T00:00:00');
                     const dataMonth = (dataDate.getMonth() + 1);
                     const dataYear = dataDate.getFullYear();
-                    // FIX: Gunakan perbandingan longgar (==)
-                    return dataMonth === month && dataYear == reportYearNum && d.masuk > 0 && d.kategori !== categories.saldo_bln_lalu;
+                    // Dana masuk manual (selain Saldo Bulan Lalu/Koin NU/Ranting 60%)
+                    const isManualIncome = d.masuk > 0 && d.kategori !== categories.saldo_bln_lalu && d.kategori !== categories.ranting_60;
+                    return dataMonth === month && dataYear == reportYearNum && isManualIncome;
                 }).reduce((sum, d) => sum + d.masuk, 0);
 
-                // TOTAL DANA MASUK KAS (Untuk perhitungan saldo) = Manual Jurnal Masuk + KOIN Ranting (60%)
-                const totalDanaMasukKas = totalDanaMasukJurnalManual + koinRantingIncome;
+                // Total Kas Masuk Rill = (60% Ranting) + (Dana Masuk Manual Jurnal Lain)
+                const totalDanaMasukKas = koinRantingIncome + totalDanaMasukJurnalManual; 
                 
-                // 2c. HITUNG PENGELUARAN JURNAL (Manual + Auto)
-                // Filter manual entries, EXCLUDE KOIN Honors (karena dihitung dari autoKoinExpense)
-                const totalDanaKeluarJurnalManualNoKoinHonors = jurnalData.filter(d => {
-                    const dataDate = new Date(d.tanggal + 'T00:00:00');
-                    const dataMonth = (dataDate.getMonth() + 1);
-                    const dataYear = dataDate.getFullYear();
-                    const isKoinHonor = [categories.honor_petugas, categories.honor_mwc, categories.honor_pc].includes(d.kategori);
-                    // FIX: Gunakan perbandingan longgar (==)
-                    return dataMonth === month && dataYear == reportYearNum && d.keluar > 0 && !isKoinHonor;
-                }).reduce((sum, d) => sum + d.keluar, 0);
-
-                // Total Dana Keluar Final
-                const totalDanaKeluarJurnal = totalDanaKeluarJurnalManualNoKoinHonors + autoKoinExpense; // This is COL 7
-                
-                // 2d. HITUNG RINCIAN PENGELUARAN WAJIB
+                // 2c. HITUNG RINCIAN PENGELUARAN WAJIB (Uang diambil dari Jurnal Umum)
                 const expensePendidikan = calculateJurnalExpense(categories.pendidikan, month.toString(), reportYear);
+                const expenseSosial = calculateJurnalExpense(categories.sosial, month.toString(), reportYear);
                 const expenseKesehatan = calculateJurnalExpense(categories.kesehatan, month.toString(), reportYear);
                 const expenseEkonomi = calculateJurnalExpense(categories.ekonomi, month.toString(), reportYear);
-                const expenseSosial = calculateJurnalExpense(categories.sosial, month.toString(), reportYear);
                 const expenseBanom = calculateJurnalExpense(categories.banom, month.toString(), reportYear);
                 const expenseBencana = calculateJurnalExpense(categories.bencana, month.toString(), reportYear);
-
-                // 2e. HITUNG RINCIAN PENGELUARAN LAIN-LAIN (Manual + Auto Honor)
+                
+                // 2d. HITUNG RINCIAN PENGELUARAN LAIN-LAIN (Manual + Auto Honor)
                 const expenseRapat = calculateJurnalExpense(categories.rapat, month.toString(), reportYear);
                 const expensePerwtnMlu = calculateJurnalExpense(categories.perwtn_mlu, month.toString(), reportYear);
                 const expenseBiayaRek = calculateJurnalExpense(categories.biaya_rek, month.toString(), reportYear);
@@ -1523,12 +1644,15 @@ function formatRupiah(number) {
                 const honorPetugas = koinTotal.petugas;
                 const honorMwc = koinTotal.mwc;
                 const honorPc = koinTotal.pc;
-
-
-                // PERHITUNGAN SALDO: Total Dana Masuk Kas - Total Dana Keluar Jurnal
-                // Ini adalah NET CASH MOVEMENT (Penerimaan Rill - Pengeluaran Rill)
-                const saldoAkhirBulanIni = totalDanaMasukKas - totalDanaKeluarJurnal;
                 
+                // Total Pengeluaran Jurnal (termasuk Honor)
+                const totalDanaKeluarJurnal = expensePendidikan + expenseSosial + expenseKesehatan + expenseEkonomi + expenseBanom + expenseBencana + 
+                                            expenseRapat + expensePerwtnMlu + expenseBiayaRek + expenseLainLainPeng + 
+                                            honorPetugas + honorMwc + honorPc;
+                
+                // PERHITUNGAN SALDO: Saldo Akhir Bulan Ini = Total Dana Masuk Kas - Total Dana Keluar Jurnal
+                const saldoAkhirBulanIni = totalDanaMasukKas - totalDanaKeluarJurnal;
+
                 // Running balance (SALDO KAS TAHUN BERJALAN)
                 runningBalance += saldoAkhirBulanIni;
                 
@@ -1536,44 +1660,58 @@ function formatRupiah(number) {
 
                 const row = {
                     id: `monthly_${reportYear}_${month}`,
-                    no: month + 2,
+                    no: month + 2, // Baris 3 - 14
                     label: monthName,
                     type: 'monthly',
+                    
                     // Kolom 3 (Display 100% Koin)
                     koinNominal: totalCollectedKoin, 
+                    
                     // Kolom 4 (Manual)
                     donatur: monthlyManual.donatur, 
-                    // Pengeluaran Wajib (Uang dari Jurnal, Penerima dari Manual)
+                    
+                    // Pengeluaran Wajib (Uang dari Jurnal, Penerima/Ket dari Manual)
                     pendidikan: { uang: expensePendidikan, penerima: monthlyManual.pendidikan.penerima },
                     sosial: { uang: expenseSosial, penerima: monthlyManual.sosial.penerima },
                     kesehatan: { uang: expenseKesehatan, penerima: monthlyManual.kesehatan.penerima },
                     ekonomi: { uang: expenseEkonomi, penerima: monthlyManual.ekonomi.penerima },
                     banom: { uang: expenseBanom, keterangan: monthlyManual.banom.keterangan },
                     bencana: { uang: expenseBencana, penerima: monthlyManual.bencana.penerima },
+                    
                     // Pengeluaran Lain-lain (Manual + Auto Honor)
                     honor: { petugas: honorPetugas, mwc: honorMwc, pc: honorPc },
                     rapat: expenseRapat,
                     perwtn_mlu: expensePerwtnMlu,
                     biaya_rek_bank: expenseBiayaRek,
                     lain_lain_peng: expenseLainLainPeng,
+                    
                     // Kolom 7 (Total Pengeluaran)
-                    totalPengeluaran: totalMonthlyExpense,
-                    // Kolom 8 (Net Cash Movement)
-                    saldoAkhirBulanIni: saldoAkhirBulanIni,
-                    // Kolom 9 (Running Balance)
-                    saldoKasTahunBerjalan: runningBalance
+                    totalPengeluaran: totalMonthlyExpense, 
+                    
+                    // Kolom 8 (Saldo Akhir Bulan Ini)
+                    saldoAkhirBulanIni: saldoAkhirBulanIni, 
+                    
+                    // Kolom 9 (Saldo Kas Tahun Berjalan)
+                    saldoKasTahunBerjalan: runningBalance 
                 };
+                
                 dataToRender.push(row);
 
-                // Update Total Tahunan
+                // Akumulasi Total Tahunan (Footer)
                 total.koin += row.koinNominal;
                 total.donatur += row.donatur;
                 total.pendidikan.uang += row.pendidikan.uang;
+                total.pendidikan.penerima += row.pendidikan.penerima;
                 total.sosial.uang += row.sosial.uang;
+                total.sosial.penerima += row.sosial.penerima;
                 total.kesehatan.uang += row.kesehatan.uang;
+                total.kesehatan.penerima += row.kesehatan.penerima;
                 total.ekonomi.uang += row.ekonomi.uang;
+                total.ekonomi.penerima += row.ekonomi.penerima;
                 total.banom.uang += row.banom.uang;
+                // total.banom.keterangan tidak diakumulasi
                 total.bencana.uang += row.bencana.uang;
+                total.bencana.penerima += row.bencana.penerima;
                 total.honor.petugas += row.honor.petugas;
                 total.honor.mwc += row.honor.mwc;
                 total.honor.pc += row.honor.pc;
@@ -1581,38 +1719,46 @@ function formatRupiah(number) {
                 total.perwtn_mlu += row.perwtn_mlu;
                 total.biaya_rek_bank += row.biaya_rek_bank;
                 total.lain_lain_peng += row.lain_lain_peng;
-                total.totalPengeluaran += totalMonthlyExpense;
-                
-                // Saldo Kas Tahunan hanya menyimpan saldo terakhir di akhir loop
-                if (month === 12) {
-                    total.saldoKasTahunBerjalan = runningBalance;
-                }
+                total.totalPengeluaran += row.totalPengeluaran;
             }
 
-            return { data: dataToRender, total: total };
+            // Tambahkan Saldo Awal ke Total
+            total.totalPengeluaran += dataToRender[0].totalPengeluaran + dataToRender[1].totalPengeluaran;
+            
+            return {
+                data: dataToRender,
+                total: total,
+                saldoKasAkhir: runningBalance // Ini adalah Saldo Kas Tahun Berjalan di Desember
+            };
         }
 
-        function renderAnnualReportTable(reportData, reportYear) {
+
+        function renderAnnualReportTable(annualDataFinal, reportYear) {
             const tableBody = document.getElementById('annual-data-body');
             tableBody.innerHTML = '';
-            const { data: dataToRender, total } = reportData;
-            
-            // Helper function untuk menampilkan angka
-            const createExpCells = (uang) => {
-                const uangDisplay = formatRupiah(uang);
-                return `<td class="money-col" style="color: #cc0000;">${uangDisplay}</td>`;
-            };
+            const dataToRender = annualDataFinal.data;
+            const totals = annualDataFinal.total;
+            const saldoKasAkhir = annualDataFinal.saldoKasAkhir;
 
+            const createMoneyCell = (nominal, isEditable = false, type = null, key = null, id = null) => {
+                const nominalDisplay = formatRupiah(nominal);
+                if (isEditable) {
+                    return `<td class="money-col"><span class="editable-cell annual-manual-input" data-type="${type}" data-key="${key}" data-id="${id}" onclick="editAnnualData('${id}', '${key}', ${nominal})">${nominalDisplay}</span></td>`;
+                }
+                return `<td class="money-col">${nominalDisplay}</td>`;
+            };
+            
             // Helper function untuk cell input manual (angka)
             const createManualDonaturCell = (donatur, id) => {
                 const donaturDisplay = donatur || 0;
                 return `<td style="text-align: center;"><span class="editable-cell annual-manual-input" data-type="monthly" data-key="donatur" data-id="${id}" onclick="editAnnualData('${id}', 'donatur', ${donatur})">${donaturDisplay}</span></td>`;
             };
+
             const createManualPenerimaCell = (key, penerima, id) => {
                 const penerimaDisplay = penerima || 0;
                 return `<td><span class="editable-cell annual-manual-input" data-type="monthly" data-key="${key}.penerima" data-id="${id}" onclick="editAnnualData('${id}', '${key}.penerima', ${penerima})">${penerimaDisplay}</span></td>`;
             };
-            
+
             // Helper function untuk cell input manual (keterangan/teks)
             const createManualKeteranganCell = (key, keterangan, id) => {
                 const keteranganDisplay = keterangan || '-';
@@ -1622,111 +1768,104 @@ function formatRupiah(number) {
 
             dataToRender.forEach((data, index) => {
                 const row = tableBody.insertRow();
-                let nominalDisplay = formatRupiah(data.koinNominal); 
+                let nominalDisplay = formatRupiah(data.koinNominal);
 
                 // --- Saldo Awal Rows (1 & 2) ---
                 if(data.type === 'saldo_bank' || data.type === 'saldo_kas') {
                     row.classList.add('annual-saldo-row');
                     const isBank = data.type === 'saldo_bank';
                     const label = isBank ? 'SALDO KAS BANK (Awal Tahun)' : 'SALDO KAS TUNAI (Awal Tahun)';
+                    const nominalValue = data.koinNominal || 0;
+
+                    // Kolom 3: Bisa diedit
+                    const editableNominal = `<span class="editable-cell annual-manual-input" data-type="${data.type}" data-key="nominal" data-id="${data.id}" onclick="editAnnualData('${data.id}', 'nominal', ${nominalValue})">${nominalDisplay}</span>`;
                     
-                    const editableNominal = `<span class="editable-cell annual-manual-input" data-type="${data.type}" data-key="nominal" data-id="${data.id}" onclick="editAnnualData('${data.id}', 'nominal', ${data.koinNominal})">${nominalDisplay}</span>`;
-                    
-                    // Saldo Kas Tahun Berjalan hanya dihitung di baris Saldo Kas Tunai
-                    const saldoKasTahunBerjalan = isBank ? formatRupiah(data.koinNominal) : formatRupiah(dataToRender[0].koinNominal + data.koinNominal);
+                    // Kolom 9: Saldo Kas Tahun Berjalan (Total Saldo Awal)
+                    const saldoKasTahunBerjalan = formatRupiah(data.saldoKasTahunBerjalan);
 
                     row.innerHTML = `
-                        <td style="text-align: center;">${data.no}</td>
-                        <td style="font-weight: bold;">${label}</td>
-                        <td class="money-col">${editableNominal}</td>
-                        <td style="text-align: center;">-</td>
-                        <td colspan="19"></td>
-                        <td class="money-col">0</td>
-                        <td class="money-col annual-saldo-row">${editableNominal}</td>
-                        <td class="money-col annual-total-row">${saldoKasTahunBerjalan}</td>
-                    `;
+                        <td style="text-align: center;">${isBank ? 1 : 2}</td>
+                        <td class="annual-saldo-row">${label}</td>
+                        <td class="money-col">${editableNominal}</td> <td style="text-align: center;">-</td> <td colspan="15" style="text-align: center; font-style: italic;">SALDO AWAL TAHUN</td>
+                        <td class="money-col">0</td> <td class="money-col">0</td> <td class="money-col annual-total-row">${saldoKasTahunBerjalan}</td> `;
                     return; // Lanjut ke baris berikutnya
                 }
 
-                // --- Baris Bulanan (3 - 14) ---
-                row.classList.add('koin-fixed-entry');
-                
+                // --- Monthly Rows (3 s.d 14) ---
                 row.innerHTML = `
                     <td style="text-align: center;">${data.no}</td>
-                    <td style="font-weight: bold;">${data.label}</td>
-                    <td class="money-col">${nominalDisplay}</td>
+                    <td>${data.label}</td>
+                    
+                    ${createMoneyCell(data.koinNominal)} 
+                    
                     ${createManualDonaturCell(data.donatur, data.id)}
                     
-                    ${createExpCells(data.pendidikan.uang)}
+                    ${createMoneyCell(data.pendidikan.uang)}
                     ${createManualPenerimaCell('pendidikan', data.pendidikan.penerima, data.id)}
                     
-                    ${createExpCells(data.kesehatan.uang)}
+                    ${createMoneyCell(data.kesehatan.uang)}
                     ${createManualPenerimaCell('kesehatan', data.kesehatan.penerima, data.id)}
                     
-                    ${createExpCells(data.ekonomi.uang)}
+                    ${createMoneyCell(data.ekonomi.uang)}
                     ${createManualPenerimaCell('ekonomi', data.ekonomi.penerima, data.id)}
                     
-                    ${createExpCells(data.sosial.uang)}
+                    ${createMoneyCell(data.sosial.uang)}
                     ${createManualPenerimaCell('sosial', data.sosial.penerima, data.id)}
                     
-                    ${createExpCells(data.banom.uang)}
+                    ${createMoneyCell(data.banom.uang)}
                     ${createManualKeteranganCell('banom', data.banom.keterangan, data.id)}
-
-                    ${createExpCells(data.bencana.uang)}
-                    ${createManualPenerimaCell('bencana', data.bencana.penerima, data.id)}
-
-                    ${createExpCells(data.honor.petugas)}
-                    ${createExpCells(data.honor.mwc)}
-                    ${createExpCells(data.honor.pc)}
                     
-                    ${createExpCells(data.rapat)}
-                    ${createExpCells(data.perwtn_mlu)}
-                    ${createExpCells(data.biaya_rek_bank)}
-                    ${createExpCells(data.lain_lain_peng)}
-
-                    <td class="money-col annual-sub-header">${formatRupiah(data.totalPengeluaran)}</td>
-                    <td class="money-col annual-saldo-row">${formatRupiah(data.saldoAkhirBulanIni)}</td>
+                    ${createMoneyCell(data.bencana.uang)}
+                    ${createManualPenerimaCell('bencana', data.bencana.penerima, data.id)}
+                    
+                    ${createMoneyCell(data.honor.petugas)}
+                    ${createMoneyCell(data.honor.mwc)}
+                    ${createMoneyCell(data.honor.pc)}
+                    
+                    ${createMoneyCell(data.rapat)}
+                    ${createMoneyCell(data.perwtn_mlu)}
+                    ${createMoneyCell(data.biaya_rek_bank)}
+                    ${createMoneyCell(data.lain_lain_peng)}
+                    
+                    ${createMoneyCell(data.totalPengeluaran)}
+                    
+                    ${createMoneyCell(data.saldoAkhirBulanIni)}
+                    
                     <td class="money-col annual-total-row">${formatRupiah(data.saldoKasTahunBerjalan)}</td>
                 `;
             });
 
-            // --- Update Footer ---
-            const totalKoin = total.koin;
-            const totalPengeluaran = total.totalPengeluaran;
-            const saldoKasAkhir = total.saldoKasTahunBerjalan;
+            // Update Footer Total
+            document.getElementById('tahunan-total-koin').textContent = formatRupiah(totals.koin);
+            document.getElementById('tahunan-total-donatur').textContent = formatRupiah(totals.donatur);
 
-            document.getElementById('tahunan-total-koin').textContent = formatRupiah(totalKoin);
-            document.getElementById('tahunan-total-donatur').textContent = total.donatur;
+            document.getElementById('tahunan-total-pend-uang').textContent = formatRupiah(totals.pendidikan.uang);
+            document.getElementById('tahunan-total-pend-penerima').textContent = totals.pendidikan.penerima;
+            document.getElementById('tahunan-total-kes-uang').textContent = formatRupiah(totals.kesehatan.uang);
+            document.getElementById('tahunan-total-kes-penerima').textContent = totals.kesehatan.penerima;
+            document.getElementById('tahunan-total-eko-uang').textContent = formatRupiah(totals.ekonomi.uang);
+            document.getElementById('tahunan-total-eko-penerima').textContent = totals.ekonomi.penerima;
+            document.getElementById('tahunan-total-sosial-uang').textContent = formatRupiah(totals.sosial.uang);
+            document.getElementById('tahunan-total-sosial-penerima').textContent = totals.sosial.penerima;
+            document.getElementById('tahunan-total-banom-uang').textContent = formatRupiah(totals.banom.uang);
+            document.getElementById('tahunan-total-bencana-uang').textContent = formatRupiah(totals.bencana.uang);
+            document.getElementById('tahunan-total-bencana-penerima').textContent = totals.bencana.penerima;
+            document.getElementById('tahunan-total-honor-petugas').textContent = formatRupiah(totals.honor.petugas);
+            document.getElementById('tahunan-total-honor-mwc').textContent = formatRupiah(totals.honor.mwc);
+            document.getElementById('tahunan-total-honor-pc').textContent = formatRupiah(totals.honor.pc);
+            document.getElementById('tahunan-total-rapat').textContent = formatRupiah(totals.rapat);
+            document.getElementById('tahunan-total-perwtn-mlu').textContent = formatRupiah(totals.perwtn_mlu);
+            document.getElementById('tahunan-total-biaya-rek-bank').textContent = formatRupiah(totals.biaya_rek_bank);
+            document.getElementById('tahunan-total-lain-lain-peng').textContent = formatRupiah(totals.lain_lain_peng);
+            document.getElementById('tahunan-total-pengeluaran').textContent = formatRupiah(totals.totalPengeluaran);
             
-            document.getElementById('tahunan-total-pend-uang').textContent = formatRupiah(total.pendidikan.uang);
-            document.getElementById('tahunan-total-kes-uang').textContent = formatRupiah(total.kesehatan.uang);
-            document.getElementById('tahunan-total-eko-uang').textContent = formatRupiah(total.ekonomi.uang);
-            document.getElementById('tahunan-total-sosial-uang').textContent = formatRupiah(total.sosial.uang);
-            document.getElementById('tahunan-total-banom-uang').textContent = formatRupiah(total.banom.uang);
-            document.getElementById('tahunan-total-bencana-uang').textContent = formatRupiah(total.bencana.uang);
-            
-            document.getElementById('tahunan-total-honor-petugas').textContent = formatRupiah(total.honor.petugas);
-            document.getElementById('tahunan-total-honor-mwc').textContent = formatRupiah(total.honor.mwc);
-            document.getElementById('tahunan-total-honor-pc').textContent = formatRupiah(total.honor.pc);
-            document.getElementById('tahunan-total-rapat').textContent = formatRupiah(total.rapat);
-            document.getElementById('tahunan-total-perwtn-mlu').textContent = formatRupiah(total.perwtn_mlu);
-            document.getElementById('tahunan-total-biaya-rek-bank').textContent = formatRupiah(total.biaya_rek_bank);
-            document.getElementById('tahunan-total-lain-lain-peng').textContent = formatRupiah(total.lain_lain_peng);
-            
-            document.getElementById('tahunan-total-pengeluaran').textContent = formatRupiah(total.totalPengeluaran);
-            
-            // Saldo Akhir Bulan ini (total Dana Masuk Kas - total Pengeluaran)
-            // Karena di sini Kolom 3 bukan lagi Dana Masuk Kas, maka Total Saldo Akhir Tahunan harus dihitung ulang.
-            // Total Pemasukan Kas Tahunan = Saldo Awal + (Total Masuk Jurnal Manual + Total Ranting 60%) - Total Pengeluaran Jurnal (termasuk Honor)
-            // Untuk footer, kita hanya bisa menghitung saldo akhir tahun berdasarkan running balance (saldoKasAkhir)
-            const totalPenerimaanCash = totalKoin - total.honor.petugas - total.honor.mwc - total.honor.pc; // Total Koin 100% - 40% (honor keluar)
-            const saldoAkhirTahun = totalPenerimaanCash - totalPengeluaran; // Ini tidak benar jika ada pemasukan manual lain
-            
-            // Saldo Kas Akhir tahun yang benar adalah nilai dari runningBalance terakhir di loop
-            document.getElementById('tahunan-total-saldo-akhir').textContent = formatRupiah(saldoKasAkhir - (dataToRender[0].koinNominal + dataToRender[1].koinNominal));
+            // Saldo Akhir Tahun
+            const totalSaldoAwal = dataToRender[1].saldoKasTahunBerjalan;
+            const totalSaldoAkhirBulanIni = saldoKasAkhir - totalSaldoAwal;
+            document.getElementById('tahunan-total-saldo-akhir').textContent = formatRupiah(totalSaldoAkhirBulanIni);
             document.getElementById('tahunan-total-saldo-kas').textContent = formatRupiah(saldoKasAkhir);
         }
-        
+
         // --- JURNAL INPUT UTILITY ---
         function updateMasukKeluarFields() {
             const kategori = document.getElementById('jurnal-input-kategori').value;
@@ -1739,466 +1878,191 @@ function formatRupiah(number) {
 
             // Logika untuk kategori yang dihitung otomatis dari KOIN NU
             if (['Ranting (60%)', 'Petugas (10%)', 'MWC (25%)', 'PC (5%)'].includes(kategori)) {
-                 // Hanya tampilkan dan disable input, tapi biarkan input diisi secara manual jika admin mau
-            }
-
-            if (isDanaMasuk) {
-                masukField.disabled = false;
-                keluarField.disabled = true;
-                keluarField.value = 0; // Set Keluar ke 0
-            } else if (isDanaKeluar) {
-                masukField.disabled = true;
-                masukField.value = 0; // Set Masuk ke 0
-                keluarField.disabled = false;
+                // Kategori KOIN NU tidak boleh diinput manual, hanya boleh dilihat (jika kategori sudah ada isinya)
+                masukField.setAttribute('readonly', 'readonly');
+                keluarField.setAttribute('readonly', 'readonly');
+                masukField.value = 0;
+                keluarField.value = 0;
             } else {
-                masukField.disabled = false;
-                keluarField.disabled = false;
-            }
-        }
+                masukField.removeAttribute('readonly');
+                keluarField.removeAttribute('readonly');
 
-
-        // --- PDF EXPORT (tetap sama) ---
-
-        // GANTI SELURUH FUNGSI downloadPDF(module) DENGAN KODE INI
-
-function downloadPDF(module) {
-    // 1. Dapatkan elemen konten
-    const contentId = `${module}-pdf-content`;
-    const content = document.getElementById(contentId);
-    if (!content) return;
-
-    // Persiapan elemen yang disembunyikan/diubah untuk PDF
-    const actionHeader = document.getElementById(`${module}-aksi-header`);
-    const actionCells = content.querySelectorAll('.action-btns');
-    const ttdArea = document.getElementById(`${module}-ttd-area`);
-    const ttdDate = document.getElementById(`${module}-ttd-date`);
-    
-    // Sembunyikan kolom aksi (jika ada) dan tampilkan TTD
-    const originalDisplay = actionHeader ? actionHeader.style.display : 'none';
-    if (actionHeader) actionHeader.style.display = 'none';
-    actionCells.forEach(cell => cell.style.display = 'none');
-    if (ttdArea) ttdArea.style.display = 'flex';
-    if (ttdDate) ttdDate.style.display = 'block';
-    if (ttdDate) document.getElementById(`${module}-ttd-tanggal-output`).textContent = formatTanggalTTD();
-
-    // >>> HILANGKAN LOGIKA PENYEMBUNYIAN KOIN NU <<<
-    // Tidak ada kode khusus untuk KOIN NU di sini lagi.
-    
-    // ===============================================
-    // FIX LAPORAN TAHUNAN: Menangani tabel lebar (Pertahankan ini)
-    // ===============================================
-    let originalFontSize = content.style.fontSize;
-    let originalTableFontSize = null;
-    let originalTablePadding = null; // Tambahkan ini untuk menyimpan padding asli
-
-    if (module === 'tahunan') {
-        const tableWrapper = content.querySelector('div[style*="overflow-x: auto"]');
-        if (tableWrapper) {
-            // FIX 1: Hapus overflow-x
-            tableWrapper.style.overflowX = 'visible';
-        }
-        
-        // FIX 2: Reduksi ukuran font dan padding SECARA AGRESIF
-        content.style.fontSize = '5px'; 
-        const annualTable = content.querySelector('#annual-data-table');
-        if (annualTable) {
-             originalTableFontSize = annualTable.style.fontSize;
-             annualTable.style.fontSize = '5px'; 
-             
-             // Ambil nilai padding cell pertama sebagai referensi untuk dikembalikan
-             const firstCell = annualTable.querySelector('th, td');
-             if(firstCell) {
-                 originalTablePadding = firstCell.style.padding;
-             }
-
-             // Kurangi padding kolom header & cell ke 1px (Sangat Rapat)
-             annualTable.querySelectorAll('th, td').forEach(el => {
-                 el.style.padding = '1px';
-             });
-        }
-    }
-    // ===============================================
-
-    html2canvas(content, {
-        scale: 3, 
-        // Pastikan html2canvas menangkap seluruh lebar konten yang di-scroll
-        width: content.scrollWidth, 
-        windowWidth: content.scrollWidth,
-    }).then(function(canvas) {
-        const { jsPDF } = window.jspdf;
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-        
-        // Pilihan kertas Landscape A4 (Lebih lebar)
-        const pdf = new jsPDF('l', 'mm', 'a4'); 
-        const pdfWidth = pdf.internal.pageSize.getWidth(); 
-
-        const margin = 10;
-        const targetPdfWidth = pdfWidth - (2 * margin); 
-        
-        // Hitung tinggi gambar berdasarkan rasio aspek dan lebar target (Ini yang memaksa muat)
-        const imgHeight = canvas.height * targetPdfWidth / canvas.width; 
-
-        let heightLeft = imgHeight;
-        let position = margin;
-        
-        // Tambahkan gambar ke PDF (logika multi-halaman)
-        pdf.addImage(imgData, 'JPEG', margin, position, targetPdfWidth, imgHeight);
-        heightLeft -= pdf.internal.pageSize.getHeight();
-        
-        while (heightLeft >= 0) {
-            position = heightLeft - imgHeight + margin; 
-            pdf.addPage();
-            pdf.addImage(imgData, 'JPEG', margin, position, targetPdfWidth, imgHeight);
-            heightLeft -= pdf.internal.pageSize.getHeight();
-        }
-        
-        pdf.save(`Laporan_${module}_${new Date().toISOString().split('T')[0]}.pdf`);
-
-        // ===============================================
-        // KEMBALIKAN PERUBAHAN SEMENTARA SETELAH SELESAI
-        // ===============================================
-        if (module === 'tahunan') {
-            // Kembalikan overflow-x
-            const currentWrapper = content.querySelector('div[style*="overflow-x: visible"]');
-            if (currentWrapper) {
-                currentWrapper.style.overflowX = 'auto'; 
-            }
-            // Kembalikan ukuran font dan padding
-            content.style.fontSize = originalFontSize; 
-            const annualTable = content.querySelector('#annual-data-table');
-            if (annualTable) {
-                 annualTable.style.fontSize = originalTableFontSize;
-                 annualTable.querySelectorAll('th, td').forEach(el => {
-                     el.style.padding = originalTablePadding || ''; // Gunakan nilai asli atau kosong
-                 });
-            }
-        }
-        // ===============================================
-        
-        // Kembalikan tampilan setelah selesai
-        if (actionHeader) actionHeader.style.display = originalDisplay;
-        actionCells.forEach(cell => cell.style.display = isLoggedIn ? 'table-cell' : 'none');
-        if (ttdArea) ttdArea.style.display = 'none';
-        if (ttdDate) ttdDate.style.display = 'none';
-
-        // >>> HILANGKAN LOGIKA PENGEMBALIAN KOIN NU <<<
-        // Tidak ada kode khusus untuk KOIN NU di sini lagi.
-    });
-}
-        
-        // --- INISIALISASI ---
-        function init() {
-            // 1. Load data dari Local Storage
-            koinData = loadDataFromStorage(KOIN_KEY, koinData);
-            jurnalData = loadDataFromStorage(JURNAL_KEY, jurnalData);
-            annualData = loadDataFromStorage(ANNUAL_KEY, annualData);
-            
-            // 2. Isi Opsi Filter
-            populateFilterOptions();
-            
-            // 3. Tampilkan modul default ('koin')
-            showModule(currentModule);
-        }
-
-        window.onload = init;
-    </script>
-
-<!-- ================= FULL FIRESTORE INTEGRATION (OVERRIDE LOCAL STORAGE) ================= -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-  getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy, where
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-// =========== CONFIG - GANTI DENGAN MILIK KAKAK ===========
-const firebaseConfig = {
-    apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
-    authDomain: "upzis-ngablak.firebaseapp.com",
-    projectId: "upzis-ngablak",
-    storageBucket: "upzis-ngablak.firebasestorage.app",
-    messagingSenderId: "869549648344",
-    appId: "1:869549648344:web:a531a37cce3a87bb672aad"
-};
-// =========================================================
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// Collection names (Opsi 1)
-const COL_KOIN = 'laporan_koin_nu';
-const COL_JURNAL = 'jurnal_umum';
-const COL_TAHUNAN = 'laporan_tahunan';
-
-// Override global arrays (will be filled from Firestore)
-koinData = [];
-jurnalData = [];
-annualData = [];
-isLoggedIn = false;
-
-// --- AUTH HANDLING ---
-window.attemptLogin = function(){
-    const emailFixed = "darwono78@gmail.com";
-    const password = document.getElementById("password").value;
-    // try sign in
-    signInWithEmailAndPassword(auth, emailFixed, password)
-    .then(() => {
-        isLoggedIn = true;
-        document.getElementById("login-area").style.display = "none";
-        // show admin controls for each module
-        document.getElementById("koin-admin-controls").style.display = "flex";
-        document.getElementById("koin-input-area").style.display = "block";
-        document.getElementById("jurnal-admin-controls").style.display = "flex";
-        document.getElementById("jurnal-input-area").style.display = "block";
-        document.getElementById("tahunan-admin-controls").style.display = "flex";
-        document.getElementById("tahunan-edit-input-area").style.display = "block";
-        loadAllCollections().then(() => filterData(currentModule));
-    })
-    .catch(err => alert('Login gagal: ' + err.message));
-};
-
-window.logout = function(){
-    signOut(auth).then(() => {
-        isLoggedIn = false;
-        location.reload();
-    });
-};
-
-// Listen auth state to set UI correctly
-onAuthStateChanged(auth, user => {
-    if (user && user.email === 'darwono78@gmail.com') {
-        isLoggedIn = true;
-        document.getElementById("login-area").style.display = "none";
-        document.getElementById("koin-admin-controls").style.display = "flex";
-        document.getElementById("koin-input-area").style.display = "block";
-        document.getElementById("jurnal-admin-controls").style.display = "flex";
-        document.getElementById("jurnal-input-area").style.display = "block";
-        document.getElementById("tahunan-admin-controls").style.display = "flex";
-        document.getElementById("tahunan-edit-input-area").style.display = "block";
-    } else {
-        // keep logged out
-    }
-});
-
-// ========== FIRESTORE CRUD ==========
-
-async function loadAllCollections(){
-    // load koin
-    try {
-        const qk = query(collection(db, COL_KOIN), orderBy('tanggal', 'asc'));
-        const snapK = await getDocs(qk);
-        koinData = [];
-        snapK.forEach(d => koinData.push({ id: d.id, ...d.data() }));
-    } catch(e){
-        console.error('load koin error', e);
-    }
-
-    // load jurnal
-    try {
-        const qj = query(collection(db, COL_JURNAL), orderBy('tanggal', 'asc'));
-        const snapJ = await getDocs(qj);
-        jurnalData = [];
-        snapJ.forEach(d => jurnalData.push({ id: d.id, ...d.data() }));
-    } catch(e){
-        console.error('load jurnal error', e);
-    }
-
-    // load tahunan
-    try {
-        const qt = query(collection(db, COL_TAHUNAN), orderBy('year', 'asc'));
-        const snapT = await getDocs(qt);
-        annualData = [];
-        snapT.forEach(d => annualData.push({ id: d.id, ...d.data() }));
-    } catch(e){
-        console.error('load tahunan error', e);
-    }
-}
-
-// Save data: will add or update depending on editing flags set in original script
-window.saveData = async function(module){
-    if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
-
-    if (module === 'koin') {
-        // gather fields
-        const tanggal = document.getElementById('koin-input-tanggal').value;
-        const petugas = document.getElementById('koin-input-petugas').value;
-        const hp = document.getElementById('koin-input-hp').value;
-        const donatur = document.getElementById('koin-input-donatur').value;
-        const alamat = document.getElementById('koin-input-alamat').value;
-        const nominal = parseInt(document.getElementById('koin-input-nominal').value) || 0;
-
-        if (!tanggal || !petugas || !donatur || nominal <= 0) {
-            return alert('Mohon lengkapi semua data Koin NU yang diperlukan.');
-        }
-
-        if (koinEditId !== null) {
-            // update existing doc
-            try {
-                const docRef = doc(db, COL_KOIN, String(koinEditId));
-                await updateDoc(docRef, { tanggal, petugas, hp, donatur, alamat, nominal });
-                alert('Data Koin diperbarui di Firestore.');
-            } catch(e){ console.error(e); alert('Gagal update: '+e.message); }
-        } else {
-            try {
-                await addDoc(collection(db, COL_KOIN), { tanggal, petugas, hp, donatur, alamat, nominal, type: 'manual', createdAt: Date.now() });
-                alert('Data Koin tersimpan di Firestore.');
-            } catch(e){ console.error(e); alert('Gagal simpan: '+e.message); }
-        }
-        // reload and refresh view
-        await loadAllCollections();
-        resetForm('koin');
-        filterData('koin');
-        koinEditId = null;
-    } else if (module === 'jurnal') {
-        const tanggal = document.getElementById('jurnal-input-tanggal').value;
-        const keterangan = document.getElementById('jurnal-input-keterangan').value;
-        const kategori = document.getElementById('jurnal-input-kategori').value;
-        const masuk = parseInt(document.getElementById('jurnal-input-masuk').value) || 0;
-        const keluar = parseInt(document.getElementById('jurnal-input-keluar').value) || 0;
-
-        if (!tanggal || !keterangan || !kategori || (masuk <= 0 && keluar <= 0)) {
-            return alert('Mohon lengkapi Tanggal, Keterangan, Kategori, dan setidaknya salah satu Nominal Masuk/Keluar.');
-        }
-        if (masuk > 0 && keluar > 0) {
-            return alert('Input tidak boleh memiliki Dana Masuk dan Dana Keluar secara bersamaan.');
-        }
-
-        if (jurnalEditId !== null) {
-            try {
-                const docRef = doc(db, COL_JURNAL, String(jurnalEditId));
-                await updateDoc(docRef, { tanggal, keterangan, kategori, masuk, keluar });
-                alert('Data Jurnal diperbarui di Firestore.');
-            } catch(e){ console.error(e); alert('Gagal update: '+e.message); }
-        } else {
-            try {
-                await addDoc(collection(db, COL_JURNAL), { tanggal, keterangan, kategori, masuk, keluar, type: 'manual', createdAt: Date.now() });
-                alert('Data Jurnal tersimpan di Firestore.');
-            } catch(e){ console.error(e); alert('Gagal simpan: '+e.message); }
-        }
-
-        await loadAllCollections();
-        resetForm('jurnal');
-        filterData('jurnal');
-        jurnalEditId = null;
-    }
-};
-
-// Edit data: fill form with firestore doc values
-window.editData = async function(module, id, month = null, year = null, currentValue = null){
-    if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
-
-    // handle saldo-bulan-lalu-edit special case (keep existing behavior but store in laporan_tahunan)
-    if (module === 'jurnal' && id === 'saldo-bulan-lalu-edit') {
-        if (!month || !year) return alert('Data bulan/tahun tidak ditemukan.');
-        const newSaldo = prompt(`Edit Saldo Bulan Lalu untuk ${month}/${year}:`, currentValue);
-        if (newSaldo !== null && !isNaN(newSaldo) && newSaldo.trim() !== '') {
-            const newSaldoNum = parseInt(newSaldo);
-            // find if exists in annualData with type 'saldo_bulan_lalu_manual'
-            let target = annualData.find(d => d.type === 'saldo_bulan_lalu_manual' && d.year === parseInt(year) && d.month === parseInt(month));
-            try {
-                if (target && target.id) {
-                    // update doc
-                    await updateDoc(doc(db, COL_TAHUNAN, target.id), { nominal: newSaldoNum });
+                // Atur status disabled/required
+                if (isDanaMasuk) {
+                    masukField.removeAttribute('disabled');
+                    keluarField.setAttribute('disabled', 'disabled');
+                    keluarField.value = 0;
+                    masukField.setAttribute('required', 'required');
+                    keluarField.removeAttribute('required');
+                } else if (isDanaKeluar) {
+                    masukField.setAttribute('disabled', 'disabled');
+                    keluarField.removeAttribute('disabled');
+                    masukField.value = 0;
+                    keluarField.setAttribute('required', 'required');
+                    masukField.removeAttribute('required');
                 } else {
-                    // add new
-                    await addDoc(collection(db, COL_TAHUNAN), { type: 'saldo_bulan_lalu_manual', year: parseInt(year), month: parseInt(month), nominal: newSaldoNum });
+                    masukField.removeAttribute('disabled');
+                    keluarField.removeAttribute('disabled');
                 }
-                alert('Saldo Bulan Lalu berhasil diperbarui di Firestore.');
-                await loadAllCollections();
-                filterData('jurnal');
-            } catch(e){ console.error(e); alert('Gagal menyimpan: '+e.message); }
+            }
         }
-        return;
-    }
 
-    if (module === 'koin') {
-        // find doc by id and populate form
-        const target = koinData.find(d => d.id === id || d.id === String(id));
-        if (!target) return alert('Data tidak ditemukan.');
-        document.getElementById('koin-input-tanggal').value = target.tanggal;
-        document.getElementById('koin-input-petugas').value = target.petugas;
-        document.getElementById('koin-input-hp').value = target.hp || '';
-        document.getElementById('koin-input-donatur').value = target.donatur;
-        document.getElementById('koin-input-alamat').value = target.alamat || '';
-        document.getElementById('koin-input-nominal').value = target.nominal || 0;
-        koinEditId = target.id;
-        const inputArea = document.getElementById('koin-input-area');
-        if (inputArea) inputArea.scrollIntoView({ behavior: 'smooth' });
-    } else if (module === 'jurnal') {
-        const target = jurnalData.find(d => d.id == id && d.type === 'manual');
-        if (!target) return alert('Data tidak ditemukan atau bukan entri manual yang bisa diedit.');
-        document.getElementById('jurnal-input-tanggal').value = target.tanggal;
-        document.getElementById('jurnal-input-keterangan').value = target.keterangan;
-        document.getElementById('jurnal-input-kategori').value = target.kategori;
-        document.getElementById('jurnal-input-masuk').value = target.masuk || '';
-        document.getElementById('jurnal-input-keluar').value = target.keluar || '';
-        jurnalEditId = target.id;
-        updateMasukKeluarFields && updateMasukKeluarFields();
-        const inputArea = document.getElementById('jurnal-input-area');
-        if (inputArea) inputArea.scrollIntoView({ behavior: 'smooth' });
-    }
-};
+        // --- PDF GENERATION ---
+        function downloadPDF(module) {
+            const contentId = `${module}-pdf-content`;
+            const ttdAreaId = `${module}-ttd-area`;
+            const ttdDateId = `${module}-ttd-date`;
+            const downloadBtnId = `${module}-download-btn-header`;
+            const adminControlsId = `${module}-admin-controls`;
+            let tableToHideColumns = null;
 
-// Delete data
-window.deleteData = async function(module, id){
-    if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
-    if (!confirm('Yakin ingin menghapus data ini?')) return;
+            if (module === 'koin') {
+                tableToHideColumns = document.getElementById('koin-data-table');
+                // Sembunyikan kolom Aksi, No HP, dan Alamat di PDF Koin NU
+                document.getElementById('koin-aksi-header').style.display = 'none';
+                document.getElementById('koin-total-aksi').style.display = 'none';
+                document.getElementById('koin-hp-header').style.display = 'none';
+                document.getElementById('koin-alamat-header').style.display = 'none';
+                // Sembunyikan kolom Pembagian Dana (kecuali untuk admin)
+                tableToHideColumns.querySelectorAll('.koin-pembagian-header').forEach(el => el.style.display = 'none');
+                tableToHideColumns.querySelectorAll('.koin-pembagian-col').forEach(el => el.style.display = 'none');
 
-    try {
-        if (module === 'koin') {
-            await deleteDoc(doc(db, COL_KOIN, String(id)));
-        } else if (module === 'jurnal') {
-            await deleteDoc(doc(db, COL_JURNAL, String(id)));
-        } else if (module === 'tahunan') {
-            await deleteDoc(doc(db, COL_TAHUNAN, String(id)));
+                // Sesuaikan colspan di footer
+                document.getElementById('koin-total-label').setAttribute('colspan', 4);
+                
+            } else if (module === 'jurnal') {
+                 // Sembunyikan kolom Aksi di PDF Jurnal
+                document.getElementById('jurnal-aksi-header').style.display = 'none';
+                document.getElementById('jurnal-total-aksi').style.display = 'none';
+                document.getElementById('jurnal-total-label').setAttribute('colspan', 4);
+            }
+
+            // Sembunyikan tombol unduh dan kontrol admin sebelum generate
+            document.getElementById(downloadBtnId).style.display = 'none';
+            if(document.getElementById(adminControlsId)) document.getElementById(adminControlsId).style.display = 'none';
+            document.getElementById(ttdAreaId).style.display = 'flex';
+            document.getElementById(ttdDateId).style.display = 'block';
+
+            const content = document.getElementById(contentId);
+            const { jsPDF } = window.jspdf;
+
+            // FIX LAPORAN TAHUNAN: Menangani tabel lebar (Pertahankan ini)
+            let originalFontSize = content.style.fontSize;
+            let originalTableFontSize = null;
+            let originalTablePadding = null; // Tambahkan ini untuk menyimpan padding asli
+
+            if (module === 'tahunan') {
+                const tableWrapper = content.querySelector('div[style*="overflow-x: auto"]');
+                if (tableWrapper) {
+                    // FIX 1: Hapus overflow-x
+                    tableWrapper.style.overflowX = 'visible';
+                }
+                // FIX 2: Reduksi ukuran font dan padding SECARA AGRESIF
+                content.style.fontSize = '5px';
+                const annualTable = content.querySelector('#annual-data-table');
+                if (annualTable) {
+                    originalTableFontSize = annualTable.style.fontSize;
+                    annualTable.style.fontSize = '5px';
+                    // Ambil nilai padding cell pertama sebagai referensi untuk dikembalikan
+                    const firstCell = annualTable.querySelector('th, td');
+                    if(firstCell) {
+                        originalTablePadding = firstCell.style.padding;
+                    }
+                    // Kurangi padding kolom
+                    annualTable.querySelectorAll('th, td').forEach(cell => cell.style.padding = '1px');
+                }
+                // Sembunyikan form edit tahunan jika sedang terbuka
+                document.getElementById('tahunan-edit-input-area').style.display = 'none';
+            }
+            
+            html2canvas(content, { 
+                scale: 2, 
+                useCORS: true, 
+                scrollY: -window.scrollY, 
+                windowHeight: window.innerHeight 
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 297; // A4 landscape width in mm
+                const pageHeight = 210; // A4 landscape height in mm
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                let heightLeft = imgHeight;
+
+                const pdf = new jsPDF('l', 'mm', 'a4'); // 'l' for landscape
+                let position = 0;
+
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                pdf.save(`${module}-report-${document.getElementById(`${module}-pdf-periode-display`).textContent}.pdf`);
+
+                // Kembalikan ke kondisi semula
+                document.getElementById(downloadBtnId).style.display = 'block';
+                if(isLoggedIn && document.getElementById(adminControlsId)) document.getElementById(adminControlsId).style.display = 'flex';
+                document.getElementById(ttdAreaId).style.display = 'none';
+                document.getElementById(ttdDateId).style.display = 'none';
+                
+                if (module === 'koin') {
+                    // Tampilkan kembali kolom-kolom yang disembunyikan
+                    document.getElementById('koin-aksi-header').style.display = isLoggedIn ? 'table-cell' : 'none';
+                    document.getElementById('koin-total-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
+                    document.getElementById('koin-hp-header').style.display = 'table-cell';
+                    document.getElementById('koin-alamat-header').style.display = 'table-cell';
+                    tableToHideColumns.querySelectorAll('.koin-pembagian-header').forEach(el => el.style.display = 'table-cell');
+                    tableToHideColumns.querySelectorAll('.koin-pembagian-col').forEach(el => el.style.display = 'table-cell');
+                    document.getElementById('koin-total-label').setAttribute('colspan', 6);
+                } else if (module === 'jurnal') {
+                    document.getElementById('jurnal-aksi-header').style.display = isLoggedIn ? 'table-cell' : 'none';
+                    document.getElementById('jurnal-total-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
+                    document.getElementById('jurnal-total-label').setAttribute('colspan', 4);
+                } else if (module === 'tahunan') {
+                    // Kembalikan gaya Laporan Tahunan
+                    const tableWrapper = content.querySelector('div[style*="overflow-x: visible"]');
+                    if (tableWrapper) {
+                         tableWrapper.style.overflowX = 'auto';
+                    }
+                    content.style.fontSize = originalFontSize;
+                    const annualTable = content.querySelector('#annual-data-table');
+                    if (annualTable) {
+                        annualTable.style.fontSize = originalTableFontSize;
+                        annualTable.querySelectorAll('th, td').forEach(cell => cell.style.padding = originalTablePadding);
+                    }
+                }
+            });
         }
-        alert('Data berhasil dihapus dari Firestore.');
-    } catch(e){ console.error(e); alert('Gagal menghapus: '+e.message); }
 
-    await loadAllCollections();
-    filterData(module === 'koin' ? 'koin' : (module === 'jurnal' ? 'jurnal' : 'tahunan'));
-};
+        // Load initial data on page ready
+        window.addEventListener('DOMContentLoaded', async () => {
+            if (typeof firebase !== 'undefined') {
+                 // Karena user sudah memberikan config firebase, kita asumsikan environment sudah support
+                 await loadAllCollections();
+            } else {
+                 // Jika tidak ada firebase, pakai local storage (jika ada)
+                koinData = loadDataFromStorage(KOIN_KEY, koinData);
+                jurnalData = loadDataFromStorage(JURNAL_KEY, jurnalData);
+                annualData = loadDataFromStorage(ANNUAL_KEY, annualData);
+            }
 
-// Delete all data in a collection (dangerous)
-window.deleteAllDataGlobal = async function(module){
-    if (!isLoggedIn) return alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
-    if (!confirm('Yakin ingin menghapus SEMUA DATA pada modul ini? Tindakan ini tidak bisa dibatalkan.')) return;
+            populateFilterOptions && populateFilterOptions();
+            filterData && filterData('koin');
+        });
 
-    try {
-        if (module === 'koin') {
-            // fetch all docs in koin and delete
-            const snap = await getDocs(collection(db, COL_KOIN));
-            const promises = [];
-            snap.forEach(d => promises.push(deleteDoc(doc(db, COL_KOIN, d.id))));
-            await Promise.all(promises);
-        } else if (module === 'jurnal') {
-            const snap = await getDocs(collection(db, COL_JURNAL));
-            const promises = [];
-            snap.forEach(d => promises.push(deleteDoc(doc(db, COL_JURNAL, d.id))));
-            await Promise.all(promises);
-        }
-        alert('Semua data dihapus.');
-        await loadAllCollections();
-        filterData(module);
-    } catch(e){ console.error(e); alert('Gagal menghapus semua data: '+e.message); }
-};
-
-// Load initial data on page ready
-window.addEventListener('DOMContentLoaded', async () => {
-    await loadAllCollections();
-    populateFilterOptions && populateFilterOptions();
-    filterData && filterData('koin');
-});
-
-// Override any remaining save-to-local-storage calls by saving when window unload (keep but not needed)
-window.addEventListener('beforeunload', async () => {
-    // no-op, Firestore is source of truth
-});
-</script>
-<!-- ================= END FIRESTORE INTEGRATION ================= -->
-
+        // Override any remaining save-to-local-storage calls by saving when window unload (keep but not needed)
+        window.addEventListener('beforeunload', async () => {
+             saveDataToStorage(KOIN_KEY, koinData);
+             saveDataToStorage(JURNAL_KEY, jurnalData);
+             saveDataToStorage(ANNUAL_KEY, annualData);
+        });
+        
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 </body>
 </html>
