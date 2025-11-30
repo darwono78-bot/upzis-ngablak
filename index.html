@@ -41,14 +41,14 @@
         
         /* Form Input dan Kontrol */
         .input-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
-        .input-form .form-group-full { grid-column: 1 / -1; } /* Untuk tombol atau elemen penuh */
+        .input-form .form-group-full { grid-column: 1 / -1; } 
         .input-form input, .input-form select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
         .input-form label { display: block; font-weight: 500; }
         .input-form button { background-color: var(--color-primary); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
         .input-form button:hover { background-color: #004d00; }
         .input-form .btn-secondary { background-color: #6c757d; margin-left: 10px; }
         
-        /* Tabel Data (Report Style) */
+        /* Tabel Data */
         .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .data-table th, .data-table td { border: 1px solid var(--color-border); padding: 12px; text-align: left; }
         .data-table th { background-color: var(--color-light); color: var(--color-primary); font-weight: 600; }
@@ -57,47 +57,22 @@
         .data-table .actions button { margin-right: 5px; padding: 6px 10px; cursor: pointer; border: none; border-radius: 3px; font-size: 0.85rem; }
         .data-table tfoot td { font-weight: bold; background-color: #ccff90; }
 
-        /* Khusus Laporan Tahunan */
-        .annual-table input { border: 1px solid #ccc; padding: 5px; width: 90%; }
-        .annual-table td:nth-child(2), .annual-table td:nth-child(3) { text-align: right; }
-        #tahunan-saldo-akhir { background-color: #c8e6c9 !important; }
+        /* Khusus Kolom Aksi (Disembunyikan saat LOGOUT) */
+        .col-aksi { display: none; } 
+        .col-aksi.visible { display: table-cell !important; }
 
-        /* Kontrol Global */
-        .control-buttons { margin-top: 20px; }
-        .control-buttons button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; transition: opacity 0.3s; }
-        .control-buttons .btn-export { background-color: #00bcd4; color: white; }
-        .control-buttons .btn-delete-all { background-color: #dc3545; color: white; }
-
-        /* Login Screen (Sama seperti sebelumnya) */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--color-light); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
-        #login-screen .login-box { background-color: var(--color-card-bg); padding: 40px; border-radius: 10px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); width: 350px; }
-        #login-screen h2 { color: var(--color-primary); margin-bottom: 20px; text-align: center; }
-        #login-screen input { margin-bottom: 20px; width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
-        #login-screen button { width: 100%; background-color: var(--color-primary); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+        /* Login Card */
+        #auth-controls-card input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 10px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
+        #auth-controls-card label { display: block; font-weight: 500; }
     </style>
 </head>
 <body>
 
-    <div id="login-screen">
-        <div class="login-box">
-            <h2>Login Dashboard UPZIS</h2>
-            <div>
-                <label for="username">Email:</label>
-                <input type="email" id="username" placeholder="Email terdaftar di Firebase">
-            </div>
-            <div>
-                <label for="password">Password:</label>
-                <input type="password" id="password" placeholder="Password terdaftar di Firebase">
-            </div>
-            <button onclick="login()">Login</button>
-        </div>
-    </div>
-
-    <div id="app-container" style="display: none;">
+    <div id="app-container">
         <nav class="navbar">
             <div class="navbar-logo">Sistem Pembukuan UPZIS Ranting Ngablak</div>
             <div class="navbar-links">
-                <button onclick="logout()">Logout</button>
+                <button onclick="logout()" style="display: none;">Logout</button>
             </div>
         </nav>
 
@@ -113,7 +88,7 @@
             <div id="module-koin" class="module-content active">
                 <h3>Laporan Koin NU</h3>
                 
-                <div class="card">
+                <div class="card" id="koin-controls-card" style="display: none;">
                     <h4>Input dan Filter Data</h4>
                     <div class="input-form">
                         <div class="form-group">
@@ -145,6 +120,11 @@
                             <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
                         </div>
                     </div>
+
+                    <div class="control-buttons" style="margin-top: 20px;">
+                        <button class="btn-export" onclick="exportToPDF('koin')">Ekspor PDF</button>
+                        <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
+                    </div>
                 </div>
 
                 <div class="card" style="overflow-x: auto;">
@@ -155,8 +135,7 @@
                                 <th style="width: 15%;">Tanggal</th>
                                 <th style="width: 55%;">Keterangan</th>
                                 <th style="width: 20%; text-align: right;">Masuk (Rp)</th>
-                                <th style="width: 10%;">Aksi</th>
-                            </tr>
+                                <th class="col-aksi" style="width: 10%;">Aksi</th> </tr>
                         </thead>
                         <tbody>
                             </tbody>
@@ -164,29 +143,28 @@
                             <tr>
                                 <td colspan="2">TOTAL KESELURUHAN (Di Filter)</td>
                                 <td id="koin-total-masuk-footer" style="text-align: right;">Rp 0</td>
-                                <td></td>
+                                <td class="col-aksi"></td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
 
-                <div class="control-buttons">
-                    <button class="btn-export" onclick="exportToPDF('koin')">Ekspor PDF</button>
-                    <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
+                <div class="control-buttons" id="koin-export-buttons">
+                    <button class="btn-export" onclick="exportToPDF('koin')">Ekspor PDF (Public)</button>
                 </div>
             </div>
 
             <div id="module-jurnal" class="module-content">
                 <h3>Jurnal Umum</h3>
                 
-                <div class="card" id="saldo-awal-card"> 
+                <div class="card" id="saldo-awal-card" style="display: none;"> 
                     <h4>Setting Saldo Awal Tahun <span id="current-year-display"></span></h4>
                     <label for="jurnal-saldo-awal-input">Saldo Awal Kas (Rp):</label>
                     <input type="number" id="jurnal-saldo-awal-input" placeholder="Masukkan Saldo Awal Kas" style="width: 250px; display: inline-block;">
                     <button onclick="editData('annual', 'jurnal_saldo')">Simpan Saldo Awal</button>
                 </div>
                 
-                <div id="jurnal-input-form" class="card">
+                <div id="jurnal-input-form" class="card" style="display: none;">
                     <h4>Input Transaksi Jurnal</h4>
                     <div class="input-form">
                         <input type="hidden" id="jurnal-id" value="">
@@ -216,6 +194,10 @@
                             <button class="btn-secondary" onclick="resetForm('jurnal')">Batal</button>
                         </div>
                     </div>
+
+                    <div class="control-buttons" style="margin-top: 20px;">
+                        <button class="btn-delete-all" onclick="deleteAllDataGlobal('jurnal')">Hapus Semua Data Jurnal</button>
+                    </div>
                 </div>
 
                 <div class="card" style="overflow-x: auto;">
@@ -228,7 +210,7 @@
                                 <th style="width: 15%; text-align: right;">Debet (Masuk)</th>
                                 <th style="width: 15%; text-align: right;">Kredit (Keluar)</th>
                                 <th style="width: 15%; text-align: right;">Saldo</th>
-                                <th style="width: 10%;">Aksi</th>
+                                <th class="col-aksi" style="width: 10%;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -236,9 +218,8 @@
                     </table>
                 </div>
 
-                <div class="control-buttons">
-                    <button class="btn-export" onclick="exportToPDF('jurnal')">Ekspor PDF</button>
-                    <button class="btn-delete-all" onclick="deleteAllDataGlobal('jurnal')">Hapus Semua Data Jurnal</button>
+                <div class="control-buttons" id="jurnal-export-buttons">
+                    <button class="btn-export" onclick="exportToPDF('jurnal')">Ekspor PDF (Public)</button>
                 </div>
             </div>
 
@@ -249,7 +230,6 @@
                     <h4>Pilih Tahun Laporan</h4>
                     <label for="filter-tahunan-tahun">Tahun:</label>
                     <select id="filter-tahunan-tahun" onchange="filterData('tahunan')" style="width: 150px; display: inline-block; padding: 10px; border: 1px solid var(--color-border); border-radius: 4px;"></select>
-                    <button class="btn-export" onclick="exportToPDF('tahunan')" style="margin-left: 20px;">Ekspor Laporan Tahun Ini (PDF)</button>
                 </div>
 
                 <div class="card" style="overflow-x: auto;">
@@ -260,7 +240,7 @@
                                 <th>Keterangan</th>
                                 <th style="width: 25%;">Pemasukan (Rp)</th>
                                 <th style="width: 25%;">Pengeluaran (Rp)</th>
-                                <th style="width: 10%;">Aksi</th>
+                                <th class="col-aksi" style="width: 10%;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -268,55 +248,75 @@
                                 <td>Saldo Kas Awal Tahun</td>
                                 <td data-type="masuk" data-manual="false" id="tahunan-saldo_awal-masuk">Rp 0</td>
                                 <td>-</td>
-                                <td></td>
+                                <td class="col-aksi"></td>
                             </tr>
                             <tr data-key="koin_nu">
                                 <td>Pemasukan Koin NU (Otomatis)</td>
                                 <td data-type="masuk" data-manual="false" id="tahunan-koin_nu-masuk">Rp 0</td>
                                 <td>-</td>
-                                <td></td>
+                                <td class="col-aksi"></td>
                             </tr>
                             <tr data-key="manual_1">
-                                <td><input type="text" id="tahunan-manual_1-keterangan" placeholder="Pemasukan/Pengeluaran Manual 1"></td>
-                                <td data-type="masuk"><input type="number" id="tahunan-manual_1-masuk" onchange="editData('annual', 'manual_1')" placeholder="0"></td>
-                                <td data-type="keluar"><input type="number" id="tahunan-manual_1-keluar" onchange="editData('annual', 'manual_1')" placeholder="0"></td>
-                                <td><button onclick="editData('annual', 'manual_1')">Simpan</button></td>
+                                <td><input type="text" id="tahunan-manual_1-keterangan" placeholder="Pemasukan/Pengeluaran Manual 1" disabled></td>
+                                <td data-type="masuk"><input type="number" id="tahunan-manual_1-masuk" onchange="editData('annual', 'manual_1')" placeholder="0" disabled></td>
+                                <td data-type="keluar"><input type="number" id="tahunan-manual_1-keluar" onchange="editData('annual', 'manual_1')" placeholder="0" disabled></td>
+                                <td class="col-aksi"><button onclick="editData('annual', 'manual_1')" disabled>Simpan</button></td>
                             </tr>
                             <tr data-key="manual_2">
-                                <td><input type="text" id="tahunan-manual_2-keterangan" placeholder="Pemasukan/Pengeluaran Manual 2"></td>
-                                <td data-type="masuk"><input type="number" id="tahunan-manual_2-masuk" onchange="editData('annual', 'manual_2')" placeholder="0"></td>
-                                <td data-type="keluar"><input type="number" id="tahunan-manual_2-keluar" onchange="editData('annual', 'manual_2')" placeholder="0"></td>
-                                <td><button onclick="editData('annual', 'manual_2')">Simpan</button></td>
+                                <td><input type="text" id="tahunan-manual_2-keterangan" placeholder="Pemasukan/Pengeluaran Manual 2" disabled></td>
+                                <td data-type="masuk"><input type="number" id="tahunan-manual_2-masuk" onchange="editData('annual', 'manual_2')" placeholder="0" disabled></td>
+                                <td data-type="keluar"><input type="number" id="tahunan-manual_2-keluar" onchange="editData('annual', 'manual_2')" placeholder="0" disabled></td>
+                                <td class="col-aksi"><button onclick="editData('annual', 'manual_2')" disabled>Simpan</button></td>
                             </tr>
                             <tr data-key="total_pengeluaran">
                                 <td>TOTAL PENGELUARAN (Otomatis dari Jurnal Umum)</td>
                                 <td>-</td>
                                 <td data-type="keluar" data-manual="false" id="tahunan-total_pengeluaran-keluar">Rp 0</td>
-                                <td></td>
+                                <td class="col-aksi"></td>
                             </tr>
                         </tbody>
                         <tfoot>
+                            <tr><td colspan="4" style="padding: 0; border: none;"></td></tr>
                             <tr style="background-color: var(--color-light);">
                                 <td style="font-size: 1.1rem;">TOTAL KAS MASUK TAHUNAN</td>
                                 <td id="tahunan-total-pemasukan" style="font-size: 1.1rem;">Rp 0</td>
                                 <td></td>
-                                <td></td>
+                                <td class="col-aksi"></td>
                             </tr>
                             <tr style="background-color: #fce4ec;">
                                 <td style="font-size: 1.1rem;">TOTAL KAS KELUAR TAHUNAN</td>
                                 <td></td>
                                 <td id="tahunan-total-pengeluaran-all" style="font-size: 1.1rem;">Rp 0</td>
-                                <td></td>
+                                <td class="col-aksi"></td>
                             </tr>
                             <tr id="tahunan-saldo-akhir-row" style="border-top: 3px solid var(--color-primary);">
                                 <td style="font-size: 1.2rem;">SALDO KAS AKHIR TAHUN</td>
                                 <td colspan="2" id="tahunan-saldo-akhir" style="text-align: center; font-size: 1.2rem;">Rp 0</td>
-                                <td></td>
+                                <td class="col-aksi"></td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
+
+                <div class="control-buttons" id="tahunan-export-buttons">
+                    <button class="btn-export" onclick="exportToPDF('tahunan')">Ekspor PDF (Public)</button>
+                </div>
             </div>
+
+            <hr style="margin: 40px 0;">
+
+            <div id="auth-controls-card" class="card" style="text-align: center;">
+                <h4>Admin Login</h4>
+                <p>Silakan login untuk mengakses fitur input, edit, dan hapus data.</p>
+                <div style="max-width: 300px; margin: auto;">
+                    <label for="username">Email:</label>
+                    <input type="email" id="username" placeholder="Email Admin">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" placeholder="Password Admin">
+                    <button onclick="login()" style="width: 100%; margin-top: 15px;">Login Admin</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -393,12 +393,65 @@
             }, 5000);
         }
         
-        // --- FUNGSI UTAMA: LOGIN & AUTHENTICATION ---
+        // --- FUNGSI UTAMA: LOGIN & AUTHENTICATION KONTROL ---
+
+        // Fungsi baru untuk mengatur visibilitas fitur admin
+        function setActionControlsVisibility(isLoggedIn) {
+            // 1. Kontrol Navbar Logout Button
+            const logoutBtn = document.querySelector('.navbar-links button');
+            logoutBtn.style.display = isLoggedIn ? 'inline-block' : 'none';
+
+            // 2. Kontrol Input Forms dan Delete Buttons
+            document.getElementById('koin-controls-card').style.display = isLoggedIn ? 'block' : 'none';
+            document.getElementById('jurnal-input-form').style.display = isLoggedIn ? 'block' : 'none';
+            document.getElementById('saldo-awal-card').style.display = isLoggedIn ? 'block' : 'none';
+
+            // Export button public dan admin
+            document.querySelectorAll('[id$="-export-buttons"]').forEach(el => el.style.display = isLoggedIn ? 'none' : 'block');
+            document.querySelectorAll('.control-buttons').forEach(el => {
+                if (!el.id.endsWith('-export-buttons')) {
+                    el.style.display = isLoggedIn ? 'block' : 'none';
+                }
+            });
+
+
+            // 3. Kontrol Kolom Aksi di Tabel (TH dan TD)
+            const aksiHeaders = document.querySelectorAll('th.col-aksi');
+            const aksiCells = document.querySelectorAll('td.col-aksi');
+            
+            aksiHeaders.forEach(th => th.classList.toggle('visible', isLoggedIn));
+            aksiCells.forEach(td => td.classList.toggle('visible', isLoggedIn));
+
+            // 4. Kontrol Input Manual di Laporan Tahunan (disabling input fields)
+            document.querySelectorAll('#table-tahunan input, #table-tahunan button').forEach(el => el.disabled = !isLoggedIn);
+
+            // 5. Kontrol Auth Card di bawah (Form Login/Info Logout)
+            const authCard = document.getElementById('auth-controls-card');
+            if (isLoggedIn) {
+                authCard.innerHTML = `
+                    <h4>Status Login</h4>
+                    <p>Anda login sebagai **${auth.currentUser.email}**. Semua fitur input, edit, dan hapus aktif.</p>
+                    <button onclick="logout()">Logout</button>
+                `;
+            } else {
+                authCard.innerHTML = `
+                    <h4>Admin Login</h4>
+                    <p>Silakan login untuk mengakses fitur input, edit, dan hapus data.</p>
+                    <div style="max-width: 300px; margin: auto;">
+                        <label for="username">Email:</label>
+                        <input type="email" id="username" placeholder="Email Admin">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" placeholder="Password Admin">
+                        <button onclick="login()" style="width: 100%; margin-top: 15px;">Login Admin</button>
+                    </div>
+                `;
+            }
+        }
         
         window.login = async function() {
             const emailInput = document.getElementById('username').value; 
             const passwordInput = document.getElementById('password').value;
-            const loginButton = document.querySelector('#login-screen button');
+            const loginButton = document.querySelector('#auth-controls-card button[onclick="login()"]');
         
             if (!emailInput || !passwordInput) {
                 showToast('Email dan Password wajib diisi.', 'error');
@@ -406,13 +459,12 @@
             }
         
             try {
-                loginButton.textContent = 'Loading...';
+                loginButton.textContent = 'Memproses...';
                 await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-                showToast('Login Berhasil!', 'success');
+                showToast('Login Berhasil! Fitur Admin Aktif.', 'success');
         
             } catch (error) {
-                loginButton.textContent = 'Login';
-                console.error("Login Gagal:", error);
+                loginButton.textContent = 'Login Admin';
                 let errorMessage = "Terjadi Kesalahan. Mohon coba lagi.";
                 if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                     errorMessage = "Email atau Password salah.";
@@ -426,32 +478,25 @@
         window.logout = async function() {
             if (!confirm('Yakin ingin keluar dari sesi?')) return;
             await signOut(auth);
-            showToast('Anda telah Logout.', 'info');
+            showToast('Anda telah Logout. Kembali ke Mode Baca.', 'info');
         };
         
+        // Cek status login saat halaman dimuat
         onAuthStateChanged(auth, (user) => {
-            const loginScreen = document.getElementById('login-screen');
-            const appContainer = document.getElementById('app-container');
-            const loginButton = document.querySelector('#login-screen button');
-
             if (user) {
-                loginScreen.style.display = 'none';
-                appContainer.style.display = 'block';
-                loginButton.textContent = 'Login';
-                
-                loadAllCollections();
-                populateFilterOptions();
-                filterData(currentModule);
+                setActionControlsVisibility(true);
             } else {
-                loginScreen.style.display = 'flex';
-                appContainer.style.display = 'none';
-                loginButton.textContent = 'Login';
+                setActionControlsVisibility(false);
             }
+            // Walaupun public, data harus tetap dimuat dan ditampilkan
+            loadAllCollections();
+            populateFilterOptions();
+            filterData(currentModule);
         });
 
         // --- FUNGSI UTAMA: PENGAMBILAN DATA (FIREBASE) ---
-
         window.loadAllCollections = async function() {
+            // (Logika Load Data Tetap Sama)
             try {
                 const koinSnapshot = await getDocs(collection(db, COL_KOIN));
                 KoinData = koinSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -462,6 +507,7 @@
                 const tahunanSnapshot = await getDocs(collection(db, COL_TAHUNAN));
                 LaporanTahunanData = tahunanSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+                // Data dimuat, update filter dan tampilkan
                 populateFilterOptions();
                 filterData(currentModule);
                 
@@ -472,8 +518,9 @@
         };
 
         // --- FUNGSI UTAMA: PENYIMPANAN DATA (FIREBASE) ---
-
         window.saveData = async function(module) {
+            if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk menyimpan data.', 'error'); return; }
+            // (Logika Save Data Tetap Sama)
             const isEdit = module === 'koin' ? !!document.getElementById('koin-id').value : !!document.getElementById('jurnal-id').value;
             let data = {};
             let id = isEdit ? (module === 'koin' ? document.getElementById('koin-id').value : document.getElementById('jurnal-id').value) : doc(collection(db, module === 'koin' ? COL_KOIN : COL_JURNAL)).id;
@@ -516,6 +563,8 @@
         };
 
         window.deleteData = async function(module, id) {
+            if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk menghapus data.', 'error'); return; }
+            // (Logika Delete Data Tetap Sama)
             if (!confirm('Yakin ingin menghapus data ini?')) return;
             const collectionName = module === 'koin' ? COL_KOIN : COL_JURNAL;
 
@@ -531,6 +580,8 @@
         };
 
         window.deleteAllDataGlobal = async function(module) {
+            if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk menghapus SEMUA data.', 'error'); return; }
+            // (Logika Delete All Data Tetap Sama)
             if (!confirm(`Yakin ingin menghapus SEMUA DATA ${module.toUpperCase()}? Tindakan ini tidak bisa dibatalkan!`)) return;
 
             try {
@@ -554,7 +605,6 @@
         };
         
         // --- FUNGSI UTAMA: TABEL DAN FILTER ---
-
         window.switchModule = function(module) {
             currentModule = module;
             document.querySelectorAll('.module-content').forEach(el => el.classList.remove('active'));
@@ -574,6 +624,7 @@
         };
 
         window.populateFilterOptions = function() {
+            // (Logika Populate Filter Tetap Sama)
             const koinDates = KoinData.map(d => new Date(d.tanggal));
             const jurnalDates = JurnalData.map(d => new Date(d.tanggal));
             const allDates = [...koinDates, ...jurnalDates].filter(d => !isNaN(d.getTime()));
@@ -606,6 +657,7 @@
         };
 
         window.filterData = function(module) {
+            // (Logika Filter Data Tetap Sama)
             if (module === 'koin') {
                 const filterValue = document.getElementById('filter-koin-bulan').value;
                 const [filterMonth, filterYear] = filterValue === 'all' ? [null, null] : filterValue.split('-').map(Number);
@@ -631,6 +683,7 @@
         window.populateTable = function(module, data) {
             const tbody = document.querySelector(`#table-${module} tbody`);
             tbody.innerHTML = '';
+            const isLoggedIn = !!auth.currentUser;
 
             if (module === 'koin') {
                 let totalMasuk = 0;
@@ -641,7 +694,7 @@
                         <td>${formatDate(d.tanggal, true)}</td>
                         <td>${d.keterangan}</td>
                         <td style="text-align: right;">${formatRupiah(d.masuk)}</td>
-                        <td class="actions">
+                        <td class="col-aksi ${isLoggedIn ? 'visible' : ''}">
                             <button class="edit" onclick="editForm('koin', '${d.id}')">Edit</button>
                             <button class="delete" onclick="deleteData('koin', '${d.id}')">Hapus</button>
                         </td>
@@ -668,7 +721,7 @@
                     <td style="text-align: right;">${formatRupiah(saldoAwal)}</td>
                     <td style="text-align: right;">-</td>
                     <td style="text-align: right;">${formatRupiah(currentBalance)}</td>
-                    <td></td>
+                    <td class="col-aksi ${isLoggedIn ? 'visible' : ''}"></td>
                 `;
 
                 data.forEach(d => {
@@ -683,7 +736,7 @@
                         <td style="text-align: right;">${formatRupiah(debet)}</td>
                         <td style="text-align: right;">${formatRupiah(kredit)}</td>
                         <td style="text-align: right; font-weight: bold;">${formatRupiah(currentBalance)}</td>
-                        <td class="actions">
+                        <td class="col-aksi ${isLoggedIn ? 'visible' : ''}">
                             <button class="edit" onclick="editForm('jurnal', '${d.id}')">Edit</button>
                             <button class="delete" onclick="deleteData('jurnal', '${d.id}')">Hapus</button>
                         </td>
@@ -691,6 +744,7 @@
                 });
 
             } else if (module === 'tahunan') {
+                // (Logika Populate Tabel Tahunan Tetap Sama)
                 const selectedYear = data;
                 const saldoAwalDoc = LaporanTahunanData.find(d => d.id === 'saldo_awal_tahun');
                 const annualDoc = LaporanTahunanData.find(d => d.id === `laporan_${selectedYear}`);
@@ -740,6 +794,8 @@
         // --- FUNGSI EDIT DAN RESET ---
         
         window.editForm = function(module, id) {
+            if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk mengedit data.', 'error'); return; }
+            // (Logika Edit Form Tetap Sama)
             let data;
             if (module === 'koin') {
                 data = KoinData.find(d => d.id === id);
@@ -747,7 +803,7 @@
                 document.getElementById('koin-tanggal').value = data.tanggal;
                 document.getElementById('koin-keterangan').value = data.keterangan;
                 document.getElementById('koin-nominal').value = data.masuk;
-                document.querySelector('#koin-input-form button:first-of-type').textContent = 'Update Data';
+                document.querySelector('#koin-controls-card button:first-of-type').textContent = 'Update Data';
             } else if (module === 'jurnal') {
                 data = JurnalData.find(d => d.id === id);
                 document.getElementById('jurnal-id').value = data.id;
@@ -760,12 +816,13 @@
         };
 
         window.resetForm = function(module) {
+            // (Logika Reset Form Tetap Sama)
             if (module === 'koin') {
                 document.getElementById('koin-id').value = '';
                 document.getElementById('koin-tanggal').value = getCurrentDate();
                 document.getElementById('koin-keterangan').value = '';
                 document.getElementById('koin-nominal').value = '';
-                document.querySelector('#koin-input-form button:first-of-type').textContent = 'Simpan Data';
+                document.querySelector('#koin-controls-card button:first-of-type').textContent = 'Simpan Data';
             } else if (module === 'jurnal') {
                 document.getElementById('jurnal-id').value = '';
                 document.getElementById('jurnal-tanggal').value = getCurrentDate();
@@ -779,6 +836,8 @@
         // --- FUNGSI KHUSUS LAPORAN TAHUNAN (EDIT DATA MANUAL/SALDO AWAL) ---
 
         window.editData = async function(dataType, key) {
+            if (!auth.currentUser) { showToast('Anda harus Login sebagai Admin untuk mengedit data tahunan.', 'error'); return; }
+            // (Logika Edit Data Tahunan Tetap Sama)
             const currentYear = Number(document.getElementById('filter-tahunan-tahun')?.value) || new Date().getFullYear();
             let docId, dataToSave = {};
 
@@ -820,27 +879,34 @@
         // --- FUNGSI UTAMA: EKSPOR PDF ---
 
         window.exportToPDF = function(module) {
+            // (Logika Export PDF Tetap Sama)
             const currentYear = new Date().getFullYear();
             const filename = `Laporan_${module.toUpperCase()}_${module === 'tahunan' ? document.getElementById('filter-tahunan-tahun').value : currentYear}.pdf`;
             const doc = new window.jspdf.jsPDF('p', 'mm', 'a4');
             const element = document.getElementById(`table-${module}`);
             
             const tableClone = element.cloneNode(true);
+            
+            // Logika untuk menghilangkan kolom Aksi saat ekspor (karena ini export public)
             const actionIndex = Array.from(tableClone.querySelector('thead tr').children).findIndex(th => th.textContent.includes('Aksi'));
             
             if (actionIndex !== -1) {
                 tableClone.querySelectorAll('tr').forEach(row => {
-                    if (row.children.length > actionIndex) {
-                        const cellToRemove = row.children[actionIndex];
-                        if (module === 'tahunan') {
-                             const buttons = cellToRemove.querySelectorAll('button');
-                             if (buttons.length > 0) {
-                                buttons.forEach(btn => btn.remove());
-                            }
-                        }
-                        cellToRemove.remove();
+                    if (row.children.length > actionIndex && row.children[actionIndex].classList.contains('col-aksi')) {
+                        row.children[actionIndex].remove();
                     }
                 });
+                tableClone.querySelector('th.col-aksi').remove();
+            }
+
+            // Juga hilangkan input manual di laporan tahunan saat ekspor
+            if (module === 'tahunan') {
+                tableClone.querySelectorAll('.annual-table input').forEach(input => {
+                    const span = document.createElement('span');
+                    span.textContent = input.value;
+                    input.parentNode.replaceChild(span, input);
+                });
+                tableClone.querySelectorAll('.annual-table button').forEach(btn => btn.remove());
             }
 
             tableClone.style.width = '100%';
