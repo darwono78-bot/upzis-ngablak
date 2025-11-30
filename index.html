@@ -80,9 +80,47 @@
         .input-form .form-group-full { grid-column: 1 / -1; } 
         .input-form input, .input-form select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
         .input-form label { display: block; font-weight: 500; }
-        .input-form button { background-color: var(--color-primary); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
-        .input-form button:hover { background-color: #004d00; }
-        .input-form .btn-secondary { background-color: #6c757d; margin-left: 10px; }
+        
+        /* Tombol Simpan (Primary Green) */
+        .input-form button:not(.btn-delete-all):not(.btn-secondary) { 
+            background-color: var(--color-primary); 
+            color: white; 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: background-color 0.3s; 
+        }
+        .input-form button:not(.btn-delete-all):not(.btn-secondary):hover { 
+            background-color: #004d00; 
+        }
+
+        /* FIX 1: Tombol Hapus Semua (Merah) */
+        .input-form .btn-delete-all {
+            background-color: #dc3545; /* Merah */
+            color: white;
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            transition: background-color 0.3s;
+        }
+        .input-form .btn-delete-all:hover {
+            background-color: #c82333; /* Merah gelap */
+        }
+        
+        /* FIX 3: Tombol Batal (Biru) */
+        .input-form .btn-secondary { 
+            background-color: #007bff; /* Biru */
+            color: white;
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 4px;
+            margin-left: 10px; 
+        }
+        .input-form .btn-secondary:hover {
+            background-color: #0056b3; /* Biru gelap */
+        }
 
         /* --- STYLING KHUSUS FILTER KOIN --- */
         #koin-filter-form {
@@ -101,7 +139,7 @@
             width: auto; 
             min-width: 120px; 
             box-sizing: content-box;
-            /* FIX 2: Vertikal ramping */
+            /* Vertikal ramping */
             padding: 5px 10px; 
             margin-top: 0; 
         }
@@ -124,7 +162,26 @@
         }
         .data-table tr:nth-child(even) { background-color: #fafafa; }
         .data-table tr:hover { background-color: #f1f8e9; }
-        .data-table .actions button { margin-right: 5px; padding: 6px 10px; cursor: pointer; border: none; border-radius: 3px; font-size: 0.85rem; }
+        .data-table .actions button { margin-right: 5px; padding: 6px 10px; cursor: pointer; border: none; border-radius: 3px; font-size: 0.85rem; transition: background-color 0.3s; }
+        
+        /* FIX 2: Tombol Edit (Hijau) */
+        .data-table .actions button.edit {
+            background-color: #28a745; /* Hijau */
+            color: white;
+        }
+        .data-table .actions button.edit:hover {
+            background-color: #1e7e34;
+        }
+        
+        /* FIX 2: Tombol Hapus (Merah) */
+        .data-table .actions button.delete {
+            background-color: #dc3545; /* Merah */
+            color: white;
+        }
+        .data-table .actions button.delete:hover {
+            background-color: #c82333;
+        }
+
         .data-table tfoot td { 
             font-weight: bold; 
             background-color: var(--color-primary); /* Background Footer */
@@ -456,7 +513,7 @@
             // Kontrol Auth Card di bawah (Form Login/Info Logout)
             const authCard = document.getElementById('auth-controls');
             
-            // Perbaikan Logika: Sembunyikan blok login di bawah jika sudah login
+            // Logika: Sembunyikan blok login di bawah jika sudah login
             if (isLoggedIn) {
                 authCard.style.display = 'none'; 
             } else {
@@ -839,9 +896,8 @@
             const margin = 10;
             const imgWidth = pageWidth - 2 * margin; // 277mm
             
-            // FIX 3: Mengatur Korp Header Height otomatis (null) agar proporsional
+            // Mengatur Korp Header Height otomatis agar proporsional
             const korpLogoUrl = 'korps-lazisnu.png';
-            // Estimasi tinggi gambar korps untuk perhitungan posisi Y
             let korpHeaderActualHeight = 20; 
             
             let currentY = 5; // Posisi Y saat ini, dimulai dari 5mm top margin
@@ -869,11 +925,11 @@
                 korpHeaderActualHeight = 15; // Ketinggian untuk teks fallback
             }
             
-            currentY += korpHeaderActualHeight; // Pindah ke bawah gambar/fallback
+            // Perlu estimasi yang lebih akurat untuk gambar agar penempatan tabel tidak bertabrakan
+            // Mengingat lebar 277mm, tinggi default lazisnu.png (misal 1000px) akan menjadi sekitar 25mm-30mm.
+            // Kita asumsikan 30mm untuk jarak aman.
+            currentY += 30; // Pindah ke bawah gambar/fallback + jarak aman
             
-            // Beri jarak setelah Header (Image)
-            currentY += 5; // Pindah untuk baris filter info
-
             // 3. Info Filter
             const filterInfo = `LAPORAN KOIN NU - PERIODE: ${monthText} TAHUN ${yearText}`; // Dibuat eksplisit untuk PDF
             doc.setFontSize(10);
