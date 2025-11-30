@@ -66,7 +66,6 @@
             box-sizing: content-box;
         }
         
-        /* PERUBAHAN #1: Ekspor PDF Rata Kanan */
         #koin-filter-form .form-group-button {
             display: flex;
             align-items: flex-end; 
@@ -87,11 +86,13 @@
         .col-aksi { display: none; } 
         .col-aksi.visible { display: table-cell !important; }
 
-        /* PERUBAHAN #3: Estetika Blok Login - Lebar Card Dibatasi dan Centered */
+        /* PERUBAHAN BARU: Mengurangi tinggi card (ramping) */
         #auth-controls-card {
-            max-width: 650px; /* Batasi lebar card putih */
+            max-width: 650px; /* Tetap mempertahankan estetika lebar yang tidak terlalu besar */
             margin-left: auto;
             margin-right: auto;
+            padding-top: 15px; /* Mengurangi padding vertikal agar terlihat lebih 'ramping' */
+            padding-bottom: 15px; /* Mengurangi padding vertikal agar terlihat lebih 'ramping' */
         }
 
         /* STYLING KHUSUS LOGIN ADMIN (1 Baris) */
@@ -102,15 +103,16 @@
             justify-content: center;
             flex-wrap: wrap; 
             max-width: 800px;
-            margin: 0 auto; /* Hilangkan margin atas 15px */
+            margin: 0 auto; 
         }
         .inline-form .form-group-login {
             display: flex;
             flex-direction: column;
             align-items: flex-start;
         }
+        /* PERUBAHAN BARU: Kembali ke lebar input (panjang) yang lebih lebar */
         .inline-form input {
-            width: 180px; 
+            width: 250px; /* Diperlebar agar 'panjangnya seperti yg sebelum di pendekin' */
             margin-top: 5px;
             margin-bottom: 0;
         }
@@ -558,12 +560,14 @@
             const filterKoinBulan = document.getElementById('filter-koin-bulan');
             const filterKoinTahun = document.getElementById('filter-koin-tahun');
             
-            const monthMap = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            const monthMap = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
             
             if (filterKoinBulan) {
                 filterKoinBulan.innerHTML = '<option value="all">Semua Bulan</option>';
                 monthMap.forEach((monthName, monthIndex) => {
-                    filterKoinBulan.innerHTML += `<option value="${monthIndex + 1}">${monthName}</option>`;
+                    if (monthIndex > 0) { // Skip the first empty string
+                         filterKoinBulan.innerHTML += `<option value="${monthIndex}">${monthName}</option>`;
+                    }
                 });
                 // Set default filter to current month
                 const currentMonth = new Date().getMonth() + 1;
