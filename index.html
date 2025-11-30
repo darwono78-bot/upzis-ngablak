@@ -178,19 +178,24 @@
                     <table class="data-table" id="table-koin">
                         <thead>
                             <tr>
-                                <th style="width: 3%; text-align: center;">No</th>
-                                <th style="width: 7%; text-align: center;">Tanggal</th>
-                                <th style="width: 12%; text-align: center;">Nama Petugas</th>
-                                <th style="width: 7%; text-align: center;">No HP</th>
-                                <th style="width: 15%; text-align: center;">Donatur/Kelompok</th>
-                                <th style="width: 10%; text-align: center;">Alamat (RT/RW)</th>
-                                <th style="width: 8%; text-align: right;">Nominal</th>
+                                <th style="width: 3%; text-align: center;" rowspan="2">No</th>
+                                <th style="width: 7%; text-align: center;" rowspan="2">Tanggal</th>
+                                <th style="width: 12%; text-align: center;" rowspan="2">Nama Petugas</th>
+                                <th style="width: 7%; text-align: center;" rowspan="2">No HP</th>
+                                <th style="width: 15%; text-align: center;" rowspan="2">Donatur/Kelompok</th>
+                                <th style="width: 10%; text-align: center;" rowspan="2">Alamat (RT/RW)</th>
+                                <th style="width: 8%; text-align: right;" rowspan="2">Nominal</th>
+                                
+                                <th colspan="4" style="text-align: center;">PEMBAGIAN DANA KOIN</th>
+                                
+                                <th class="col-aksi" style="width: 6%;" rowspan="2">Aksi</th>
+                            </tr>
+                            <tr>
                                 <th style="width: 8%; text-align: right;">Petugas (10%)</th>
                                 <th style="width: 8%; text-align: right;">Ranting (60%)</th>
                                 <th style="width: 8%; text-align: right;">MWC (25%)</th>
                                 <th style="width: 8%; text-align: right;">PC (5%)</th>
-                                <th class="col-aksi" style="width: 6%;">Aksi</th>
-                            </tr>
+                                </tr>
                         </thead>
                         <tbody>
                             </tbody>
@@ -750,6 +755,39 @@
             doc.setFontSize(8);
             doc.text(`Dicetak pada: ${formatDate(getCurrentDate(), false)}`, 10, 20);
             doc.setFontSize(11);
+
+            // LOGIKA PENYESUAIAN HEADER UNTUK PDF
+            const thead = tableClone.querySelector('thead');
+            const newThead = document.createElement('thead');
+            
+            // Kita akan membuat satu baris header untuk PDF (terlihat lebih baik)
+            const finalHeaderRow = newThead.insertRow();
+            
+            // Ambil semua header kolom yang memiliki rowspan="2" (No s/d Nominal)
+            const topRow = thead.rows[0];
+            for (let i = 0; i < 7; i++) {
+                const headerCell = topRow.cells[i];
+                const newCell = document.createElement('th');
+                newCell.textContent = headerCell.textContent;
+                newCell.style.textAlign = headerCell.style.textAlign;
+                finalHeaderRow.appendChild(newCell);
+            }
+
+            // Ambil header Pembagian Dana Koin (Detailnya)
+            const bottomRow = thead.rows[1];
+            for (let i = 0; i < 4; i++) {
+                const headerCell = bottomRow.cells[i];
+                const newCell = document.createElement('th');
+                newCell.textContent = headerCell.textContent.replace(' (', ' ('); // Biarkan persentase tetap
+                newCell.style.textAlign = headerCell.style.textAlign;
+                finalHeaderRow.appendChild(newCell);
+            }
+            
+            // Gantikan thead lama dengan thead baru yang 1 baris untuk ekspor
+            tableClone.removeChild(thead);
+            tableClone.insertBefore(newThead, tableClone.firstChild);
+            
+            // Akhir LOGIKA PENYESUAIAN HEADER UNTUK PDF
 
             window.html2canvas(tableClone, { scale: 2 }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
