@@ -484,7 +484,7 @@
             <div class="login-box">
                 <h2 style="text-align: center; color: #006400;">ADMIN LOGIN</h2>
                 <div class="login-input-row">
-                    <input type="text" id="username" placeholder="Username">
+                    <input type="email" id="username" placeholder="Email Admin">
                     <input type="password" id="password" placeholder="Password">
                 </div>
                 <button class="button btn-green" style="width: 100%;" onclick="attemptLogin()">Masuk</button>
@@ -496,6 +496,8 @@
     // Menggunakan versi 9.1.0 karena versi sebelumnya (10.x.x) mungkin menimbulkan masalah di environment tertentu
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
     import { getFirestore, collection, addDoc, getDocs, doc, setDoc, deleteDoc, getDoc, query, where, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+    // IMPORT BARU: Firebase Authentication
+    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
     
     // --- KONFIGURASI FIREBASE ANDA ---
     const firebaseConfig = {
@@ -510,6 +512,8 @@
     // Inisialisasi Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    // INISIALISASI BARU: Firebase Auth
+    const auth = getAuth(app); 
 
     // --- KONSTANTA NAMA KOLEKSI ---
     const COL_KOIN = 'laporan_koin_nu';
@@ -560,31 +564,68 @@
         return { month: (date.getMonth() + 1).toString().padStart(2, '0'), year: date.getFullYear().toString() };
     };
     
-    // --- LOGIN/LOGOUT ---
-    const ADMIN_USER = 'admin'; 
-    const ADMIN_PASS = 'admin123'; 
-
-    window.attemptLogin = () => {
-        const username = document.getElementById('username').value;
+    // --- LOGIN/LOGOUT (Menggunakan Firebase Auth) ---
+    // ADMIN_USER & ADMIN_PASS Dihapus
+    
+    window.attemptLogin = async () => {
+        // ID input 'username' digunakan untuk Email
+        const email = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        if (username === ADMIN_USER && password === ADMIN_PASS) {
+        
+        if (!email || !password) {
+            return alert('Mohon masukkan Email dan Password.');
+        }
+
+        try {
+            // FUNGSI UTAMA FIREBASE LOGIN
+            await signInWithEmailAndPassword(auth, email, password);
+            
             isLoggedIn = true;
             document.getElementById('login-area').style.display = 'none';
             showModule(currentModule);
-            alert('Selamat datang, Admin!');
-        } else {
-            alert('Username atau Password salah.');
+            alert('Login Admin Berhasil (via Firebase Email).');
+        } catch (error) {
+            console.error("Firebase Login Error:", error.code, error.message);
+            // Pesan error yang lebih informatif untuk user
+            let errorMessage = "Login Gagal. Pastikan email dan password benar.";
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                errorMessage = "Email atau Password salah.";
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = "Format Email tidak valid.";
+            }
+            alert(errorMessage);
         }
     };
 
-    window.logout = () => {
-        isLoggedIn = false;
-        showModule(currentModule);
-        alert('Anda telah Log Out.');
+    window.logout = async () => {
+        try {
+            // FUNGSI UTAMA FIREBASE LOGOUT
+            await signOut(auth);
+            isLoggedIn = false;
+            showModule(currentModule);
+            alert('Anda telah Log Out.');
+        } catch (e) {
+            console.error("Logout Error:", e);
+            alert('Gagal Log Out: ' + e.message);
+        }
     };
+    
+    // Tambahkan listener untuk cek status login saat memuat halaman
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            isLoggedIn = true;
+            // Jika user sudah login, sembunyikan area login
+            document.getElementById('login-area').style.display = 'none';
+        } else {
+            isLoggedIn = false;
+        }
+        showModule(currentModule); // Re-render modul setelah mengetahui status login
+    });
+
 
     // ====================================================================
     // FUNGSI UMUM: LOAD SEMUA DATA DARI FIRESTORE
+    // ... (sisa fungsi lainnya tetap sama) ...
     // ====================================================================
     
     const loadAllCollections = async () => {
