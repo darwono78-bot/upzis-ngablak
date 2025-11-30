@@ -77,11 +77,24 @@
         
         /* Form Input dan Kontrol */
         /* .input-form DIHAPUS, DIGANTI DENGAN Koin-Inline-Form */
-        .input-form input, .input-form select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
-        .input-form label { display: block; font-weight: 500; }
+        .input-form input, .koin-inline-form input, .input-form select, .koin-inline-form select { 
+            width: 100%; 
+            padding: 10px; 
+            margin-top: 5px; 
+            border: 1px solid var(--color-border); 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            color: #000; /* Pastikan input text berwarna hitam */
+        }
+        .input-form label, .koin-inline-form label { 
+            display: block; 
+            font-weight: 600; /* Diperkuat: Kuatin Tulisannya */
+            color: #000; /* Pastikan label berwarna hitam */
+        }
         
         /* Tombol Simpan (Primary Green) */
-        .input-form button:not(.btn-delete-all):not(.btn-secondary) { 
+        .input-form button:not(.btn-delete-all):not(.btn-secondary),
+        .control-buttons-right button:not(.btn-secondary) { 
             background-color: var(--color-primary); 
             color: white; 
             padding: 10px 15px; 
@@ -90,12 +103,13 @@
             cursor: pointer; 
             transition: background-color 0.3s; 
         }
-        .input-form button:not(.btn-delete-all):not(.btn-secondary):hover { 
+        .input-form button:not(.btn-delete-all):not(.btn-secondary):hover,
+        .control-buttons-right button:not(.btn-secondary):hover { 
             background-color: #004d00; 
         }
 
         /* Tombol Hapus Semua (Merah) */
-        .input-form .btn-delete-all {
+        .btn-delete-all {
             background-color: #dc3545; /* Merah */
             color: white;
             padding: 10px 15px; 
@@ -104,12 +118,13 @@
             cursor: pointer; 
             transition: background-color 0.3s;
         }
-        .input-form .btn-delete-all:hover {
+        .btn-delete-all:hover {
             background-color: #c82333; /* Merah gelap */
         }
         
         /* Tombol Batal (Biru) */
-        .input-form .btn-secondary { 
+        .input-form .btn-secondary,
+        .control-buttons-right .btn-secondary { 
             background-color: #007bff; /* Biru */
             color: white;
             padding: 10px 15px; 
@@ -117,7 +132,8 @@
             border-radius: 4px;
             margin-left: 10px; 
         }
-        .input-form .btn-secondary:hover {
+        .input-form .btn-secondary:hover,
+        .control-buttons-right .btn-secondary:hover {
             background-color: #0056b3; /* Biru gelap */
         }
 
@@ -214,33 +230,35 @@
             padding: 20px; 
             border-radius: 6px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
-            margin-top: 20px; 
             margin-bottom: 20px;
+            /* Jarak atas dihilangkan karena tombol hapus dipindah ke atasnya */
         }
         
         /* === FORM INPUT KOIN SATU BARIS BARU === */
         .koin-inline-form { 
             display: flex; 
-            flex-wrap: wrap; /* Memungkinkan wrap jika layar kecil */
-            gap: 10px 15px; /* Spasi vertikal 10px, horizontal 15px */
-            align-items: flex-end; /* Semua item rata bawah */
+            flex-wrap: wrap; 
+            gap: 10px 15px; 
+            align-items: flex-end; 
+            margin-top: 15px; /* Jarak dari judul "Input Data Baru" */
         }
         .koin-inline-form .form-group-item {
             display: flex;
             flex-direction: column;
-            /* Flex-grow dihapus agar lebar input sesuai kebutuhan konten/min-width */
         }
         .koin-inline-form input[type="date"] {
-            width: 120px; /* Lebar tetap untuk tanggal */
+            width: 120px; 
         }
         .koin-inline-form input[type="text"], 
         .koin-inline-form input[type="number"] {
-             min-width: 150px; /* Lebar minimum untuk teks dan nominal */
-             width: auto; /* Agar lebar menyesuaikan konten */
+             min-width: 150px; 
+             width: auto; 
         }
-        .koin-inline-form .control-buttons-left,
-        .koin-inline-form .control-buttons-right {
-             margin-top: 10px;
+        /* Kontainer Tombol Simpan/Batal yang mengisi sisa ruang */
+        .control-buttons-right {
+             margin-left: auto; /* Dorong ke kanan */
+             display: flex;
+             align-items: flex-end;
         }
 
         /* STYLING KHUSUS LOGIN ADMIN */
@@ -253,7 +271,7 @@
             border-radius: 6px; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
             text-align: center;
-            margin-top: 40px; /* Jarak atas saat muncul */
+            margin-top: 40px; 
         }
         #auth-controls h4 {
             margin-top: 0;
@@ -326,6 +344,10 @@
                     <div class="double-line"></div>
                 </div>
 
+                <div id="admin-controls-top" style="display: none; margin-bottom: 15px;">
+                    <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
+                </div>
+                
                 <div style="overflow-x: auto;">
                     <div class="input-form" id="koin-filter-form" style="margin-bottom: 20px;">
                          <div class="form-group">
@@ -359,7 +381,7 @@
                                 <th style="width: 8%; text-align: right;">Ranting (60%)</th>
                                 <th style="width: 8%; text-align: right;">MWC (25%)</th>
                                 <th style="width: 8%; text-align: right;">PC (5%)</th>
-                                </tr>
+                            </tr>
                         </thead>
                         <tbody>
                             </tbody>
@@ -408,17 +430,12 @@
                             <input type="number" id="koin-nominal" placeholder="Total Nominal Koin">
                         </div>
                         
-                        <div class="form-group-item control-buttons-left" style="flex-grow: 1;">
-                            <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
-                        </div>
-                        
-                        <div class="form-group-item control-buttons-right" style="margin-left: auto;">
+                        <div class="control-buttons-right">
                             <button onclick="saveData('koin')">Simpan Data</button>
                             <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
                         </div>
-
                     </div>
-                    </div>
+                </div>
 
             </div>
 
@@ -538,9 +555,10 @@
             const logoutBtn = document.querySelector('.navbar-links button');
             logoutBtn.style.display = isLoggedIn ? 'inline-block' : 'none';
 
-            // Kontrol Input Forms (koin-input-card) dan Delete Buttons
+            // Kontrol Input Forms (koin-input-card) dan Tombol Hapus Semua (admin-controls-top)
             if (currentModule === 'koin') {
                 document.getElementById('koin-input-card').style.display = isLoggedIn ? 'block' : 'none';
+                document.getElementById('admin-controls-top').style.display = isLoggedIn ? 'block' : 'none';
             }
             
             // Kontrol Kolom Aksi di Tabel (TH dan TD)
@@ -934,7 +952,6 @@
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeightA4 = doc.internal.pageSize.getHeight();
             const margin = 10;
-            const imgWidth = pageWidth - 2 * margin; // 277mm
             
             // --- FIXED TEXT HEADER UNTUK PDF ---
             let currentY = 5; 
