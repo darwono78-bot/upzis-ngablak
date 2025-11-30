@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Pembukuan UPZIS | Ranting Ngablak</title>
+    <title>Sistem Pembukuan UPZIS | Ranting Ngablak</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
-        /* Variabel CSS untuk Warna */
+        /* Variabel CSS dan Gaya Umum */
         :root {
             --color-primary: #006400; /* Hijau Tua/NU */
-            --color-secondary: #008000; /* Hijau Sedang */
-            --color-light: #e8f5e9; /* Hijau Sangat Muda */
+            --color-secondary: #008000;
+            --color-light: #e8f5e9;
             --color-bg: #f5f5f5;
             --color-text: #333;
             --color-card-bg: #ffffff;
@@ -22,12 +22,11 @@
 
         /* Global Style */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: var(--color-bg); color: var(--color-text); }
-        .container { padding: 20px; max-width: 1300px; margin: auto; }
+        .container { padding: 20px; max-width: 1200px; margin: auto; }
         h3 { color: var(--color-primary); border-bottom: 2px solid var(--color-light); padding-bottom: 5px; margin-top: 0; }
         
-        /* Layout Grid */
-        .grid-layout { display: grid; grid-template-columns: 1fr 3fr; gap: 20px; }
-        .card { background-color: var(--color-card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        /* Box untuk Input dan Filter */
+        .card { background-color: var(--color-card-bg); padding: 20px; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
 
         /* Navbar */
         .navbar { background-color: var(--color-primary); color: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: space-between; }
@@ -41,57 +40,40 @@
         .tab-menu button.active { color: var(--color-primary); border-bottom: 3px solid var(--color-primary); font-weight: 600; }
         
         /* Form Input dan Kontrol */
-        .input-form input, .input-form select { width: 100%; padding: 10px; margin: 5px 0 10px 0; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
-        .input-form label { display: block; font-weight: 500; margin-top: 10px; }
-        .input-form button { background-color: var(--color-primary); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; margin-top: 10px; }
+        .input-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .input-form .form-group-full { grid-column: 1 / -1; } /* Untuk tombol atau elemen penuh */
+        .input-form input, .input-form select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
+        .input-form label { display: block; font-weight: 500; }
+        .input-form button { background-color: var(--color-primary); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s; }
         .input-form button:hover { background-color: #004d00; }
         .input-form .btn-secondary { background-color: #6c757d; margin-left: 10px; }
-        .input-form .btn-secondary:hover { background-color: #5a6268; }
-
-        /* Tabel Data */
+        
+        /* Tabel Data (Report Style) */
         .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .data-table th, .data-table td { border: 1px solid var(--color-border); padding: 12px; text-align: left; }
         .data-table th { background-color: var(--color-light); color: var(--color-primary); font-weight: 600; }
         .data-table tr:nth-child(even) { background-color: #fafafa; }
         .data-table tr:hover { background-color: #f1f8e9; }
         .data-table .actions button { margin-right: 5px; padding: 6px 10px; cursor: pointer; border: none; border-radius: 3px; font-size: 0.85rem; }
-        .data-table .actions .edit { background-color: #ff9800; color: white; }
-        .data-table .actions .delete { background-color: #f44336; color: white; }
         .data-table tfoot td { font-weight: bold; background-color: #ccff90; }
 
         /* Khusus Laporan Tahunan */
         .annual-table input { border: 1px solid #ccc; padding: 5px; width: 90%; }
         .annual-table td:nth-child(2), .annual-table td:nth-child(3) { text-align: right; }
-        .annual-table tfoot tr { font-size: 1.1rem; }
         #tahunan-saldo-akhir { background-color: #c8e6c9 !important; }
 
         /* Kontrol Global */
+        .control-buttons { margin-top: 20px; }
         .control-buttons button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; transition: opacity 0.3s; }
         .control-buttons .btn-export { background-color: #00bcd4; color: white; }
         .control-buttons .btn-delete-all { background-color: #dc3545; color: white; }
 
-        /* Login Screen Style */
-        #login-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--color-light); 
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 1000;
-        }
-        #login-screen .login-box {
-            background-color: var(--color-card-bg); padding: 40px; border-radius: 10px; 
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2); width: 350px;
-        }
+        /* Login Screen (Sama seperti sebelumnya) */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--color-light); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        #login-screen .login-box { background-color: var(--color-card-bg); padding: 40px; border-radius: 10px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); width: 350px; }
         #login-screen h2 { color: var(--color-primary); margin-bottom: 20px; text-align: center; }
-        #login-screen input { margin-bottom: 20px; }
-        #login-screen button { width: 100%; }
-
-        /* Toast Notification */
-        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1050; }
-        .toast { min-width: 250px; background-color: #333; color: white; padding: 10px 20px; border-radius: 4px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); opacity: 0; transition: opacity 0.5s, transform 0.5s; transform: translateY(20px); }
-        .toast.show { opacity: 1; transform: translateY(0); }
-        .toast.success { background-color: #28a745; }
-        .toast.error { background-color: #dc3545; }
-        .toast.info { background-color: #007bff; }
+        #login-screen input { margin-bottom: 20px; width: 100%; padding: 10px; border: 1px solid var(--color-border); border-radius: 4px; box-sizing: border-box; }
+        #login-screen button { width: 100%; background-color: var(--color-primary); color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -120,50 +102,47 @@
         </nav>
 
         <div class="tab-menu">
-            <button id="tab-koin" class="active" onclick="switchModule('koin')">Laporan Koin NU</button>
-            <button id="tab-jurnal" onclick="switchModule('jurnal')">Jurnal Umum</button>
-            <button id="tab-tahunan" onclick="switchModule('tahunan')">Laporan Tahunan</button>
+            <button id="tab-koin" class="active" onclick="switchModule('koin')">1. Laporan Koin NU</button>
+            <button id="tab-jurnal" onclick="switchModule('jurnal')">2. Jurnal Umum</button>
+            <button id="tab-tahunan" onclick="switchModule('tahunan')">3. Laporan Tahunan</button>
         </div>
 
         <div class="container">
             <div id="toast-container"></div>
 
             <div id="module-koin" class="module-content active">
-                <h3>Laporan Pemasukan Koin NU</h3>
+                <h3>Laporan Koin NU</h3>
                 
-                <div class="grid-layout">
-                    <div id="koin-input-form" class="card">
-                        <h4>Input Data Koin</h4>
-                        <input type="hidden" id="koin-id" value="">
+                <div class="card">
+                    <h4>Input dan Filter Data</h4>
+                    <div class="input-form">
+                        <div class="form-group">
+                            <label for="koin-tanggal">Tanggal:</label>
+                            <input type="date" id="koin-tanggal">
+                        </div>
+                        <div class="form-group">
+                            <label for="koin-keterangan">Keterangan/Asal:</label>
+                            <input type="text" id="koin-keterangan" placeholder="Asal/Nama Ranting/Keterangan">
+                        </div>
+                        <div class="form-group">
+                            <label for="koin-nominal">Nominal (Rp):</label>
+                            <input type="number" id="koin-nominal" placeholder="Nominal Koin">
+                            <input type="hidden" id="koin-id" value="">
+                        </div>
                         
-                        <label for="koin-tanggal">Tanggal:</label>
-                        <input type="date" id="koin-tanggal">
-                        
-                        <label for="koin-keterangan">Keterangan/Asal:</label>
-                        <input type="text" id="koin-keterangan" placeholder="Asal/Nama Ranting/Keterangan">
-                        
-                        <label for="koin-nominal">Nominal (Rp):</label>
-                        <input type="number" id="koin-nominal" placeholder="Nominal Koin">
-                        
-                        <button onclick="saveData('koin')">Simpan Data</button>
-                        <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
-                    </div>
-
-                    <div class="card">
-                        <h4>Filter & Ringkasan</h4>
-                        <div style="margin-bottom: 20px;">
+                        <div class="form-group">
                             <label for="filter-koin-bulan">Filter Bulan & Tahun:</label>
                             <select id="filter-koin-bulan" onchange="filterData('koin')"></select>
                         </div>
                         
-                        <div style="border-top: 1px dashed var(--color-border); padding-top: 15px;">
-                            <p style="font-size: 1.2rem;">Total Pemasukan Koin (Filter):</p>
-                            <p id="koin-total-masuk" style="font-size: 1.8rem; color: var(--color-primary); font-weight: bold;">Rp 0</p>
+                        <div class="form-group">
+                            <p>Total Masuk (Filter):</p>
+                            <p id="koin-total-masuk" style="font-weight: bold; font-size: 1.2rem; color: var(--color-primary);">Rp 0</p>
                         </div>
 
-                        <div class="control-buttons" style="margin-top: 20px;">
-                            <button class="btn-export" onclick="exportToPDF('koin')">Ekspor PDF</button>
-                            <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data</button>
+                        <div class="form-group-full" style="text-align: right;">
+                            <button onclick="saveData('koin')">Simpan Data</button>
+                            <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
                         </div>
                     </div>
                 </div>
@@ -173,64 +152,68 @@
                     <table class="data-table" id="table-koin">
                         <thead>
                             <tr>
-                                <th>Tanggal</th>
-                                <th>Keterangan</th>
-                                <th style="text-align: right;">Masuk (Rp)</th>
-                                <th>Aksi</th>
+                                <th style="width: 15%;">Tanggal</th>
+                                <th style="width: 55%;">Keterangan</th>
+                                <th style="width: 20%; text-align: right;">Masuk (Rp)</th>
+                                <th style="width: 10%;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan="2">TOTAL MASUK (Di Filter)</td>
+                                <td colspan="2">TOTAL KESELURUHAN (Di Filter)</td>
                                 <td id="koin-total-masuk-footer" style="text-align: right;">Rp 0</td>
                                 <td></td>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
+
+                <div class="control-buttons">
+                    <button class="btn-export" onclick="exportToPDF('koin')">Ekspor PDF</button>
+                    <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
+                </div>
             </div>
 
             <div id="module-jurnal" class="module-content">
-                <h3>Jurnal Umum & Kas Masuk/Keluar</h3>
+                <h3>Jurnal Umum</h3>
                 
-                <div class="grid-layout">
-                    <div id="jurnal-input-form" class="card">
-                        <h4>Input Transaksi Jurnal</h4>
+                <div class="card" id="saldo-awal-card"> 
+                    <h4>Setting Saldo Awal Tahun <span id="current-year-display"></span></h4>
+                    <label for="jurnal-saldo-awal-input">Saldo Awal Kas (Rp):</label>
+                    <input type="number" id="jurnal-saldo-awal-input" placeholder="Masukkan Saldo Awal Kas" style="width: 250px; display: inline-block;">
+                    <button onclick="editData('annual', 'jurnal_saldo')">Simpan Saldo Awal</button>
+                </div>
+                
+                <div id="jurnal-input-form" class="card">
+                    <h4>Input Transaksi Jurnal</h4>
+                    <div class="input-form">
                         <input type="hidden" id="jurnal-id" value="">
+                        <div class="form-group">
+                            <label for="jurnal-tanggal">Tanggal:</label>
+                            <input type="date" id="jurnal-tanggal">
+                        </div>
+                        <div class="form-group">
+                            <label for="jurnal-jenis">Jenis Transaksi:</label>
+                            <select id="jurnal-jenis">
+                                <option value="MASUK">Pemasukan (Debet)</option>
+                                <option value="KELUAR">Pengeluaran (Kredit)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="jurnal-nominal">Nominal (Rp):</label>
+                            <input type="number" id="jurnal-nominal" placeholder="Nominal Transaksi">
+                        </div>
                         
-                        <label for="jurnal-tanggal">Tanggal:</label>
-                        <input type="date" id="jurnal-tanggal">
-                        
-                        <label for="jurnal-keterangan">Keterangan:</label>
-                        <input type="text" id="jurnal-keterangan" placeholder="Uraian Transaksi">
-                        
-                        <label for="jurnal-jenis">Jenis Transaksi:</label>
-                        <select id="jurnal-jenis">
-                            <option value="MASUK">Pemasukan (Debet)</option>
-                            <option value="KELUAR">Pengeluaran (Kredit)</option>
-                        </select>
-                        
-                        <label for="jurnal-nominal">Nominal (Rp):</label>
-                        <input type="number" id="jurnal-nominal" placeholder="Nominal Transaksi">
-                        
-                        <button onclick="saveData('jurnal')">Simpan Data</button>
-                        <button class="btn-secondary" onclick="resetForm('jurnal')">Batal</button>
-                    </div>
-
-                    <div class="card">
-                        <h4>Setting Saldo Awal</h4>
-                        <div id="saldo-awal-form">
-                            <p style="font-size: 0.9rem;">Saldo Awal Tahun <span id="current-year-display" style="font-weight: bold;"></span> digunakan untuk menghitung saldo kumulatif di bawah.</p>
-                            <label for="jurnal-saldo-awal-input">Saldo Awal (Rp):</label>
-                            <input type="number" id="jurnal-saldo-awal-input" placeholder="Saldo Awal Kas">
-                            <button onclick="editData('annual', 'jurnal_saldo')">Simpan Saldo Awal</button>
+                        <div class="form-group form-group-full">
+                            <label for="jurnal-keterangan">Uraian/Keterangan:</label>
+                            <input type="text" id="jurnal-keterangan" placeholder="Uraian Transaksi">
                         </div>
 
-                        <div class="control-buttons" style="margin-top: 30px; border-top: 1px dashed var(--color-border); padding-top: 20px;">
-                            <button class="btn-export" onclick="exportToPDF('jurnal')">Ekspor PDF</button>
-                            <button class="btn-delete-all" onclick="deleteAllDataGlobal('jurnal')">Hapus Semua Data</button>
+                        <div class="form-group-full" style="text-align: right;">
+                            <button onclick="saveData('jurnal')">Simpan Data</button>
+                            <button class="btn-secondary" onclick="resetForm('jurnal')">Batal</button>
                         </div>
                     </div>
                 </div>
@@ -240,17 +223,22 @@
                     <table class="data-table" id="table-jurnal">
                         <thead>
                             <tr>
-                                <th>Tanggal</th>
-                                <th>Keterangan</th>
-                                <th style="text-align: right;">Debet (Masuk)</th>
-                                <th style="text-align: right;">Kredit (Keluar)</th>
-                                <th style="text-align: right;">Saldo Akumulatif</th>
-                                <th>Aksi</th>
+                                <th style="width: 10%;">Tanggal</th>
+                                <th style="width: 35%;">Uraian</th>
+                                <th style="width: 15%; text-align: right;">Debet (Masuk)</th>
+                                <th style="width: 15%; text-align: right;">Kredit (Keluar)</th>
+                                <th style="width: 15%; text-align: right;">Saldo</th>
+                                <th style="width: 10%;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             </tbody>
                     </table>
+                </div>
+
+                <div class="control-buttons">
+                    <button class="btn-export" onclick="exportToPDF('jurnal')">Ekspor PDF</button>
+                    <button class="btn-delete-all" onclick="deleteAllDataGlobal('jurnal')">Hapus Semua Data Jurnal</button>
                 </div>
             </div>
 
@@ -260,7 +248,8 @@
                 <div class="card">
                     <h4>Pilih Tahun Laporan</h4>
                     <label for="filter-tahunan-tahun">Tahun:</label>
-                    <select id="filter-tahunan-tahun" onchange="filterData('tahunan')"></select>
+                    <select id="filter-tahunan-tahun" onchange="filterData('tahunan')" style="width: 150px; display: inline-block; padding: 10px; border: 1px solid var(--color-border); border-radius: 4px;"></select>
+                    <button class="btn-export" onclick="exportToPDF('tahunan')" style="margin-left: 20px;">Ekspor Laporan Tahun Ini (PDF)</button>
                 </div>
 
                 <div class="card" style="overflow-x: auto;">
@@ -269,14 +258,14 @@
                         <thead>
                             <tr>
                                 <th>Keterangan</th>
-                                <th style="width: 20%;">Pemasukan (Rp)</th>
-                                <th style="width: 20%;">Pengeluaran (Rp)</th>
+                                <th style="width: 25%;">Pemasukan (Rp)</th>
+                                <th style="width: 25%;">Pengeluaran (Rp)</th>
                                 <th style="width: 10%;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr data-key="saldo_awal">
-                                <td>Saldo Kas Awal Tahun <small>(Diambil dari Saldo Awal Jurnal Umum)</small></td>
+                                <td>Saldo Kas Awal Tahun</td>
                                 <td data-type="masuk" data-manual="false" id="tahunan-saldo_awal-masuk">Rp 0</td>
                                 <td>-</td>
                                 <td></td>
@@ -288,15 +277,15 @@
                                 <td></td>
                             </tr>
                             <tr data-key="manual_1">
-                                <td><input type="text" id="tahunan-manual_1-keterangan" placeholder="Keterangan Pemasukan/Pengeluaran Manual 1"></td>
-                                <td data-type="masuk"><input type="number" id="tahunan-manual_1-masuk" onchange="editData('annual', 'manual_1')"></td>
-                                <td data-type="keluar"><input type="number" id="tahunan-manual_1-keluar" onchange="editData('annual', 'manual_1')"></td>
+                                <td><input type="text" id="tahunan-manual_1-keterangan" placeholder="Pemasukan/Pengeluaran Manual 1"></td>
+                                <td data-type="masuk"><input type="number" id="tahunan-manual_1-masuk" onchange="editData('annual', 'manual_1')" placeholder="0"></td>
+                                <td data-type="keluar"><input type="number" id="tahunan-manual_1-keluar" onchange="editData('annual', 'manual_1')" placeholder="0"></td>
                                 <td><button onclick="editData('annual', 'manual_1')">Simpan</button></td>
                             </tr>
                             <tr data-key="manual_2">
-                                <td><input type="text" id="tahunan-manual_2-keterangan" placeholder="Keterangan Pemasukan/Pengeluaran Manual 2"></td>
-                                <td data-type="masuk"><input type="number" id="tahunan-manual_2-masuk" onchange="editData('annual', 'manual_2')"></td>
-                                <td data-type="keluar"><input type="number" id="tahunan-manual_2-keluar" onchange="editData('annual', 'manual_2')"></td>
+                                <td><input type="text" id="tahunan-manual_2-keterangan" placeholder="Pemasukan/Pengeluaran Manual 2"></td>
+                                <td data-type="masuk"><input type="number" id="tahunan-manual_2-masuk" onchange="editData('annual', 'manual_2')" placeholder="0"></td>
+                                <td data-type="keluar"><input type="number" id="tahunan-manual_2-keluar" onchange="editData('annual', 'manual_2')" placeholder="0"></td>
                                 <td><button onclick="editData('annual', 'manual_2')">Simpan</button></td>
                             </tr>
                             <tr data-key="total_pengeluaran">
@@ -308,28 +297,24 @@
                         </tbody>
                         <tfoot>
                             <tr style="background-color: var(--color-light);">
-                                <td>TOTAL KAS MASUK TAHUNAN</td>
-                                <td id="tahunan-total-pemasukan">Rp 0</td>
+                                <td style="font-size: 1.1rem;">TOTAL KAS MASUK TAHUNAN</td>
+                                <td id="tahunan-total-pemasukan" style="font-size: 1.1rem;">Rp 0</td>
                                 <td></td>
                                 <td></td>
                             </tr>
                             <tr style="background-color: #fce4ec;">
-                                <td>TOTAL KAS KELUAR TAHUNAN</td>
+                                <td style="font-size: 1.1rem;">TOTAL KAS KELUAR TAHUNAN</td>
                                 <td></td>
-                                <td id="tahunan-total-pengeluaran-all">Rp 0</td>
+                                <td id="tahunan-total-pengeluaran-all" style="font-size: 1.1rem;">Rp 0</td>
                                 <td></td>
                             </tr>
-                            <tr id="tahunan-saldo-akhir-row">
-                                <td>SALDO KAS AKHIR TAHUN</td>
-                                <td colspan="2" id="tahunan-saldo-akhir" style="text-align: center;">Rp 0</td>
+                            <tr id="tahunan-saldo-akhir-row" style="border-top: 3px solid var(--color-primary);">
+                                <td style="font-size: 1.2rem;">SALDO KAS AKHIR TAHUN</td>
+                                <td colspan="2" id="tahunan-saldo-akhir" style="text-align: center; font-size: 1.2rem;">Rp 0</td>
                                 <td></td>
                             </tr>
                         </tfoot>
                     </table>
-                </div>
-
-                <div class="control-buttons">
-                    <button class="btn-export" onclick="exportToPDF('tahunan')">Ekspor PDF</button>
                 </div>
             </div>
         </div>
@@ -357,7 +342,7 @@
         // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app); // Inisialisasi Firebase Auth
+        const auth = getAuth(app); 
         
         // Konstanta Nama Koleksi
         const COL_KOIN = 'laporan_koin_nu';
@@ -396,17 +381,15 @@
             
             container.appendChild(toast);
             
-            // Tampilkan
             setTimeout(() => {
                 toast.classList.add('show');
             }, 10);
 
-            // Hilangkan
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => {
                     container.removeChild(toast);
-                }, 500); // Tunggu transisi selesai
+                }, 500);
             }, 5000);
         }
         
@@ -425,7 +408,6 @@
             try {
                 loginButton.textContent = 'Loading...';
                 await signInWithEmailAndPassword(auth, emailInput, passwordInput);
-                // Login Sukses. onAuthStateChanged akan menangani tampilan.
                 showToast('Login Berhasil!', 'success');
         
             } catch (error) {
@@ -447,24 +429,20 @@
             showToast('Anda telah Logout.', 'info');
         };
         
-        // Cek status login saat halaman dimuat
         onAuthStateChanged(auth, (user) => {
             const loginScreen = document.getElementById('login-screen');
             const appContainer = document.getElementById('app-container');
             const loginButton = document.querySelector('#login-screen button');
 
             if (user) {
-                // User sudah login
                 loginScreen.style.display = 'none';
                 appContainer.style.display = 'block';
                 loginButton.textContent = 'Login';
                 
-                // Panggil fungsi inisialisasi data
                 loadAllCollections();
                 populateFilterOptions();
                 filterData(currentModule);
             } else {
-                // User belum login
                 loginScreen.style.display = 'flex';
                 appContainer.style.display = 'none';
                 loginButton.textContent = 'Login';
@@ -475,19 +453,15 @@
 
         window.loadAllCollections = async function() {
             try {
-                // 1. Ambil Data KOIN
                 const koinSnapshot = await getDocs(collection(db, COL_KOIN));
                 KoinData = koinSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
-                // 2. Ambil Data JURNAL
                 const jurnalSnapshot = await getDocs(collection(db, COL_JURNAL));
                 JurnalData = jurnalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // 3. Ambil Data TAHUNAN
                 const tahunanSnapshot = await getDocs(collection(db, COL_TAHUNAN));
                 LaporanTahunanData = tahunanSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Data dimuat, update filter dan tampilkan
                 populateFilterOptions();
                 filterData(currentModule);
                 
@@ -517,7 +491,7 @@
                 data = {
                     tanggal: document.getElementById('jurnal-tanggal').value || getCurrentDate(),
                     keterangan: document.getElementById('jurnal-keterangan').value,
-                    jenis: document.getElementById('jurnal-jenis').value, // MASUK/KELUAR
+                    jenis: document.getElementById('jurnal-jenis').value, 
                     nominal: Number(document.getElementById('jurnal-nominal').value),
                     tipe: 'JURNAL',
                     createdAt: new Date().toISOString()
@@ -525,7 +499,7 @@
             }
 
             if (!data.keterangan || data.nominal <= 0) {
-                showToast('Keterangan dan Nominal wajib diisi (Nominal > 0).', 'error');
+                showToast('Keterangan/Uraian dan Nominal wajib diisi (Nominal > 0).', 'error');
                 return;
             }
 
@@ -608,7 +582,6 @@
             const currentYear = new Date().getFullYear();
             if (!years.includes(currentYear)) years.unshift(currentYear);
 
-            // Filter Koin (Bulan & Tahun)
             const filterKoin = document.getElementById('filter-koin-bulan');
             filterKoin.innerHTML = '<option value="all">Semua Bulan & Tahun</option>';
             
@@ -621,14 +594,12 @@
                 });
             });
 
-            // Filter Tahunan (Tahun)
             const filterTahunan = document.getElementById('filter-tahunan-tahun');
             filterTahunan.innerHTML = '';
             years.forEach(year => {
                 filterTahunan.innerHTML += `<option value="${year}">${year}</option>`;
             });
 
-            // Set filter default
             const currentMonth = new Date().getMonth() + 1;
             filterKoin.value = `${currentMonth}-${currentYear}`;
             filterTahunan.value = currentYear;
@@ -648,7 +619,6 @@
                 populateTable('koin', filtered);
 
             } else if (module === 'jurnal') {
-                // Jurnal Umum tampilkan semua data dan hitung saldo
                 const sortedJurnal = JurnalData.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
                 populateTable('jurnal', sortedJurnal);
 
@@ -678,7 +648,6 @@
                     `;
                 });
                 document.getElementById('koin-total-masuk').textContent = formatRupiah(totalMasuk);
-                // Update footer juga
                 const koinFooter = document.getElementById('koin-total-masuk-footer');
                 if(koinFooter) koinFooter.textContent = formatRupiah(totalMasuk);
 
@@ -690,7 +659,6 @@
                 const saldoAwal = saldoAwalDoc ? (saldoAwalDoc[currentYear]?.saldo || 0) : 0;
                 currentBalance = saldoAwal;
 
-                // Saldo Awal sebagai baris pertama
                 const initialRow = tbody.insertRow();
                 initialRow.style.fontWeight = 'bold';
                 initialRow.style.backgroundColor = '#f1f8e9';
@@ -728,41 +696,32 @@
                 const annualDoc = LaporanTahunanData.find(d => d.id === `laporan_${selectedYear}`);
                 const currentAnnualData = annualDoc || {};
 
-                // 1. Hitung Otomatis (Koin NU)
                 const totalKoinMasuk = KoinData
                     .filter(d => new Date(d.tanggal).getFullYear() === selectedYear)
                     .reduce((sum, d) => sum + d.masuk, 0);
 
-                // 2. Hitung Otomatis (Total Pengeluaran Jurnal)
                 const totalJurnalKeluar = JurnalData
                     .filter(d => new Date(d.tanggal).getFullYear() === selectedYear && d.jenis === 'KELUAR')
                     .reduce((sum, d) => sum + d.nominal, 0);
 
-                // 3. Saldo Awal Tahun
                 const saldoAwalTahun = saldoAwalDoc ? (saldoAwalDoc[selectedYear]?.saldo || 0) : 0;
                 document.getElementById('tahunan-saldo_awal-masuk').textContent = formatRupiah(saldoAwalTahun);
                 
-                // 4. Update baris Koin NU
                 document.getElementById('tahunan-koin_nu-masuk').textContent = formatRupiah(totalKoinMasuk);
 
-                // 5. Update baris Total Pengeluaran Jurnal
                 document.getElementById('tahunan-total_pengeluaran-keluar').textContent = formatRupiah(totalJurnalKeluar);
 
-                // 6. Update Input Manual
                 for (let i = 1; i <= 2; i++) {
                     const key = `manual_${i}`;
-                    // Cari data manual untuk tahun ini
                     const manualData = currentAnnualData[key] || {};
                     document.getElementById(`tahunan-${key}-keterangan`).value = manualData.keterangan || '';
                     document.getElementById(`tahunan-${key}-masuk`).value = manualData.masuk || '';
                     document.getElementById(`tahunan-${key}-keluar`).value = manualData.keluar || '';
                 }
 
-                // 7. Hitung Total Akhir
                 let totalPemasukan = saldoAwalTahun + totalKoinMasuk;
                 let totalPengeluaran = totalJurnalKeluar;
 
-                // Tambah data manual
                 for (let i = 1; i <= 2; i++) {
                     const key = `manual_${i}`;
                     const manualData = currentAnnualData[key] || {};
@@ -824,24 +783,19 @@
             let docId, dataToSave = {};
 
             if (dataType === 'annual' && key === 'jurnal_saldo') {
-                // Edit Saldo Awal Tahun
                 docId = 'saldo_awal_tahun';
                 const saldo = Number(document.getElementById('jurnal-saldo-awal-input').value) || 0;
                 
-                // Ambil data yang sudah ada, lalu update hanya untuk tahun ini
                 const existingDoc = LaporanTahunanData.find(d => d.id === docId) || {};
-                // Saldo Awal disimpan dengan key tahun, agar bisa melacak saldo awal tiap tahun
                 dataToSave = { ...existingDoc, [currentYear]: { saldo: saldo } };
 
             } else if (dataType === 'annual' && key.startsWith('manual_')) {
-                // Edit Baris Manual di Laporan Tahunan
                 docId = `laporan_${currentYear}`;
 
                 const keterangan = document.getElementById(`tahunan-${key}-keterangan`).value;
                 const masuk = Number(document.getElementById(`tahunan-${key}-masuk`).value) || 0;
                 const keluar = Number(document.getElementById(`tahunan-${key}-keluar`).value) || 0;
 
-                // Ambil data yang sudah ada, lalu update hanya key manual_x ini
                 const existingAnnualDoc = LaporanTahunanData.find(d => d.id === docId) || {};
                 
                 dataToSave = { 
@@ -849,14 +803,14 @@
                     [key]: { keterangan, masuk, keluar }
                 };
             } else {
-                return; // Tipe data tidak dikenal
+                return;
             }
 
             try {
                 await setDoc(doc(db, COL_TAHUNAN, docId), dataToSave);
                 showToast('Data Tahunan berhasil disimpan!', 'success');
                 await loadAllCollections();
-                filterData(currentModule); // Refresh tampilan
+                filterData(currentModule); 
             } catch (error) {
                 console.error("Error saving annual data:", error);
                 showToast(`Gagal menyimpan data tahunan: ${error.message}`, 'error');
@@ -871,16 +825,13 @@
             const doc = new window.jspdf.jsPDF('p', 'mm', 'a4');
             const element = document.getElementById(`table-${module}`);
             
-            // Logika untuk menghilangkan kolom Aksi sebelum cetak
             const tableClone = element.cloneNode(true);
             const actionIndex = Array.from(tableClone.querySelector('thead tr').children).findIndex(th => th.textContent.includes('Aksi'));
             
             if (actionIndex !== -1) {
                 tableClone.querySelectorAll('tr').forEach(row => {
-                    // Cek jika baris memiliki kolom aksi (untuk menghindari baris footer/saldo awal yang tidak memiliki aksi)
                     if (row.children.length > actionIndex) {
                         const cellToRemove = row.children[actionIndex];
-                        // Pastikan tombol input di laporan tahunan dihilangkan juga
                         if (module === 'tahunan') {
                              const buttons = cellToRemove.querySelectorAll('button');
                              if (buttons.length > 0) {
@@ -892,28 +843,27 @@
                 });
             }
 
-            // Atur style agar tabel terlihat bagus saat dikonversi
             tableClone.style.width = '100%';
             tableClone.style.borderCollapse = 'collapse';
             tableClone.style.fontSize = '8pt';
-            tableClone.style.tableLayout = 'auto'; // Agar kolom lebar otomatis
+            tableClone.style.tableLayout = 'auto';
 
             const header = `Laporan ${module.toUpperCase()} UPZIS Ranting Ngablak`;
             doc.text(header, 10, 10);
             doc.setFontSize(8);
             doc.text(`Dicetak pada: ${formatDate(getCurrentDate(), false)}`, 10, 15);
-            doc.setFontSize(11); // Kembalikan ukuran font
+            doc.setFontSize(11);
 
             window.html2canvas(tableClone, { scale: 2 }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 190; // A4 width minus margins (210 - 10*2)
-                const pageHeight = 295; // A4 height
+                const imgWidth = 190;
+                const pageHeight = 295;
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
                 let position = 20;
 
                 doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                heightLeft -= (pageHeight - 20); // Kurangi area header
+                heightLeft -= (pageHeight - 20);
 
                 let pageNum = 1;
                 while (heightLeft >= 0) {
