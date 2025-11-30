@@ -35,32 +35,26 @@
             justify-content: center;
             margin-bottom: 5px;
         }
-        .report-header img {
-            height: 90px; /* Logo Diperbesar */
-            margin-right: 15px;
+        /* Menggunakan file korps-laziznu.png sebagai header utama */
+        .report-header img.korp-header {
+            height: auto; 
+            width: 100%; /* Lebar 100% */
+            max-width: 900px;
+            margin: 0 auto 5px auto;
+            display: block;
         }
-        .report-header h3 {
-            color: #004d00; /* Warna judul lebih kuat/keren */
-            margin: 0;
-            padding: 0;
-            font-size: 1.8rem; /* Ukuran judul lebih besar */
-            font-weight: 900; /* Lebih tebal */
-            line-height: 1.2;
-            border-bottom: none;
+        /* Menghilangkan Logo kecil dan Judul di Halaman HTML */
+        .report-header img, .report-header h3, .report-header p {
+            display: none; 
         }
-        .report-header p {
-            margin: 0;
-            font-size: 1rem; /* Ukuran alamat */
-            color: #111; /* Warna alamat hitam kuat */
-            font-weight: 500;
-        }
+
         /* Garis Ganda Tipis */
         .double-line {
             border-bottom: 3px double var(--color-primary); /* Garis Ganda */
             height: 1px;
             margin-top: 10px;
             margin-bottom: 20px;
-            width: 100%; /* Lebar 100% (Sepanjang Tabel) */
+            width: 100%; 
             margin-left: auto;
             margin-right: auto;
         }
@@ -213,6 +207,7 @@
                 
                 <div class="report-header">
                     <div class="report-header-content">
+                        <img class="korp-header" src="korps-laziznu.png" alt="Korp Header Lazisnu">
                         <img src="logo_laziznu.png" alt="Logo Lazisnu">
                         <div>
                             <h3>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h3>
@@ -814,94 +809,64 @@
             const monthText = filterMonth === 'all' ? 'SEMUA BULAN' : monthNames[Number(filterMonth)].toUpperCase();
             const yearText = filterYear === 'all' ? 'SEMUA TAHUN' : filterYear;
 
-            // --- HEADER BARU UNTUK PDF ---
-            const headerLine1 = `NU CARE UPZIS - LAZISNU RANTING NGABLAK`;
-            const headerLine2 = `Sekretariat: Jalan raya KM 7 Tayu jepara, Desa Ngablak, Kec. Cuwak, Kab. Pati`;
-            const filterInfo = `Laporan Koin NU - Periode: ${monthText} TAHUN ${yearText}`;
-
             // PENGATURAN FONT & POSISI
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeightA4 = doc.internal.pageSize.getHeight();
-            const logoSize = 25; // Ukuran logo di PDF (mm)
             const margin = 10;
-            const logoX = margin;
+            const imgWidth = pageWidth - 2 * margin; // 277mm
+            const korpHeaderHeight = 25; // Tinggi Korp Header (25mm)
             
-            // 1. Tambah Logo
-            const logo = document.querySelector('.report-header img');
-            if (logo) {
-                try {
-                     const logoDataUrl = logo.src;
-                     doc.addImage(logoDataUrl, 'PNG', logoX, 5, logoSize, logoSize);
-                } catch(e) {
-                    console.warn("Logo not found or failed to load for PDF. Skipping image.");
-                }
+            let currentY = 5; // Posisi Y saat ini, dimulai dari 5mm top margin
+            
+            // --- HEADER KORPS BARU UNTUK PDF ---
+            try {
+                 // 1. Tambah Korps Header Image (korps-laziznu.png)
+                 const korpLogoUrl = 'korps-laziznu.png'; // Nama file sesuai permintaan user
+                 doc.addImage(korpLogoUrl, 'PNG', margin, currentY, imgWidth, korpHeaderHeight);
+            } catch(e) {
+                console.warn("Korp Header not found or failed to load for PDF. Using text header fallback.");
+                
+                // FALLBACK: Use text header if image fails to load
+                const headerLine1 = `NU CARE UPZIS - LAZISNU RANTING NGABLAK`;
+                const headerLine2 = `Sekretariat: Jalan raya KM 7 Tayu jepara, Desa Ngablak, Kec. Cuwak, Kab. Pati`;
+
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                doc.text(headerLine1, pageWidth / 2, currentY + 5, { align: 'center' }); 
+                
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text(headerLine2, pageWidth / 2, currentY + 10, { align: 'center' }); 
+                
+                currentY += 15;
             }
-
-
-            // 2. Judul Rata Tengah
-            doc.setFontSize(14);
-            doc.setFont('helvetica', 'bold');
-            doc.text(headerLine1, pageWidth / 2, 10, { align: 'center' }); 
             
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text(headerLine2, pageWidth / 2, 15, { align: 'center' }); 
-            
-            // 3. Garis Ganda Tipis
+            currentY += korpHeaderHeight; // Pindah ke bawah gambar/fallback (sekitar Y=30)
+
+            // 2. Garis Ganda Tipis (Di bawah Korp Header)
             doc.setLineWidth(0.5);
-            doc.line(margin, 17, pageWidth - margin, 17); // Garis 1 (Tebal)
+            doc.line(margin, currentY, pageWidth - margin, currentY); // Garis 1 (Tebal)
             doc.setLineWidth(0.1);
-            doc.line(margin, 18.5, pageWidth - margin, 18.5); // Garis 2 (Tipis)
+            doc.line(margin, currentY + 1.5, pageWidth - margin, currentY + 1.5); // Garis 2 (Tipis)
 
-            // 4. Info Filter
+            currentY += 5; // Pindah ke Y=35
+
+            // 3. Info Filter
+            const filterInfo = `Laporan Koin NU - Periode: ${monthText} TAHUN ${yearText}`;
             doc.setFontSize(10);
             doc.setFont('helvetica', 'bold');
-            doc.text(filterInfo, margin, 25); 
+            doc.text(filterInfo, margin, currentY); 
             
+            // 4. Info Dicetak
             doc.setFontSize(8);
             doc.setFont('helvetica', 'italic');
-            doc.text(`Dicetak pada: ${getCurrentDateIndonesian()}`, margin, 30);
+            doc.text(`Dicetak pada: ${getCurrentDateIndonesian()}`, margin, currentY + 5);
+            
+            let position = currentY + 10; // Start position for table canvas/image (sekitar Y=45)
             
             doc.setFontSize(11);
             doc.setFont('helvetica', 'normal');
-            
-            let position = 35; // Start position for table canvas/image
-            // --- END HEADER BARU UNTUK PDF ---
-
-
-            // LOGIKA PENYESUAIAN HEADER TABEL UNTUK CANVAS PDF (menjadi 1 baris)
-            const thead = tableClone.querySelector('thead');
-            const newThead = document.createElement('thead');
-            
-            const finalHeaderRow = newThead.insertRow();
-            
-            // Ambil semua header kolom yang memiliki rowspan="2" (No s/d Nominal)
-            const topRow = thead.rows[0];
-            for (let i = 0; i < 7; i++) {
-                const headerCell = topRow.cells[i];
-                const newCell = document.createElement('th');
-                newCell.textContent = headerCell.textContent;
-                newCell.style.textAlign = headerCell.style.textAlign;
-                newCell.style.whiteSpace = 'nowrap';
-                finalHeaderRow.appendChild(newCell);
-            }
-
-            // Ambil header Pembagian Dana Koin (Detailnya)
-            const bottomRow = thead.rows[1];
-            for (let i = 0; i < 4; i++) {
-                const headerCell = bottomRow.cells[i];
-                const newCell = document.createElement('th');
-                newCell.textContent = headerCell.textContent.replace(' (', ' (');
-                newCell.style.textAlign = headerCell.style.textAlign;
-                newCell.style.whiteSpace = 'nowrap';
-                finalHeaderRow.appendChild(newCell);
-            }
-            
-            // Gantikan thead lama dengan thead baru yang 1 baris untuk ekspor
-            tableClone.removeChild(thead);
-            tableClone.insertBefore(newThead, tableClone.firstChild);
-            
-            // Akhir LOGIKA PENYESUAIAN HEADER UNTUK PDF
+            // --- END HEADER KORPS BARU UNTUK PDF ---
 
             // --- FIX ERROR: Append tableClone to a hidden DOM element before calling html2canvas ---
             const tempDiv = document.createElement('div');
@@ -921,16 +886,21 @@
                 document.body.removeChild(tempDiv);
                 
                 const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 277; // Lebar gambar di PDF (sesuai A4 landscape minus margin)
                 const pageHeight = 190; // Area efektif per halaman (210 - 20)
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
                 let pageNum = 1;
                 
-                doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                heightLeft -= (pageHeight - 20); // 20mm margin/header space on first page
+                // Add first chunk of image (table)
+                doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight); 
+                
+                // Menghitung sisa tinggi di halaman pertama
+                const spaceUsedBeforeTable = position; 
+                const availableSpaceFirstPage = pageHeightA4 - spaceUsedBeforeTable - margin;
+                
+                heightLeft -= availableSpaceFirstPage; 
 
-                while (heightLeft >= -5) { // Looping while there is still content (with tolerance)
+                while (heightLeft >= -5) { 
                     doc.addPage();
                     pageNum++;
                     
@@ -941,9 +911,9 @@
                     // Adjust Y offset for the next image chunk
                     const yOffset = -(imgHeight - heightLeft);
                     
-                    doc.addImage(imgData, 'PNG', 10, yOffset + 10, imgWidth, imgHeight); // 10mm top margin on new pages
+                    doc.addImage(imgData, 'PNG', margin, yOffset + margin, imgWidth, imgHeight); 
                     
-                    heightLeft -= (pageHeight - 15); // 15mm for top/bottom margin on subsequent pages
+                    heightLeft -= (pageHeightA4 - 2 * margin); // 15mm for top/bottom margin on subsequent pages
                 }
 
                 // --- Tanda Tangan Block ---
@@ -951,14 +921,11 @@
                 const signatureBlockHeight = 40; 
                 
                 // Calculate where the content ends on the final page
-                let lastChunkHeight = imgHeight - ((pageNum - 1) * pageHeight);
-                if (pageNum > 1) {
-                    lastChunkHeight = imgHeight - (imgHeight + heightLeft - (10 - margin)); // Rough calculation of remaining height
-                }
+                const availableHeightLastPage = pageHeightA4 - margin;
+                // Posisi Y akhir dari tabel pada halaman terakhir (estimasi)
+                let tableEnd = availableHeightLastPage + heightLeft; 
                 
-                // Calculate the end of the last table chunk relative to the page top
-                let tableEnd = (pageHeightA4 - 10) + heightLeft + 10; // Simple approximation
-                
+                // Jika ruang di bawah tabel tidak cukup untuk tanda tangan, pindah ke halaman baru
                 if (tableEnd > pageHeightA4 - signatureBlockHeight - 10) {
                     doc.addPage();
                     signatureY = 20;
@@ -968,8 +935,8 @@
                 
                 const separation = 40; // Spacing from left/right edge to the center of the text block
 
-                const leftXCenter = margin + separation; // 50mm from left edge
-                const rightXCenter = pageWidth - margin - separation; // 50mm from right edge
+                const leftXCenter = margin + separation; 
+                const rightXCenter = pageWidth - margin - separation;
                 const lineHeight = 7;
 
                 // Tanggal (Rata Kanan)
