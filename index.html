@@ -90,8 +90,8 @@
             <div id="module-koin" class="module-content active">
                 <h3>Laporan Koin NU</h3>
                 
-                <div class="card" id="koin-controls-card" style="display: none;">
-                    <h4>Input dan Filter Data</h4>
+                <div class="card" id="koin-input-card" style="display: none;">
+                    <h4>Input Data Baru</h4>
                     <div class="input-form">
                         <input type="hidden" id="koin-id" value="">
                         <div class="form-group">
@@ -120,16 +120,6 @@
                             <input type="number" id="koin-nominal" placeholder="Total Nominal Koin">
                         </div>
                         
-                        <div class="form-group">
-                            <label for="filter-koin-bulan">Filter Bulan & Tahun:</label>
-                            <select id="filter-koin-bulan" onchange="filterData('koin')"></select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <p>Total Masuk (Filter):</p>
-                            <p id="koin-total-masuk" style="font-weight: bold; font-size: 1.2rem; color: var(--color-primary);">Rp 0</p>
-                        </div>
-
                         <div class="form-group-full" style="text-align: right;">
                             <button onclick="saveData('koin')">Simpan Data</button>
                             <button class="btn-secondary" onclick="resetForm('koin')">Batal</button>
@@ -137,10 +127,27 @@
                     </div>
 
                     <div class="control-buttons" style="margin-top: 20px;">
-                        <button class="btn-export" onclick="exportToPDF('koin')">Ekspor PDF</button>
                         <button class="btn-delete-all" onclick="deleteAllDataGlobal('koin')">Hapus Semua Data Koin</button>
                     </div>
                 </div>
+
+                <div class="card" id="koin-filter-card">
+                    <h4>Filter Data dan Total</h4>
+                    <div class="input-form" style="grid-template-columns: 1fr 1fr 1fr;">
+                         <div class="form-group">
+                            <label for="filter-koin-bulan">Filter Bulan & Tahun:</label>
+                            <select id="filter-koin-bulan" onchange="filterData('koin')"></select>
+                        </div>
+                        <div class="form-group">
+                            <p>Total Nominal Masuk (Filter):</p>
+                            <p id="koin-total-masuk" style="font-weight: bold; font-size: 1.2rem; color: var(--color-primary);">Rp 0</p>
+                        </div>
+                        <div class="form-group" style="text-align: right;">
+                            <button class="btn-export" onclick="exportToPDF('koin')" style="margin-top: 25px;">Ekspor PDF</button>
+                        </div>
+                    </div>
+                </div>
+
 
                 <div class="card" style="overflow-x: auto;">
                     <h4>Detail Transaksi Koin</h4>
@@ -157,7 +164,8 @@
                                 <th colspan="4" style="text-align: center;">Pembagian Koin (100%)</th>
                                 <th class="col-aksi" style="width: 5%;">Aksi</th> </tr>
                             <tr>
-                                <th colspan="7" style="border-right: 1px solid var(--color-border);"></th>
+                                <th colspan="6" style="border-right: 1px solid var(--color-border); border-top: none;"></th>
+                                <th style="width: 9%; text-align: right; border-top: none;">(Total)</th>
                                 <th style="width: 8%; text-align: right;">Petugas (10%)</th>
                                 <th style="width: 8%; text-align: right;">Ranting (60%)</th>
                                 <th style="width: 8%; text-align: right;">MWC (25%)</th>
@@ -181,10 +189,7 @@
                     </table>
                 </div>
 
-                <div class="control-buttons" id="koin-export-buttons">
-                    <button class="btn-export" onclick="exportToPDF('koin')">Ekspor PDF (Public)</button>
                 </div>
-            </div>
 
             <div id="module-jurnal" class="module-content">
                 <h3>Jurnal Umum</h3>
@@ -433,15 +438,18 @@
             const logoutBtn = document.querySelector('.navbar-links button');
             logoutBtn.style.display = isLoggedIn ? 'inline-block' : 'none';
 
-            // 2. Kontrol Input Forms dan Delete Buttons
-            document.getElementById('koin-controls-card').style.display = isLoggedIn ? 'block' : 'none';
+            // 2. Kontrol Input Forms (koin-input-card) dan Delete Buttons
+            document.getElementById('koin-input-card').style.display = isLoggedIn ? 'block' : 'none';
             document.getElementById('jurnal-input-form').style.display = isLoggedIn ? 'block' : 'none';
             document.getElementById('saldo-awal-card').style.display = isLoggedIn ? 'block' : 'none';
 
             // Export button public dan admin
-            document.querySelectorAll('[id$="-export-buttons"]').forEach(el => el.style.display = isLoggedIn ? 'none' : 'block');
+            // Kita pindahkan tombol export public ke dalam filter card di Koin, jadi yang disembunyikan hanya export button lama
+            document.querySelectorAll('#jurnal-export-buttons, #tahunan-export-buttons').forEach(el => el.style.display = isLoggedIn ? 'none' : 'block');
+            
+            // Tombol di dalam input card (Hapus semua data)
             document.querySelectorAll('.control-buttons').forEach(el => {
-                if (!el.id.endsWith('-export-buttons')) {
+                if (el.parentNode.id === 'koin-input-card' || el.parentNode.id === 'jurnal-input-form') {
                     el.style.display = isLoggedIn ? 'block' : 'none';
                 }
             });
@@ -683,6 +691,7 @@
                 filterTahunan.innerHTML += `<option value="${year}">${year}</option>`;
             });
 
+            // Set default filter to current month/year for better user experience
             const currentMonth = new Date().getMonth() + 1;
             filterKoin.value = `${currentMonth}-${currentYear}`;
             filterTahunan.value = currentYear;
@@ -697,11 +706,14 @@
                     if (filterValue === 'all') return true;
                     const dDate = new Date(d.tanggal);
                     return dDate.getMonth() + 1 === filterMonth && dDate.getFullYear() === filterYear;
-                }).sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+                })
+                // PENTING: Sorting Ascending (terlama ke terbaru) agar input baru di bawah
+                .sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
 
                 populateTable('koin', filtered);
 
             } else if (module === 'jurnal') {
+                // Sorting Ascending juga untuk Jurnal
                 const sortedJurnal = JurnalData.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
                 populateTable('jurnal', sortedJurnal);
 
@@ -728,10 +740,10 @@
                     const nominal = d.nominal || d.masuk || 0;
                     
                     // Hitung Distribusi
-                    const petugas = nominal * 0.10;
-                    const ranting = nominal * 0.60;
-                    const mwc = nominal * 0.25;
-                    const pc = nominal * 0.05;
+                    const petugas = Math.round(nominal * 0.10); // Pembulatan
+                    const ranting = Math.round(nominal * 0.60);
+                    const mwc = Math.round(nominal * 0.25);
+                    const pc = nominal - petugas - ranting - mwc; // Sisanya
 
                     // Update Totals
                     totalNominal += nominal;
@@ -763,7 +775,7 @@
                     `;
                 });
                 
-                // Update footer
+                // Update footer dan total di filter card
                 document.getElementById('koin-total-masuk').textContent = formatRupiah(totalNominal);
                 document.getElementById('koin-total-masuk-footer').textContent = formatRupiah(totalNominal);
                 
@@ -877,7 +889,7 @@
                 // Updated Nominal field (used to be 'masuk')
                 document.getElementById('koin-nominal').value = data.nominal || data.masuk || ''; 
                 
-                document.querySelector('#koin-controls-card button:first-of-type').textContent = 'Update Data';
+                document.querySelector('#koin-input-card button:first-of-type').textContent = 'Update Data';
             } else if (module === 'jurnal') {
                 data = JurnalData.find(d => d.id === id);
                 document.getElementById('jurnal-id').value = data.id;
@@ -903,7 +915,7 @@
                 // Updated Nominal field
                 document.getElementById('koin-nominal').value = '';
                 
-                document.querySelector('#koin-controls-card button:first-of-type').textContent = 'Simpan Data';
+                document.querySelector('#koin-input-card button:first-of-type').textContent = 'Simpan Data';
             } else if (module === 'jurnal') {
                 document.getElementById('jurnal-id').value = '';
                 document.getElementById('jurnal-tanggal').value = getCurrentDate();
@@ -974,21 +986,21 @@
             const aksiCells = tableClone.querySelectorAll('td.col-aksi');
             aksiCells.forEach(td => td.remove());
 
-            // Hilangkan header kosong di baris pertama tabel koin agar tidak double
+            // Menyatukan header koin agar lebih rapi di PDF
             if (module === 'koin') {
                 const firstRow = tableClone.querySelector('thead tr:first-child');
                 const secondRow = tableClone.querySelector('thead tr:last-child');
                 
-                if (firstRow) {
-                    // Pindahkan teks dari baris kedua ke baris pertama (menyatukan header)
+                if (firstRow && secondRow) {
                     const nominalHeader = firstRow.querySelector('th:nth-child(7)');
                     if (nominalHeader) {
                         nominalHeader.setAttribute('rowspan', '2');
                     }
                     
+                    // Pindahkan kolom Pembagian Koin ke baris pertama
                     const cellsToMove = Array.from(secondRow.children).filter(cell => cell.textContent.trim() !== '');
-                    const placeholder = tableClone.querySelector('thead tr:first-child th:nth-child(8)');
-                    if(placeholder) placeholder.remove(); // Remove old colspan cell
+                    const placeholder = firstRow.querySelector('th[colspan="4"]');
+                    if(placeholder) placeholder.remove(); 
 
                     cellsToMove.forEach(cell => {
                         const newTh = document.createElement('th');
@@ -997,7 +1009,6 @@
                         newTh.style.width = cell.style.width;
                         newTh.style.border = '1px solid var(--color-border)';
                         firstRow.appendChild(newTh);
-                        cell.remove();
                     });
                     secondRow.remove();
                 }
