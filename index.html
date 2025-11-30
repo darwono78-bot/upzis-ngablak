@@ -112,8 +112,8 @@
         .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         .data-table th, .data-table td { border: 1px solid var(--color-border); padding: 8px; text-align: left; }
         .data-table th { 
-            background-color: var(--color-primary); /* PERUBAHAN: Background Header */
-            color: white; /* PERUBAHAN: Teks Header Putih */
+            background-color: var(--color-primary); /* Background Header */
+            color: white; /* Teks Header Putih */
             font-weight: 600; 
             white-space: nowrap; 
         }
@@ -122,8 +122,8 @@
         .data-table .actions button { margin-right: 5px; padding: 6px 10px; cursor: pointer; border: none; border-radius: 3px; font-size: 0.85rem; }
         .data-table tfoot td { 
             font-weight: bold; 
-            background-color: var(--color-primary); /* PERUBAHAN: Background Footer */
-            color: white; /* PERUBAHAN: Teks Footer Putih */
+            background-color: var(--color-primary); /* Background Footer */
+            color: white; /* Teks Footer Putih */
         }
 
         /* Khusus Kolom Aksi (Disembunyikan saat LOGOUT) */
@@ -778,7 +778,7 @@
             
             const currentYear = new Date().getFullYear();
             const filename = `Laporan_KOIN_NU_${currentYear}.pdf`;
-            const doc = new window.jspdf.jsPDF('l', 'mm', 'a4'); 
+            const doc = new window.jspdf.jsPDF('l', 'mm', 'a4'); // Landscape, mm, A4
 
             const tableId = `table-${module}`;
             const element = document.getElementById(tableId);
@@ -814,6 +814,7 @@
 
             // PENGATURAN FONT & POSISI
             const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeightA4 = doc.internal.pageSize.getHeight();
             const logoSize = 25; // Ukuran logo di PDF (mm)
             const margin = 10;
             const logoX = margin;
@@ -897,22 +898,104 @@
 
             window.html2canvas(tableClone, { scale: 2 }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
-                const imgWidth = 277; 
-                const pageHeight = 190; 
+                const imgWidth = 277; // Lebar gambar di PDF (sesuai A4 landscape minus margin)
+                const pageHeight = 190; // Area efektif per halaman (210 - 20)
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
+                let pageNum = 1;
+                let finalPageY = 0; // Y position where the content ends on the final page.
                 
                 doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                heightLeft -= (pageHeight - 20);
+                heightLeft -= (pageHeight - 20); // 20mm margin/header space on first page
 
-                let pageNum = 1;
-                while (heightLeft >= 0) {
-                    position = heightLeft - imgHeight + 20;
+                while (heightLeft >= -5) { // Looping while there is still content (with tolerance)
                     doc.addPage();
-                    doc.text(`Halaman ${++pageNum}`, 277, 5, null, null, 'right');
-                    doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                    heightLeft -= (pageHeight - 5);
+                    pageNum++;
+                    
+                    // Header untuk halaman tambahan
+                    doc.setFontSize(8);
+                    doc.text(`Halaman ${pageNum}`, pageWidth - margin, 5, null, null, 'right');
+                    
+                    position = imgHeight - (imgHeight - heightLeft);
+                    
+                    // Adjust Y offset for the next image chunk, accounting for the new page
+                    const yOffset = -(imgHeight - heightLeft);
+                    
+                    doc.addImage(imgData, 'PNG', 10, yOffset + 10, imgWidth, imgHeight); // 10mm top margin on new pages
+                    
+                    // Track the end position on the current page for signature placement
+                    finalPageY = 10 + (pageHeight - (heightLeft + 5)); // A rough estimation of where the chunk ends
+                    
+                    heightLeft -= (pageHeight - 15); // 15mm for top/bottom margin on subsequent pages
                 }
+
+                // --- Tanda Tangan Block ---
+                let signatureY = 0;
+                const signatureBlockHeight = 40; 
+                
+                // Set signatureY. If single page, use calculated end. If multi-page, use a fixed point (170mm) 
+                // and check for overlap to decide if new page is needed.
+                if (pageNum === 1) {
+                    signatureY = position + imgHeight + 10;
+                } else {
+                    // For multi-page, the last chunk is on the final page. 
+                    // Calculate the position of the last chunk end.
+                    const lastChunkStart = 10; // New page top margin
+                    const lastChunkHeight = (imgHeight * imgWidth / canvas.width) - (pageNum - 1) * (pageHeight - 15) - 5; // A very rough estimation
+                    
+                    const tableEnd = lastChunkStart + lastChunkHeight;
+                    
+                    // Simple logic: if table ends too low or too high for a clean signature, use a new page.
+                    if (tableEnd > (pageHeightA4 - signatureBlockHeight - 20) || tableEnd < 50) {
+                        doc.addPage();
+                        pageNum++;
+                        doc.text(`Halaman ${pageNum}`, pageWidth - margin, 5, null, null, 'right');
+                        signatureY = 20;
+                    } else {
+                        signatureY = tableEnd + 10;
+                    }
+
+                    // Fallback: If calculation fails, place fixed Y and hope it works.
+                    if(signatureY < 20 || signatureY > pageHeightA4 - signatureBlockHeight - 10) {
+                        signatureY = 170; // Fixed comfortable spot near the bottom
+                    }
+                }
+                
+                const separation = 40; // Spacing from left/right edge to the center of the text block
+
+                const leftXCenter = margin + separation; // 50mm from left edge
+                const rightXCenter = pageWidth - margin - separation; // 50mm from right edge
+                const lineHeight = 7;
+
+                // Tanggal (Rata Kanan)
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                // TANDA TANGAN NGABLAK TANGGAL DIBUAT RATA KANAN
+                doc.text(`Ngablak, ${formatDate(getCurrentDate(), false)}`, pageWidth - margin, signatureY, { align: 'right' }); 
+
+                // Posisi Tanda Tangan
+                let currentSignY = signatureY + lineHeight;
+                
+                // Posisi 1: Ketua (Rata Kiri Tengah)
+                doc.text('Mengetahui,', leftXCenter, currentSignY, { align: 'center' }); 
+                
+                // Posisi 2: Bendahara (Rata Kanan Tengah)
+                doc.text('Dibuat Oleh,', rightXCenter, currentSignY, { align: 'center' });
+                
+                currentSignY += 2 * lineHeight; // Space for signature line
+
+                // Nama Ketua/Bendahara (Bold)
+                doc.setFont('helvetica', 'bold');
+                doc.text('( Nama Ketua )', leftXCenter, currentSignY, { align: 'center' });
+                doc.text('( Nama Bendahara )', rightXCenter, currentSignY, { align: 'center' });
+                
+                // Jabatan
+                currentSignY += lineHeight;
+                doc.setFont('helvetica', 'normal');
+                doc.text('Ketua Ranting UPZIS-LAZISNU Ngablak', leftXCenter, currentSignY, { align: 'center' }); 
+                doc.text('Bendahara UPZIS-LAZISNU Ngablak', rightXCenter, currentSignY, { align: 'center' }); 
+                
+                // --- END Tanda Tangan Block ---
                 
                 doc.save(filename);
             });
