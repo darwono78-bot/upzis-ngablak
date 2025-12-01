@@ -204,7 +204,7 @@
             color: white; 
             font-weight: 600; 
             white-space: nowrap; 
-            /* Perbaikan Vertikal Align untuk Header Rowspan (Penguatan CSS Eksternal) */
+            /* Perbaikan Vertikal Align untuk Header Rowspan */
             vertical-align: middle; 
         }
         /* Perubahan: Header Aksi di Tengah */
@@ -214,14 +214,8 @@
 
         /* Styling untuk Header Rowspan agar vertikal center saat di-clone oleh html2canvas */
         .data-table th[rowspan="2"] {
-            vertical-align: middle !important; /* MENGUATKAN ALIGNMENT VERTICAL */
+            vertical-align: middle !important;
         }
-        
-        /* **PERBAIKAN 1**: Untuk memastikan Rowspan terbaca tingginya saat export PDF */
-        .data-table tr {
-            min-height: 20px; /* Tambahkan tinggi minimum agar html2canvas bisa menghitung tinggi row gabungan */
-        }
-
         
         .data-table tr:nth-child(even) { background-color: #fafafa; }
         .data-table tr:hover { background-color: #f1f8e9; }
@@ -410,17 +404,18 @@
                     <table class="data-table" id="table-koin">
                         <thead>
                             <tr>
-                                <th style="width: 3%; text-align: center; vertical-align: middle;" rowspan="2">No</th>
-                                <th style="width: 7%; text-align: center; vertical-align: middle;" rowspan="2">Tanggal</th>
-                                <th style="width: 12%; text-align: center; vertical-align: middle;" rowspan="2">Nama Petugas</th>
-                                <th style="width: 7%; text-align: center; vertical-align: middle;" rowspan="2">No HP</th>
-                                <th style="width: 15%; text-align: center; vertical-align: middle;" rowspan="2">Donatur/Kelompok</th>
-                                <th style="width: 10%; text-align: center; vertical-align: middle;" rowspan="2">Alamat (RT/RW)</th>
-                                <th style="width: 8%; text-align: right; vertical-align: middle;" rowspan="2">Nominal</th>
+                                <th style="width: 3%; text-align: center;" rowspan="2">No</th>
+                                <th style="width: 7%; text-align: center;" rowspan="2">Tanggal</th>
+                                <th style="width: 12%; text-align: center;" rowspan="2">Nama Petugas</th>
+                                <th style="width: 7%; text-align: center;" rowspan="2">No HP</th>
+                                <th style="width: 15%; text-align: center;" rowspan="2">Donatur/Kelompok</th>
+                                <th style="width: 10%; text-align: center;" rowspan="2">Alamat (RT/RW)</th>
+                                <th style="width: 8%; text-align: right;" rowspan="2">Nominal</th>
                                 
                                 <th colspan="4" style="text-align: center;">PEMBAGIAN DANA KOIN</th>
                                 
-                                <th class="col-aksi" rowspan="2" style="vertical-align: middle;">Aksi</th> </tr>
+                                <th class="col-aksi" rowspan="2">Aksi</th>
+                            </tr>
                             <tr>
                                 <th style="width: 8%; text-align: right;">Petugas (10%)</th>
                                 <th style="width: 8%; text-align: right;">Ranting (60%)</th>
@@ -513,10 +508,10 @@
         // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
         import { getFirestore, collection, getDocs, setDoc, doc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-
-
-        // === KONFIGURASI FIREBASE ===
+        // *** FIREBASE AUTH ***
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+        
+        // === START KONFIGURASI FIREBASE ===
         const firebaseConfig = {
             apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A", // <--- GANTI DENGAN API KEY ANDA
             authDomain: "upzis-ngablak.firebaseapp.com",
@@ -526,27 +521,26 @@
             appId: "1:869549648344:web:a531a37cce3a87bb672aad"
         };
         // === END KONFIGURASI FIREBASE ===
-
+        
         // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const auth = getAuth(app);
-
+        const auth = getAuth(app); 
+        
         // Konstanta Nama Koleksi
         const COL_KOIN = 'laporan_koin_nu';
         const COL_JURNAL = 'jurnal_umum';
         const COL_TAHUNAN = 'laporan_tahunan';
-
+        
         // Variabel Global
         let KoinData = [];
         let JurnalData = [];
         let LaporanTahunanData = [];
-        
         // PENTING: Set modul untuk halaman ini
         let currentModule = 'koin';
 
-
         // --- FUNGSI UTAMA: UTILITY & FORMATTING ---
+        
         function formatRupiah(angka) {
             // TIDAK MENGGUNAKAN "Rp "
             return (Number(angka) || 0).toLocaleString('id-ID', { minimumFractionDigits: 0 });
@@ -570,63 +564,65 @@
             const options = { day: 'numeric', month: 'long', year: 'numeric' };
             return new Date().toLocaleDateString('id-ID', options);
         }
-
+        
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
             container.appendChild(toast);
-            
-            // Show the toast
+
             setTimeout(() => {
                 toast.classList.add('show');
-            }, 10); // Small delay to trigger transition
+            }, 10);
 
-            // Hide the toast after 3 seconds
             setTimeout(() => {
                 toast.classList.remove('show');
-                // Remove the element after transition
                 setTimeout(() => {
-                    if (container.contains(toast)) {
-                         container.removeChild(toast);
-                    }
-                }, 500); 
-            }, 3000);
+                    container.removeChild(toast);
+                }, 500);
+            }, 5000);
         }
 
-        // --- FUNGSI UTAMA: AUTHENTICATION ---
-        window.setActionControlsVisibility = function(isLoggedIn) {
+        function setActiveNav() {
+            const path = window.location.pathname;
+            document.querySelectorAll('.navbar-links a').forEach(a => {
+                if (path.includes(a.getAttribute('href')) || (path === '/' && a.getAttribute('href') === 'index.html')) {
+                    a.classList.add('active');
+                } else {
+                    a.classList.remove('active');
+                }
+            });
+        }
+        
+        // --- FUNGSI UTAMA: LOGIN & AUTHENTICATION KONTROL ---
+        
+        function setActionControlsVisibility(isLoggedIn) {
+            const logoutBtn = document.querySelector('.navbar-links button');
+            logoutBtn.style.display = isLoggedIn ? 'inline-block' : 'none';
+
+            // Kontrol Kolom Aksi di Tabel
+            document.querySelectorAll('.col-aksi').forEach(el => {
+                if (isLoggedIn) {
+                    el.classList.add('visible');
+                } else {
+                    el.classList.remove('visible');
+                }
+            });
+
+            // Kontrol Form Input dan Admin
             const koinInputCard = document.getElementById('koin-input-card');
             const authCard = document.getElementById('auth-controls');
-            const logoutButton = document.querySelector('.navbar-links button');
-            const colAksiHeaders = document.querySelectorAll(`#table-koin th.col-aksi`);
-            const colAksiCells = document.querySelectorAll(`#table-koin td.col-aksi`);
-
-            if (isLoggedIn) {
-                // Tampilkan kontrol admin
-                if (koinInputCard) koinInputCard.style.display = 'block';
-                if (authCard) authCard.style.display = 'none';
-                if (logoutButton) logoutButton.style.display = 'inline-block';
-                
-                // Tampilkan kolom aksi di header dan body tabel
-                colAksiHeaders.forEach(th => th.classList.add('visible'));
-                colAksiCells.forEach(td => td.classList.add('visible'));
-
-            } else {
-                // Sembunyikan kontrol admin
-                if (koinInputCard) koinInputCard.style.display = 'none';
-                if (authCard) authCard.style.display = 'block';
-                if (logoutButton) logoutButton.style.display = 'none';
-
-                // Sembunyikan kolom aksi di header dan body tabel
-                colAksiHeaders.forEach(th => th.classList.remove('visible'));
-                colAksiCells.forEach(td => td.classList.remove('visible'));
+            
+            if (koinInputCard) {
+                koinInputCard.style.display = isLoggedIn ? 'block' : 'none';
             }
-
-            // Tampilkan kembali form login jika sudah logout
+            if (authCard) {
+                authCard.style.display = isLoggedIn ? 'none' : 'block';
+            }
+            
+            // Jika logout, pastikan input form login ada dan dikosongkan
             const loginFormContent = `
-                <h4>Login Admin</h4>
                 <div class="inline-form">
                     <div class="form-group-login">
                         <label for="username">Email:</label>
@@ -639,18 +635,15 @@
                     <button onclick="login()">Login Admin</button>
                 </div>
             `;
-            
             if(!isLoggedIn && authCard.innerHTML.trim() === '' || authCard.querySelector('#username') === null) {
                 authCard.innerHTML = loginFormContent;
             }
-
             // Reset nilai input
             const usernameInput = document.getElementById('username');
             const passwordInput = document.getElementById('password');
             if(usernameInput) usernameInput.value = '';
             if(passwordInput) passwordInput.value = '';
         }
-
 
         window.login = async function() {
             const emailInput = document.getElementById('username').value;
@@ -695,48 +688,46 @@
             setActiveNav();
         });
 
-
         // --- FUNGSI UTAMA: PENGAMBILAN DATA (FIREBASE) ---
         window.loadAllCollections = async function() {
             try {
                 const koinSnapshot = await getDocs(collection(db, COL_KOIN));
                 KoinData = koinSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                // Inisialisasi filter setelah data dimuat
-                initializeFilters('koin'); 
-                filterData('koin');
+                const jurnalSnapshot = await getDocs(collection(db, COL_JURNAL));
+                JurnalData = jurnalSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
+                // Panggil filterData untuk me-render data koin setelah loading
+                setupKoinFilters();
+                filterData(currentModule); 
             } catch (error) {
-                console.error("Error loading data:", error);
-                // Hanya tampilkan toast error jika user sudah login
-                if(auth.currentUser) {
-                    showToast(`Gagal memuat data: ${error.message}`, 'error');
-                }
+                console.error("Error loading data from Firebase:", error);
+                showToast(`Gagal memuat data: ${error.message}`, 'error');
             }
         };
 
-        // --- FUNGSI UTAMA: SIMPAN & HAPUS DATA ---
+        // --- FUNGSI UTAMA: SIMPAN/HAPUS DATA (FIREBASE) ---
         window.saveData = async function(module) {
             if (!auth.currentUser) {
                 showToast('Anda harus Login sebagai Admin untuk menyimpan data.', 'error');
                 return;
             }
 
-            const id = document.getElementById(`${module}-id`).value;
-            const isEdit = !!id;
+            const id = document.getElementById(`${module}-id`).value || doc(collection(db, COL_KOIN)).id; // Gunakan id baru jika tidak ada
+            const isEdit = !!document.getElementById(`${module}-id`).value;
             const collectionName = module === 'koin' ? COL_KOIN : COL_JURNAL;
-            let data = {};
+
+            let data;
 
             if (module === 'koin') {
-                const nominal = Number(document.getElementById('koin-nominal').value);
                 data = {
                     tanggal: document.getElementById('koin-tanggal').value || getCurrentDate(),
-                    namaPetugas: document.getElementById('koin-nama-petugas').value.trim(),
-                    noHp: document.getElementById('koin-no-hp').value.trim(),
-                    donatur: document.getElementById('koin-donatur').value.trim(),
-                    alamat: document.getElementById('koin-alamat').value.trim(),
-                    nominal: nominal,
-                    dataType: 'KOIN',
+                    namaPetugas: document.getElementById('koin-nama-petugas').value,
+                    noHp: document.getElementById('koin-no-hp').value,
+                    donatur: document.getElementById('koin-donatur').value,
+                    alamat: document.getElementById('koin-alamat').value,
+                    nominal: Number(document.getElementById('koin-nominal').value),
+                    tipe: 'KOIN',
                     createdAt: new Date().toISOString()
                 };
             } else if (module === 'jurnal') {
@@ -749,7 +740,7 @@
             }
 
             try {
-                await setDoc(doc(db, collectionName, id || doc(collection(db, collectionName)).id), data);
+                await setDoc(doc(db, collectionName, id), data);
                 showToast(`Data ${module.toUpperCase()} berhasil di${isEdit ? 'update' : 'simpan'}!`, 'success');
                 resetForm(module);
                 await loadAllCollections();
@@ -769,7 +760,6 @@
             if (!confirm('Yakin ingin menghapus data ini?')) return;
 
             const collectionName = module === 'koin' ? COL_KOIN : COL_JURNAL;
-
             try {
                 await deleteDoc(doc(db, collectionName, id));
                 showToast(`Data ${module.toUpperCase()} berhasil dihapus!`, 'success');
@@ -802,7 +792,6 @@
                 showToast(`Semua data ${module.toUpperCase()} berhasil dihapus!`, 'success');
                 await loadAllCollections();
                 filterData(module);
-
             } catch (error) {
                 console.error("Error deleting all data:", error);
                 showToast(`Gagal menghapus semua data: ${error.message}`, 'error');
@@ -811,26 +800,24 @@
 
 
         // --- FUNGSI UTAMA: FILTER DAN POPULATE TABEL ---
-        function generateMonthOptions() {
-            return [
+        
+        function setupKoinFilters() {
+            const years = [...new Set(KoinData.map(d => new Date(d.tanggal).getFullYear()))].sort((a, b) => b - a);
+            const currentYear = new Date().getFullYear();
+            
+            const filterKoinBulan = document.getElementById('filter-koin-bulan');
+            const filterKoinTahun = document.getElementById('filter-koin-tahun');
+            
+            const months = [
                 { value: 'all', text: 'Semua Bulan' },
                 { value: 1, text: 'Januari' }, { value: 2, text: 'Februari' }, { value: 3, text: 'Maret' },
                 { value: 4, text: 'April' }, { value: 5, text: 'Mei' }, { value: 6, text: 'Juni' },
                 { value: 7, text: 'Juli' }, { value: 8, text: 'Agustus' }, { value: 9, text: 'September' },
                 { value: 10, text: 'Oktober' }, { value: 11, text: 'November' }, { value: 12, text: 'Desember' }
             ];
-        }
-
-        window.initializeFilters = function(module) {
-            const filterKoinBulan = document.getElementById('filter-koin-bulan');
-            const filterKoinTahun = document.getElementById('filter-koin-tahun');
-
-            const allDates = KoinData.map(d => new Date(d.tanggal).getFullYear()).filter(y => !isNaN(y));
-            const years = [...new Set(allDates)].sort((a, b) => b - a);
-            const currentYear = new Date().getFullYear();
 
             if (filterKoinBulan) {
-                filterKoinBulan.innerHTML = generateMonthOptions().map(m => `<option value="${m.value}">${m.text}</option>`).join('');
+                filterKoinBulan.innerHTML = months.map(m => `<option value="${m.value}">${m.text}</option>`).join('');
                 // Set default filter to current month
                 const currentMonth = new Date().getMonth() + 1;
                 filterKoinBulan.value = currentMonth;
@@ -850,7 +837,7 @@
             if (module === 'koin') {
                 const filterMonth = document.getElementById('filter-koin-bulan').value;
                 const filterYear = document.getElementById('filter-koin-tahun').value;
-
+                
                 const filtered = KoinData.filter(d => {
                     const dDate = new Date(d.tanggal);
                     const isMonthMatch = filterMonth === 'all' || dDate.getMonth() + 1 === Number(filterMonth);
@@ -860,7 +847,6 @@
                 .sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
 
                 populateTable('koin', filtered);
-
             } else if (module === 'jurnal') {
                 // Logic di file jurnal.html
             } else if (module === 'tahunan') {
@@ -894,27 +880,27 @@
                     totalRanting += ranting;
                     totalMWC += mwc;
                     totalPC += pc;
+                    
+                    const donaturKeterangan = d.donatur || d.keterangan || '-';
 
-                    const row = `
-                        <tr>
-                            <td style="text-align: center;">${index + 1}</td>
-                            <td style="text-align: center;">${formatDate(d.tanggal, true)}</td>
-                            <td>${d.namaPetugas || ''}</td>
-                            <td style="text-align: center;">${d.noHp || ''}</td>
-                            <td>${d.donatur || d.keterangan || ''}</td>
-                            <td>${d.alamat || ''}</td>
-                            <td style="text-align: right;">${formatRupiah(nominal)}</td>
-                            <td style="text-align: right;">${formatRupiah(petugas)}</td>
-                            <td style="text-align: right;">${formatRupiah(ranting)}</td>
-                            <td style="text-align: right;">${formatRupiah(mwc)}</td>
-                            <td style="text-align: right;">${formatRupiah(pc)}</td>
-                            <td class="col-aksi">
-                                <button class="edit" onclick="editForm('koin', '${d.id}')">Edit</button>
-                                <button class="delete" onclick="deleteData('koin', '${d.id}')">Hapus</button>
-                            </td>
-                        </tr>
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td style="text-align: center;">${index + 1}</td>
+                        <td style="white-space: nowrap;">${d.tanggal ? formatDate(d.tanggal, true) : '-'}</td>
+                        <td style="white-space: nowrap;">${d.namaPetugas || '-'}</td>
+                        <td style="white-space: nowrap;">${d.noHp || '-'}</td>
+                        <td style="white-space: nowrap;">${donaturKeterangan}</td>
+                        <td style="white-space: nowrap;">${d.alamat || '-'}</td>
+                        <td style="text-align: right; white-space: nowrap;">${formatRupiah(nominal)}</td>
+                        <td style="text-align: right; white-space: nowrap;">${formatRupiah(petugas)}</td>
+                        <td style="text-align: right; white-space: nowrap;">${formatRupiah(ranting)}</td>
+                        <td style="text-align: right; white-space: nowrap;">${formatRupiah(mwc)}</td>
+                        <td style="text-align: right; white-space: nowrap;">${formatRupiah(pc)}</td>
+                        <td class="col-aksi">
+                            <button class="edit" onclick="editForm('koin', '${d.id}')">Edit</button>
+                            <button class="delete" onclick="deleteData('koin', '${d.id}')">Hapus</button>
+                        </td>
                     `;
-                    tbody.innerHTML += row;
                 });
 
                 // Update Footer
@@ -927,9 +913,7 @@
                 // Pastikan kolom aksi tetap terlihat jika sudah login
                 if (isLoggedIn) {
                     document.querySelectorAll(`#table-koin th.col-aksi`).forEach(th => th.classList.add('visible'));
-                    document.querySelectorAll(`#table-koin td.col-aksi`).forEach(td => td.classList.add('visible'));
                 }
-
             } else if (module === 'jurnal') {
                 // Logic di file jurnal.html
             } else if (module === 'tahunan') {
@@ -953,6 +937,7 @@
                 document.getElementById('koin-donatur').value = data.donatur || data.keterangan || '';
                 document.getElementById('koin-alamat').value = data.alamat || '';
                 document.getElementById('koin-nominal').value = data.nominal || data.masuk || '';
+                
                 // Mengubah teks tombol Simpan
                 document.querySelector('.control-buttons-center button:first-of-type').textContent = 'Update Data';
             }
@@ -967,6 +952,7 @@
                 document.getElementById('koin-donatur').value = '';
                 document.getElementById('koin-alamat').value = '';
                 document.getElementById('koin-nominal').value = '';
+                
                 // Mengubah teks tombol Simpan
                 document.querySelector('.control-buttons-center button:first-of-type').textContent = 'Simpan Data';
             }
@@ -978,143 +964,189 @@
             showToast('Fungsi ini tidak tersedia di halaman Laporan Koin NU.', 'info');
         };
 
-        // --- FUNGSI UTAMA: EKSPOR PDF (FIXED - MENGHILANGKAN DUPLIKASI HEADER DAN MEMPERBAIKI ALIGNMENT KOLOM KIRI) ---
+        // --- FUNGSI UTAMA: EKSPOR PDF (MEMPERBAIKI HEADER TABEL) ---
         window.exportToPDF = function(module) {
-            if (module !== 'koin') return;
-
-            const tableEl = document.getElementById(`table-${module}`);
-            const reportHeaderEl = document.querySelector('.report-header');
-            const filename = `Laporan_Koin_NU_${document.getElementById('filter-koin-bulan').selectedOptions[0].text}_${document.getElementById('filter-koin-tahun').value}.pdf`;
-
-            // 1. Persiapan Tabel Clone untuk Export
-            const tableClone = tableEl.cloneNode(true);
-
-            // Hapus kolom Aksi dari clone
-            tableClone.querySelectorAll('thead th.col-aksi').forEach(th => th.remove());
-            tableClone.querySelectorAll('tbody .col-aksi').forEach(td => td.remove());
-            tableClone.querySelectorAll('tfoot .col-aksi').forEach(td => td.remove());
-
-            // Koreksi colspan pada footer
-            const tfoot = tableClone.querySelector('tfoot td:first-child');
-            if (tfoot) {
-                // Digabung dari No (1) hingga Alamat (6) = 6 kolom
-                tfoot.setAttribute('colspan', '6'); 
+            if (module !== 'koin') {
+                showToast('Fungsi ini hanya untuk Laporan Koin NU di halaman ini.', 'error');
+                return;
             }
 
-            // Atur styling khusus untuk ekspor PDF pada tabel
-            tableClone.style.fontSize = '8pt';
-            tableClone.style.width = '100%'; 
-            tableClone.style.tableLayout = 'fixed'; // PENTING: Gunakan fixed layout agar width kolom di HTML berfungsi
-            tableClone.style.margin = '0';
-            tableClone.style.borderCollapse = 'collapse';
+            const currentYear = new Date().getFullYear();
+            const filename = `Laporan_KOIN_NU_${currentYear}.pdf`;
+
+            // Dapatkan data filter untuk ditampilkan di header PDF
+            const filterMonthValue = document.getElementById('filter-koin-bulan').value;
+            const filterYearValue = document.getElementById('filter-koin-tahun').value;
             
-            // Atur lebar TH di Thead secara spesifik (MENGUATKAN LEBAR AGAR ALIGNMENT ROWSPAN TIDAK RUSAK)
-            // Urutan kolom: No, Tanggal, Nama Petugas, No HP, Donatur, Alamat, Nominal, Petugas, Ranting, MWC, PC
-            const widths = ['3%', '7%', '12%', '7%', '15%', '10%', '8%', '8%', '8%', '8%', '8%']; // Total ~94%
-            tableClone.querySelectorAll('thead th').forEach((th, index) => {
-                // Jangan sentuh TH Pembagian Dana Koin (yang colspan 4)
-                if(th.textContent.trim() !== 'PEMBAGIAN DANA KOIN') {
-                    th.style.width = widths[index] || 'auto';
+            const monthText = filterMonthValue === 'all' ? 'SEMUA BULAN' : document.querySelector(`#filter-koin-bulan option[value="${filterMonthValue}"]`).textContent.toUpperCase();
+            const yearText = filterYearValue === 'all' ? 'SEMUA TAHUN' : filterYearValue;
+
+            // 1. Persiapan HTML untuk Canvas (Cloning & Styling)
+            const tableEl = document.getElementById('table-koin');
+            const tableClone = tableEl.cloneNode(true);
+            
+            // Hapus kolom Aksi dari clone (PERBAIKAN: Menggunakan selector kelas)
+            
+            // Iterasi melalui semua baris (thead, tbody, tfoot) untuk menghapus sel di kolom Aksi
+            Array.from(tableClone.querySelectorAll('tr')).forEach(tr => {
+                const cellToDelete = tr.querySelector('.col-aksi');
+                if (cellToDelete) {
+                    cellToDelete.remove();
                 }
             });
 
-
+            // Koreksi colspan pada footer setelah kolom Aksi dihapus (colspan dari 6 menjadi 5)
+            const tfoot = tableClone.querySelector('tfoot td:first-child');
+            if (tfoot) {
+                tfoot.setAttribute('colspan', '6'); // Dikembalikan ke 6 karena kolom nominal di index 7
+                // No (1), Tanggal (2), Nama Petugas (3), No HP (4), Donatur (5), Alamat (6) = 6 kolom
+            }
+            
+            // Atur styling khusus untuk ekspor PDF agar tabel tidak melebihi lebar A4 Landscape
+            tableClone.style.fontSize = '8pt'; 
+            tableClone.style.width = 'fit-content'; 
+            tableClone.style.maxWidth = 'unset'; 
+            tableClone.style.tableLayout = 'auto';
+            tableClone.style.margin = '0';
+            tableClone.style.borderCollapse = 'collapse'; 
+            
             // Buat div sementara untuk html2canvas (agar tidak terlihat di layar)
             const tempDiv = document.createElement('div');
             tempDiv.style.position = 'absolute';
-            tempDiv.style.left = '-9999px'; 
-            // Atur lebar div sekitar 1200px agar tabel wide tertangkap semua
+            tempDiv.style.left = '-9999px';
+            // Paksa lebar tempDiv menjadi 1200px (agar seluruh lebar tabel tertangkap)
             tempDiv.style.width = '1200px'; 
+            tempDiv.appendChild(tableClone);
             document.body.appendChild(tempDiv);
             
-            // 2. Kloning Header dan Tabel untuk Pengambilan Gambar Terpisah (FIXED: Tidak ada gambar manual)
-
-            // Kloning Header Laporan
-            const headerClone = reportHeaderEl.cloneNode(true);
-            headerClone.querySelector('.double-line').style.margin = '5px 0 10px 0'; // Kurangi margin garis
-            tempDiv.appendChild(headerClone);
-
-            // Tambahkan Judul Laporan di antara Header dan Tabel
-            const titleEl = document.createElement('h4');
-            const filterBulan = document.getElementById('filter-koin-bulan').selectedOptions[0].text;
-            const filterTahun = document.getElementById('filter-koin-tahun').value;
-            titleEl.textContent = `LAPORAN KOIN NU BULAN ${filterBulan.toUpperCase()} TAHUN ${filterTahun}`;
-            titleEl.style.textAlign = 'center';
-            titleEl.style.fontSize = '12pt';
-            titleEl.style.margin = '10px 0 10px 0';
-            tempDiv.appendChild(titleEl);
-            
-            // Tambahkan Tabel Clone
-            tempDiv.appendChild(tableClone);
-            
-            // Tambahkan Tanda Tangan (sebagai elemen HTML agar terbaca html2canvas)
-            const signatureEl = document.createElement('div');
-            signatureEl.style.width = '100%';
-            signatureEl.style.marginTop = '20px';
-            signatureEl.style.fontSize = '10pt';
-            signatureEl.innerHTML = `
-                <div style="float: right; text-align: right; width: 100%;">Ngablak, ${getCurrentDateIndonesian()}</div>
-                <div style="overflow: auto; margin-top: 15px;">
-                    <div style="float: left; width: 40%; text-align: center;">
-                        <p style="margin: 0; font-weight: bold;">Mengetahui,</p>
-                        <p style="margin: 0;">Ketua Ranting UPZIS-LAZISNU Ngablak</p>
-                        <br><br><br>
-                        <p style="margin: 0; font-weight: bold; text-decoration: underline;">( Nama Ketua )</p>
-                    </div>
-                    <div style="float: right; width: 40%; text-align: center;">
-                        <p style="margin: 0; font-weight: bold;">Dibuat Oleh,</p>
-                        <p style="margin: 0;">Bendahara UPZIS-LAZISNU Ngablak</p>
-                        <br><br><br>
-                        <p style="margin: 0; font-weight: bold; text-decoration: underline;">( Nama Bendahara )</p>
-                    </div>
-                </div>
-            `;
-            tempDiv.appendChild(signatureEl);
-
-            // 3. Generate Canvas dan PDF
+            // 2. Generate Canvas dan PDF
             html2canvas(tempDiv, { scale: 2 }).then(canvas => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('l', 'mm', 'a4'); // Landscape, mm, A4
+                
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const pageHeightA4 = doc.internal.pageSize.getHeight();
                 const margin = 10;
-
+                const lineHeight = 5; 
+                
                 const imgData = canvas.toDataURL('image/png');
                 const imgWidth = pageWidth - 2 * margin; // 277mm
                 const imgHeight = canvas.height * imgWidth / canvas.width;
+                
+                // =================================================================================
+                // Header Image
+                // =================================================================================
+                
+                let currentY = 5;
+                const korpsImagePath = 'korps-lazisnu.png'; 
+                const korpsImageWidth = pageWidth - 2 * margin; 
+                const korpsImageX = margin; 
+                
+                const korpsImageHeight = 20; 
+                const korpsImageTotalSpace = korpsImageHeight + 5; 
 
-                let position = margin;
-                let heightLeft = imgHeight;
+                doc.addImage(korpsImagePath, 'PNG', korpsImageX, currentY, korpsImageWidth, korpsImageHeight); 
+                
+                currentY += korpsImageTotalSpace; 
+                
+                // =================================================================================
 
-                // Tambahkan gambar ke PDF
-                doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
-                heightLeft -= (pageHeightA4 - position - margin);
-                position = pageHeightA4;
 
-                // Handle Multipage Table
-                while (heightLeft >= -50) { // Beri toleransi 50mm untuk menghindari footer terpotong
+                // 3. Info Filter
+                const filterInfo = `LAPORAN KOIN NU - PERIODE: ${monthText} TAHUN ${yearText}`; 
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text(filterInfo, margin, currentY);
+
+                // 4. Info Dicetak
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'italic');
+                doc.text(`Dicetak pada: ${getCurrentDateIndonesian()}`, margin, currentY + 5);
+                let position = currentY + 10; // Start position for table canvas/image
+
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'normal');
+
+                
+                const imgData2 = imgData; // Menggunakan canvas hasil pertama
+                const imgHeight2 = imgHeight; // Menggunakan tinggi hasil pertama
+                let heightLeft2 = imgHeight2;
+
+                // Tambahkan gambar tabel ke PDF (Sekarang menggunakan tabel 2 baris header asli)
+                doc.addImage(imgData2, 'PNG', margin, position, imgWidth, imgHeight2);
+
+                // Logika multi-halaman
+                const spaceUsedBeforeTable = position;
+                const availableSpaceFirstPage = pageHeightA4 - spaceUsedBeforeTable - margin;
+                heightLeft2 -= availableSpaceFirstPage;
+                let pageNum = 1;
+
+                while (heightLeft2 >= -5) {
+                    doc.addPage();
+                    pageNum++;
+                    // Header untuk halaman tambahan
+                    doc.setFontSize(8);
+                    doc.text(`Halaman ${pageNum}`, pageWidth - margin, 5, null, null, 'right'); 
+                    
+                    // Hitung Y offset untuk melanjutkan gambar tabel
+                    const yOffset = -(imgHeight2 - heightLeft2);
+                    doc.addImage(imgData2, 'PNG', margin, yOffset + margin, imgWidth, imgHeight2);
+                    heightLeft2 -= (pageHeightA4 - 2 * margin); 
+                }
+
+                // --- Tanda Tangan Block --- 
+                let signatureY;
+                const signatureBlockHeight = 40; 
+                
+                const totalHeightOnFinalPage = imgHeight2 - (imgHeight2 - heightLeft2);
+                const availableHeightLastPage = pageHeightA4 - (totalHeightOnFinalPage + position); 
+                
+                if (availableHeightLastPage >= signatureBlockHeight + 10) { 
+                    signatureY = pageHeightA4 - signatureBlockHeight - margin; 
+                } else { 
                     doc.addPage();
                     doc.setFontSize(8);
-                    doc.setFont('helvetica', 'normal');
-                    const pageNum = doc.internal.pages.length - 1;
-                    // Posisi nomor halaman
-                    doc.text(`Halaman ${pageNum}`, pageWidth - margin, margin / 2); 
-
-                    let yOffset = -(imgHeight - heightLeft);
-                    doc.addImage(imgData, 'PNG', margin, yOffset + margin, imgWidth, imgHeight);
-                    heightLeft -= (pageHeightA4 - 2 * margin);
+                    doc.text(`Halaman ${pageNum + 1}`, pageWidth - margin, 5, null, null, 'right'); 
+                    signatureY = margin;
                 }
+
+                const rightXCenter = pageWidth * 0.75;
+                const leftXCenter = pageWidth * 0.25;
+
+                let currentSignY = signatureY;
+
+                // Tempat dan Tanggal
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'normal');
+                doc.text('Ngablak, ' + getCurrentDateIndonesian(), rightXCenter, currentSignY, { align: 'center' });
+                
+                currentSignY += lineHeight;
+                doc.text('Mengetahui/Mengesahkan,', leftXCenter, currentSignY, { align: 'center' });
+                doc.text('Dibuat Oleh,', rightXCenter, currentSignY, { align: 'center' });
+                
+                currentSignY += 4 * lineHeight; 
+
+                // Nama Ketua/Bendahara (Bold)
+                doc.setFont('helvetica', 'bold');
+                doc.text('( Nama Ketua )', leftXCenter, currentSignY, { align: 'center' });
+                doc.text('( Nama Bendahara )', rightXCenter, currentSignY, { align: 'center' });
+                
+                // Jabatan
+                currentSignY += lineHeight;
+                doc.setFont('helvetica', 'normal');
+                doc.text('Ketua Ranting UPZIS-LAZISNU Ngablak', leftXCenter, currentSignY, { align: 'center' }); 
+                doc.text('Bendahara UPZIS-LAZISNU Ngablak', rightXCenter, currentSignY, { align: 'center' }); 
+                
+                // --- END Tanda Tangan Block ---
                 
                 doc.save(filename);
                 
-                // 4. Bersihkan (Hapus div sementara setelah PDF selesai dibuat)
+                // Hapus div sementara setelah PDF selesai dibuat
                 if (document.body.contains(tempDiv)) {
                     document.body.removeChild(tempDiv);
                 }
-                showToast('Ekspor PDF berhasil!', 'success');
-                
             }).catch(error => {
-                // Pastikan div sementara dihapus jika terjadi error
+                // Ensure the tempDiv is removed even if html2canvas fails
                 if (document.body.contains(tempDiv)) {
                     document.body.removeChild(tempDiv);
                 }
@@ -1128,3 +1160,4 @@
     </script>
 </body>
 </html>
+
