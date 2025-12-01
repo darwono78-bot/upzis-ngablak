@@ -988,8 +988,8 @@
             tableClone.style.width = '100%';
             tableClone.style.maxWidth = '100%';
             tableClone.style.tableLayout = 'auto';
-            tableClone.style.borderCollapse = 'collapse';
             tableClone.style.margin = '0';
+            tableClone.style.borderCollapse = 'collapse'; // Tambahkan ini agar border rapi
             
             // Buat div sementara untuk html2canvas (agar tidak terlihat di layar)
             const tempDiv = document.createElement('div');
@@ -1013,23 +1013,23 @@
                 const imgWidth = pageWidth - 2 * margin; 
                 const imgHeight = canvas.height * imgWidth / canvas.width;
                 let heightLeft = imgHeight;
-
-                // **FIX DITERAPKAN DI SINI: document.body.removeChild(tempDiv); DIHAPUS DARI BLOK INI**
                 
                 // =================================================================================
                 // MODIFIKASI 2: Mengganti Header Teks dengan Image Korps PDF (korps-lazisnu.png)
+                //               *FIXED: Height diset null agar rasio aspek gambar tetap terjaga*
                 // =================================================================================
                 
                 let currentY = 5;
-                const korpsImagePath = 'korps-lazisnu.png'; // File korps baru
-                const korpsImageHeight = 25; // Tinggi korps image (misal 25mm)
-                const korpsImageWidth = pageWidth - 2 * margin; // Lebar korps image (sesuai lebar konten)
-                const korpsImageX = margin;
+                const korpsImagePath = 'korps-lazisnu.png'; 
+                const korpsImageWidth = pageWidth - 2 * margin; // Ditetapkan lebar 277mm
+                const korpsImageX = margin; 
+                const korpsHeaderSpace = 30; // Alokasi ruang yang cukup untuk gambar korps (misalnya 30mm total)
 
                 // 1. Tambahkan Image Korps
-                doc.addImage(korpsImagePath, 'PNG', korpsImageX, currentY, korpsImageWidth, korpsImageHeight);
+                // Set height ke null agar jsPDF menghitung tinggi secara otomatis (menjaga rasio)
+                doc.addImage(korpsImagePath, 'PNG', korpsImageX, currentY, korpsImageWidth, null); 
                 
-                currentY += korpsImageHeight + 5; // Jarak setelah image
+                currentY += korpsHeaderSpace; // Jarak setelah image (menggunakan alokasi ruang tetap)
                 
                 // =================================================================================
                 // END OF PDF HEADER MODIFICATION
@@ -1072,9 +1072,8 @@
                 for (let i = 0; i < 4; i++) {
                     const headerCell = bottomRow.cells[i];
                     const newCell = document.createElement('th');
-                    // Tambahkan prefix jika perlu (misal: Ranting (60%))
-                    const parentText = topRow.cells[7].textContent; // "PEMBAGIAN DANA KOIN"
-                    const currentText = headerCell.textContent.replace(/\s*\(.*\)/, ''); // Hapus persentase
+                    // Hapus persentase jika ada dan ambil teks
+                    const currentText = headerCell.textContent.replace(/\s*\(.*\)/, ''); 
                     newCell.textContent = `${currentText.trim()}`; 
                     newCell.style.textAlign = headerCell.style.textAlign;
                     newCell.style.whiteSpace = 'nowrap';
@@ -1158,7 +1157,7 @@
                     
                     doc.save(filename);
                     
-                    // **FIX DITERAPKAN DI SINI:** Hapus div sementara setelah PDF selesai dibuat
+                    // Hapus div sementara setelah PDF selesai dibuat
                     if (document.body.contains(tempDiv)) {
                         document.body.removeChild(tempDiv);
                     }
