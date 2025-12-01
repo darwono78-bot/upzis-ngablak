@@ -1382,50 +1382,65 @@ function editAnnualData(id, key, currentValue, isText = false) {
             document.getElementById('tahunan-edit-input-area').style.display = 'none';
         }
         
-        function saveAnnualReportData() {
-            if (!annualEditData) return;
+        // Pastikan Kakak sudah punya import doc, updateDoc, dsb. dari Firebase
 
-            let newValue;
-            if (annualEditData.isText) {
-                newValue = document.getElementById('annual-edit-keterangan').value;
-            } else {
-                newValue = parseInt(document.getElementById('annual-edit-nominal').value);
-                if (isNaN(newValue)) {
-                    alert('Nominal harus berupa angka.');
-                    return;
-                }
-            }
+async function saveAnnualReportData() { // <<< Wajib ada 'async'
+    if (!annualEditData) return;
 
-            const { id, key, isText } = annualEditData;
-            const type = id.split(/_|_/)[0];
+    let newValue;
+    const nominalInput = document.getElementById('annual-edit-nominal');
+    const keteranganInput = document.getElementById('annual-edit-keterangan');
 
-            // FIX: Gunakan perbandingan longgar (==) atau id == id (untuk string) saat mencari objek annualData
-            const targetData = annualData.find(d => d.id == id || (d.type === 'monthly' && d.year.toString() === id.split('_')[1] && d.month.toString() === id.split('_')[2]) );
-            
-            if (!targetData) {
-                alert('Data tidak ditemukan!');
-                return;
-            }
-            
-            // Update data berdasarkan key (contoh: 'pendidikan.penerima' atau 'nominal')
-            let keys = key.split('.');
-            let obj = targetData;
-
-            for (let i = 0; i < keys.length - 1; i++) {
-                obj = obj[keys[i]];
-            }
-            obj[keys[keys.length - 1]] = newValue;
-
-            // Khusus untuk Saldo Awal, update properti 'nominal' di objek utama
-            if (type.startsWith('saldo')) {
-                targetData.nominal = newValue;
-            }
-            
-            saveDataToStorage(ANNUAL_KEY, annualData);
-            alert('Data tahunan berhasil disimpan!');
-            cancelAnnualEdit();
-            filterData('tahunan');
+    // 1. VALIDASI DAN AMBIL NILAI BARU
+    if (annualEditData.isText) {
+        // Mode Teks
+        newValue = keteranganInput.value.trim();
+        if (newValue === "") {
+            alert("Keterangan tidak boleh kosong.");
+            return;
         }
+    } else {
+        // Mode Nominal
+        // Bersihkan input dari pemisah ribuan (titik) dan koma (jika ada)
+        const nominalStr = nominalInput.value.replace(/\./g, '').replace(',', '.'); 
+        
+        // Gunakan parseInt (sesuai kode Kakak) pada string yang sudah bersih
+        newValue = parseInt(nominalStr); 
+        
+        if (isNaN(newValue)) {
+            alert('Nominal harus berupa angka yang valid.');
+            return;
+        }
+    }
+    
+    // 2. PERSIAPAN DATA FIREBASE
+    // Menggunakan destructuring seperti kode Kakak
+    const { id, key } = annualEditData; 
+    
+    const updateData = {};
+    // Firebase dapat mengupdate field bersarang (nested) menggunakan notasi titik (dot notation)
+    // Misalnya, jika key adalah 'pendidikan.penerima', Firebase akan mengupdate field tersebut.
+    updateData[key] = newValue; 
+    
+    // 3. UPDATE DATABASE (MENGGANTIKAN saveDataToStorage)
+    try {
+        const annualDocRef = doc(db, 'annual_reports', id); 
+        
+        await updateDoc(annualDocRef, updateData); // <<< Wajib ada 'await'
+        
+        alert("Data berhasil disimpan!");
+
+        // 4. CLEANUP & REFRESH (Sesuai dengan kode Kakak yang lama)
+        cancelAnnualEdit(); // Fungsi ini biasanya menyembunyikan form dan mereset annualEditData
+        filterData('tahunan'); // Fungsi ini biasanya memuat ulang data tabel tahunan
+        
+
+    } catch (e) {
+        // JIKA ADA ERROR DARI FIREBASE/NETWORK AKAN MUNCUL DI SINI
+        console.error("Gagal menyimpan data tahunan:", e);
+        alert("Gagal menyimpan perubahan. Cek detail error di console browser.");
+    }
+}
 
         // --- LOGIC LAPORAN TAHUNAN ---
         
@@ -2223,4 +2238,5 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
