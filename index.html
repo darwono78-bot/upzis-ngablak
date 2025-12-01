@@ -964,54 +964,57 @@ function formatRupiah(number) {
         }
         
         // 6. Filter and Render Data
-        function filterData(module) {
-            let selectedMonth, selectedYear, displayId, ttdId;
-            
-            if (module === 'koin') {
-                selectedMonth = document.getElementById('koin-filter-bulan').value;
-                selectedYear = document.getElementById('koin-filter-tahun').value;
-                displayId = 'koin-pdf-periode-display';
-                ttdId = 'koin-ttd-tanggal-output';
+async function filterData(module) { // <<< Wajib tambahkan 'async' di sini!
+    let selectedMonth, selectedYear, displayId, ttdId;
+    
+    if (module === 'koin') {
+        selectedMonth = document.getElementById('koin-filter-bulan').value;
+        selectedYear = document.getElementById('koin-filter-tahun').value;
+        displayId = 'koin-pdf-periode-display';
+        ttdId = 'koin-ttd-tanggal-output';
 
-                let periodeDisplay = "Semua Periode";
-                if (selectedMonth !== 'all' && selectedYear) {
-                    const monthName = namaBulan[parseInt(selectedMonth) - 1];
-                    periodeDisplay = `${monthName} ${selectedYear}`;
-                } else if (selectedYear) {
-                    periodeDisplay = `Tahun ${selectedYear}`;
-                }
-                document.getElementById(displayId).textContent = periodeDisplay;
-                
-                const koinTotal = calculateKoinTotals(selectedMonth, selectedYear);
-                renderKoinTable(koinTotal.data, koinTotal);
-
-            } else if (module === 'jurnal') {
-                selectedMonth = document.getElementById('jurnal-filter-bulan').value;
-                selectedYear = document.getElementById('jurnal-filter-tahun').value;
-                displayId = 'jurnal-pdf-periode-display';
-                ttdId = 'jurnal-ttd-tanggal-output';
-
-                const isFilterAll = selectedMonth === 'all';
-                let periodeDisplay = "Semua Periode";
-                if (selectedMonth && selectedYear && selectedMonth !== 'all') {
-                    const monthName = namaBulan[parseInt(selectedMonth) - 1];
-                    periodeDisplay = `${monthName} ${selectedYear}`;
-                } else if (selectedYear) {
-                    periodeDisplay = `Tahun ${selectedYear}`;
-                }
-                document.getElementById(displayId).textContent = periodeDisplay;
-                renderJurnalTable(jurnalData, selectedMonth, selectedYear);
-
-            } else if (module === 'tahunan') {
-                selectedYear = document.getElementById('tahunan-filter-tahun').value;
-                displayId = 'tahunan-pdf-periode-display';
-                ttdId = 'tahunan-ttd-tanggal-output';
-                document.getElementById(displayId).textContent = selectedYear;
-                const annualDataFinal = generateAnnualReportData(selectedYear);
-                renderAnnualReportTable(annualDataFinal, selectedYear);
-            }
-            document.getElementById(ttdId).textContent = formatTanggalTTD();
+        let periodeDisplay = "Semua Periode";
+        if (selectedMonth !== 'all' && selectedYear) {
+            const monthName = namaBulan[parseInt(selectedMonth) - 1];
+            periodeDisplay = `${monthName} ${selectedYear}`;
+        } else if (selectedYear) {
+            periodeDisplay = `Tahun ${selectedYear}`;
         }
+        document.getElementById(displayId).textContent = periodeDisplay;
+        
+        const koinTotal = calculateKoinTotals(selectedMonth, selectedYear);
+        renderKoinTable(koinTotal.data, koinTotal);
+
+    } else if (module === 'jurnal') {
+        selectedMonth = document.getElementById('jurnal-filter-bulan').value;
+        selectedYear = document.getElementById('jurnal-filter-tahun').value;
+        displayId = 'jurnal-pdf-periode-display';
+        ttdId = 'jurnal-ttd-tanggal-output';
+
+        const isFilterAll = selectedMonth === 'all';
+        let periodeDisplay = "Semua Periode";
+        if (selectedMonth && selectedYear && selectedMonth !== 'all') {
+            const monthName = namaBulan[parseInt(selectedMonth) - 1];
+            periodeDisplay = `${monthName} ${selectedYear}`;
+        } else if (selectedYear) {
+            periodeDisplay = `Tahun ${selectedYear}`;
+        }
+        document.getElementById(displayId).textContent = periodeDisplay;
+        renderJurnalTable(jurnalData, selectedMonth, selectedYear);
+
+    } else if (module === 'tahunan') {
+        selectedYear = document.getElementById('tahunan-filter-tahun').value;
+        displayId = 'tahunan-pdf-periode-display';
+        ttdId = 'tahunan-ttd-tanggal-output';
+        document.getElementById(displayId).textContent = selectedYear;
+        
+        // 🏆 PERBAIKAN: Tambahkan 'await' di sini!
+        const annualDataFinal = await generateAnnualReportData(selectedYear); 
+        
+        renderAnnualReportTable(annualDataFinal, selectedYear);
+    }
+    document.getElementById(ttdId).textContent = formatTanggalTTD();
+}
 
         // --- CRUD DAN INPUT BARU ---
         function resetForm(module) {
@@ -2223,5 +2226,6 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
 
