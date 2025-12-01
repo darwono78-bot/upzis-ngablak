@@ -27,19 +27,18 @@
             padding: 0; 
             background-color: var(--color-bg); 
             color: var(--color-text); 
-            overflow-x: hidden; /* Pastikan body tidak punya scroll horizontal */
+            overflow-x: hidden; 
         }
         
-        /* === Perubahan Utama: Menghilangkan blok putih terpusat (max-width) === */
+        /* Kontainer Utama (Full Width) */
         .container { 
-            width: 98%; /* Menggunakan hampir seluruh lebar layar */
-            margin: 10px auto; /* Margin atas/bawah sedikit dikurangi */
-            padding: 15px; /* Padding dikurangi sedikit */
+            width: 98%; 
+            margin: 10px auto; 
+            padding: 15px; 
             background-color: var(--color-card-bg); 
             border-radius: 8px; 
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
         }
-        /* ====================================================================== */
         
         h2 { 
             color: var(--color-primary); 
@@ -84,16 +83,42 @@
             box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.2); 
         }
         
-        /* Gaya Tombol */
-        .control-buttons { 
-            display: flex; 
-            justify-content: space-between; 
-            margin-top: 20px; 
-        }
+        /* === Gaya Tombol Umum (Untuk Tombol di Dalam Form) === */
         .control-buttons-center {
             text-align: center;
         }
-        .control-buttons button, .control-buttons-center button {
+        .control-buttons-center button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            color: white;
+        }
+        .control-buttons-center button:first-of-type { 
+            background-color: var(--color-primary); 
+        }
+        .control-buttons-center button:first-of-type:hover { 
+            background-color: #004d00; 
+        }
+        .control-buttons-center button:last-of-type { 
+            background-color: #dc3545; 
+            margin-left: 10px;
+        }
+        .control-buttons-center button:last-of-type:hover { 
+            background-color: #c82333; 
+        }
+
+        /* === NEW: Alignment untuk Ekspor PDF (atas tabel, rata kanan) === */
+        .control-buttons-top {
+            text-align: right;
+            margin-top: 10px;
+            margin-bottom: 15px; 
+        }
+        .control-buttons-top button {
+            background-color: var(--color-primary); 
+            color: white; 
             padding: 10px 20px;
             border: none;
             border-radius: 4px;
@@ -101,22 +126,30 @@
             font-weight: bold;
             transition: background-color 0.3s ease;
         }
-        .control-buttons button:first-of-type, .control-buttons-center button:first-of-type { 
-            background-color: var(--color-primary); 
-            color: white; 
-        }
-        .control-buttons button:first-of-type:hover, .control-buttons-center button:first-of-type:hover { 
+        .control-buttons-top button:hover { 
             background-color: #004d00; 
         }
-        .control-buttons button:last-of-type, .control-buttons-center button:last-of-type { 
+        
+        /* === NEW: Alignment untuk Hapus Semua Data (atas form, rata kiri) === */
+        .control-buttons-bottom {
+            text-align: left;
+            margin-top: 20px; 
+            margin-bottom: 10px;
+        }
+        .control-buttons-bottom button {
             background-color: #dc3545; 
             color: white; 
-            margin-left: 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
         }
-        .control-buttons button:last-of-type:hover, .control-buttons-center button:last-of-type:hover { 
+        .control-buttons-bottom button:hover { 
             background-color: #c82333; 
         }
-        
+
         /* Gaya untuk Kolom Berdampingan (Form Input) */
         .form-row {
             display: flex;
@@ -141,15 +174,14 @@
             max-height: 400px; 
             overflow-x: hidden; /* MENGHILANGKAN SCROLL HORIZONTAL */
             overflow-y: auto; 
-            margin-top: 20px;
+            margin-top: 5px;
             border: 1px solid var(--color-border);
             border-radius: 4px;
         }
 
-        /* === Tabel Data - Excel Look (Perubahan Utama) === */
+        /* Tabel Data - Excel Look */
         .data-table {
             width: 100%;
-            /* min-width: 1200px; DIHAPUS agar tabel menyesuaikan lebar kontainer */
             border-collapse: collapse;
             font-size: 0.9em;
             text-align: left;
@@ -227,7 +259,7 @@
         .action-cell button.edit:hover { background-color: #e0a800; }
         .action-cell button.delete:hover { background-color: #c82333; }
         
-        /* Toast Notification (Tidak Berubah) */
+        /* Toast Notification */
         .toast {
             visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center;
             border-radius: 2px; padding: 16px; position: fixed; z-index: 100; right: 30px; bottom: 30px;
@@ -246,7 +278,7 @@
         @-webkit-keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
         @keyframes fadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
         
-        /* --- STYLING UNTUK PDF EXPORT SAJA (Tidak Berubah) --- */
+        /* --- STYLING UNTUK PDF EXPORT SAJA --- */
         #pdf-header, #report-title-print, #pdf-signature { display: none; padding: 0 20px; }
         #pdf-header {
             display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--color-primary); padding-bottom: 10px; margin-bottom: 15px;
@@ -285,13 +317,8 @@
         
         <h3>Data Pemasukan Koin NU</h3>
         
-        <div class="control-buttons">
-            <div>
-                <button type="button" onclick="exportToPDF('koin')">⬇️ Ekspor Laporan PDF</button>
-            </div>
-            <div>
-                <button type="button" onclick="clearData('koin')">❌ Hapus Semua Data</button>
-            </div>
+        <div class="control-buttons-top">
+            <button type="button" onclick="exportToPDF('koin')">⬇️ Ekspor Laporan PDF</button>
         </div>
 
         <div class="data-table-wrapper" id="koin-table-wrapper">
@@ -332,6 +359,10 @@
         </div>
         
         <h2 id="main-title">Input Data Koin NU</h2>
+        
+        <div class="control-buttons-bottom">
+            <button type="button" onclick="clearData('koin')">❌ Hapus Semua Data</button>
+        </div>
         
         <div class="form-section">
             <form id="koin-form">
@@ -635,7 +666,7 @@
             // Hapus batasan tinggi & scroll pada tabel untuk memastikan semua data terbaca oleh html2canvas
             tableWrapper.style.maxHeight = 'none';
             tableWrapper.style.overflowY = 'visible';
-            tableWrapper.style.overflowX = 'visible'; // Diaktifkan kembali untuk keperluan PDF (agar tidak terpotong)
+            tableWrapper.style.overflowX = 'visible'; 
             tableEl.style.minWidth = '0'; // Hapus min-width agar tabel mengikuti lebar kertas PDF (A4)
             
             const initialScrollY = window.scrollY;
@@ -687,7 +718,6 @@
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
                 
-                // Kembalikan ke kondisi awal
                 tableWrapper.style.maxHeight = originalMaxHeight; 
                 tableWrapper.style.overflowY = originalOverflowY; 
                 tableWrapper.style.overflowX = originalOverflowX;
@@ -706,7 +736,6 @@
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
                 
-                // Kembalikan ke kondisi awal
                 tableWrapper.style.maxHeight = originalMaxHeight; 
                 tableWrapper.style.overflowY = originalOverflowY; 
                 tableWrapper.style.overflowX = originalOverflowX;
