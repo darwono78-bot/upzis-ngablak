@@ -504,6 +504,9 @@
         const KOIN_KEY = 'upzis_koin_data';
         const JURNAL_KEY = 'upzis_jurnal_data';
         const ANNUAL_KEY = 'upzis_annual_data';
+		
+		// 🏆 VARIABEL MEMO (Wajib Ada di Sini) 
+   		 let annualEditData = null;
 
         // Data Dummy Awal (Jika Local Storage Kosong)
         let koinData = [
@@ -1395,79 +1398,6 @@ function editAnnualData(id, key, currentValue, isText = false) {
     document.getElementById('tahunan-edit-input-area').scrollIntoView({ behavior: 'smooth' });
 }
 
-
-// Fungsi ini juga harus diubah agar menghapus object annualEditData, bukan sekadar set ke null.
-function cancelAnnualEdit() {
-    // 🛑 KRUSIAL 2: Hapus Memo agar Tombol Simpan tidak salah baca
-    annualEditData = null; 
-    document.getElementById('tahunan-edit-input-area').style.display = 'none';
-}
-        
-       async function saveAnnualReportData() {
-    // 🏆 DEBUG 1: Cek apakah fungsi ini benar-benar dimulai
-    console.log("--- FUNGSI SAVE DIMULAI ---"); 
-    
-    // 🛑 LANGKAH PENTING 1: Cek apakah ID dan KEY ada
-    if (!annualEditData || !annualEditData.id || !annualEditData.key) {
-        // Jika data kunci tidak ada, fungsi berhenti di sini.
-        console.error("Gagal menyimpan: annualEditData, ID, atau KEY hilang.");
-        alert('Gagal menyimpan: Data yang diedit tidak teridentifikasi. Coba klik sel data lagi.');
-        document.getElementById('tahunan-edit-input-area').style.display = 'none';
-        return;
-    }
-    
-    const { id, key, isText } = annualEditData;
-
-    // 🏆 DEBUG 2: Cek apakah Memo (ID dan Key) terisi dengan benar
-    console.log("ID Dokumen:", id, "Key Field (Loker):", key); 
-
-    let newValue;
-    const nominalInput = document.getElementById('annual-edit-nominal');
-    const keteranganInput = document.getElementById('annual-edit-keterangan');
-
-    // 2. VALIDASI DAN AMBIL NILAI BARU
-    if (isText) {
-        // Mode Teks
-        newValue = keteranganInput.value.trim();
-        if (newValue === "") {
-            alert("Keterangan tidak boleh kosong.");
-            return;
-        }
-    } else {
-        // Mode Nominal
-        // Bersihkan input dari pemisah ribuan (titik) sebelum diproses!
-        const nominalStr = nominalInput.value.replace(/\./g, '').replace(',', '.'); 
-        newValue = parseInt(nominalStr); 
-        
-        if (isNaN(newValue)) {
-            alert('Nominal harus berupa angka yang valid.');
-            return;
-        }
-    }
-    
-    // 3. PERSIAPAN DATA FIREBASE
-    const updateData = {};
-    updateData[key] = newValue; // Menggunakan key field yang sudah terisi
-
-    // 4. UPDATE DATABASE (MENGGANTIKAN saveDataToStorage)
-    try {
-        const annualDocRef = doc(db, 'annual_reports', id); 
-        
-        await updateDoc(annualDocRef, updateData); // Wajib ada 'await'
-        
-        alert("Data berhasil disimpan!");
-
-        // 5. CLEANUP & REFRESH
-        cancelAnnualEdit(); 
-        filterData('tahunan'); 
-        
-    } catch (e) {
-        // JIKA ADA ERROR DATABASE, SEKARANG AKAN MUNCUL DI ALERT
-        console.error("Gagal menyimpan data tahunan, error database:", e);
-        alert("Gagal menyimpan perubahan. Cek console browser untuk detail error.");
-    }
-}
-
         // --- LOGIC LAPORAN TAHUNAN ---
         
         async function generateAnnualReportData(reportYear) {
@@ -2259,11 +2189,116 @@ window.addEventListener('DOMContentLoaded', async () => {
 window.addEventListener('beforeunload', async () => {
     // no-op, Firestore is source of truth
 });
+// --- Tempelkan kode ini di DALAM <script type="module"> Anda ---
+
+// --- 1. Fungsi Batal (Pengosong Memo) ---
+function cancelAnnualEdit() {
+    annualEditData = null; 
+    document.getElementById('tahunan-edit-input-area').style.display = 'none';
+}
+
+
+// --- 2. Fungsi Edit Data (Pengisi Memo/Surat Jalan) ---
+function editAnnualData(id, key, currentValue, isText = false) {
+    if (!isLoggedIn) {
+        alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
+        return;
+    }
+    
+    // 🏆 KRUSIAL: Isi Memo (annualEditData) yang Dibutuhkan oleh Tombol Simpan!
+    annualEditData = {
+        id: id,            // ID Dokumen dari baris tabel (Ini yang sering hilang!)
+        key: key,          // Nama Field (e.g., 'nominal')
+        isText: isText
+    };
+
+    // --- Berikut adalah kode UI yang sudah Kakak sesuaikan, PASTIKAN ID HTML BENAR! ---
+    
+    // Pastikan Kakak sudah memperbaiki error TypeError dengan menambahkan div#annual-edit-nominal-group
+    
+    const clickedElement = document.querySelector(`#annual-data-table [data-id="${id}"][data-key="${key}"]`);
+    if (!clickedElement) {
+        annualEditData = null; 
+        return;
+    }
+
+    let label = '';
+    const rowElement = clickedElement.closest('tr');
+    if (rowElement) {
+        const labelCell = rowElement.querySelectorAll('td')[1];
+        if (labelCell) { label = labelCell.textContent.trim(); }
+    }
+    if (label === '') { label = id.includes('saldo_bank') ? 'SALDO KAS BANK (Awal Tahun)' : 'Data Bulanan'; }
+
+    // KRUSIAL: Gunakan .value untuk elemen <input>
+    document.getElementById('annual-edit-label').value = label; 
+    document.getElementById('annual-edit-nominal').value = isText ? '' : currentValue;
+    document.getElementById('annual-edit-keterangan').value = isText ? currentValue : '';
+
+    document.getElementById('annual-edit-keterangan-group').style.display = isText ? 'block' : 'none';
+    document.getElementById('annual-edit-nominal-group').style.display = isText ? 'none' : 'block';
+
+    document.getElementById('tahunan-edit-input-area').style.display = 'block';
+    document.getElementById('tahunan-edit-input-area').scrollIntoView({ behavior: 'smooth' });
+}
+
+
+// --- 3. Fungsi Simpan Data (Kurir ke Firebase) ---
+async function saveAnnualReportData() {
+    console.log("--- FUNGSI SAVE DIMULAI ---"); 
+    
+    if (!annualEditData || !annualEditData.id || !annualEditData.key) {
+        console.error("Gagal menyimpan: annualEditData, ID, atau KEY hilang.");
+        alert('Gagal menyimpan: Data yang diedit tidak teridentifikasi. Coba klik sel data lagi.');
+        document.getElementById('tahunan-edit-input-area').style.display = 'none';
+        return;
+    }
+    
+    const { id, key, isText } = annualEditData;
+
+    console.log("ID Dokumen:", id, "Key Field (Loker):", key); 
+
+    let newValue;
+    const nominalInput = document.getElementById('annual-edit-nominal');
+    
+    // 2. VALIDASI DAN AMBIL NILAI BARU
+    if (isText) {
+        newValue = document.getElementById('annual-edit-keterangan').value.trim();
+        if (newValue === "") { alert("Keterangan tidak boleh kosong."); return; }
+    } else {
+        const nominalStr = nominalInput.value.replace(/\./g, '').replace(',', '.'); 
+        newValue = parseInt(nominalStr); 
+        if (isNaN(newValue)) { alert('Nominal harus berupa angka yang valid.'); return; }
+    }
+    
+    // 3. PERSIAPAN DATA FIREBASE
+    const updateData = {};
+    updateData[key] = newValue; 
+
+    // 4. UPDATE DATABASE (Sekarang akan menemukan 'doc' dan 'updateDoc')
+    try {
+        const annualDocRef = doc(db, 'laporan_tahunan', id); // Ganti COL_TAHUNAN jika berbeda
+        
+        await updateDoc(annualDocRef, updateData); 
+        
+        alert("Data berhasil disimpan!");
+
+        // 5. CLEANUP & REFRESH
+        cancelAnnualEdit(); 
+        filterData('tahunan'); 
+        
+    } catch (e) {
+        console.error("Gagal menyimpan data tahunan, error database:", e);
+        alert("Gagal menyimpan perubahan. Cek console browser untuk detail error.");
+    }
+}
+	
 </script>
 <!-- ================= END FIRESTORE INTEGRATION ================= -->
 
 </body>
 </html>
+
 
 
 
