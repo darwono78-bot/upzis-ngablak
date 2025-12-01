@@ -985,8 +985,8 @@
             
             // Atur styling khusus untuk ekspor PDF agar tabel tidak melebihi lebar A4 Landscape
             tableClone.style.fontSize = '8pt'; 
-            tableClone.style.width = '100%';
-            tableClone.style.maxWidth = '100%';
+            tableClone.style.width = 'fit-content'; // Dibuat fit-content agar melebihi 100% jika perlu
+            tableClone.style.maxWidth = 'unset'; // Hapus batasan lebar
             tableClone.style.tableLayout = 'auto';
             tableClone.style.margin = '0';
             tableClone.style.borderCollapse = 'collapse'; // Tambahkan ini agar border rapi
@@ -995,7 +995,8 @@
             const tempDiv = document.createElement('div');
             tempDiv.style.position = 'absolute';
             tempDiv.style.left = '-9999px';
-            tempDiv.style.width = '1122px'; // Lebar kira-kira untuk A4 Landscape pada skala 2
+            // PERBAIKAN: Paksa lebar tempDiv menjadi 1200px agar seluruh lebar tabel tertangkap
+            tempDiv.style.width = '1200px'; 
             tempDiv.appendChild(tableClone);
             document.body.appendChild(tempDiv);
             
@@ -1010,13 +1011,11 @@
                 const lineHeight = 5; 
                 
                 const imgData = canvas.toDataURL('image/png');
-                const imgWidth = pageWidth - 2 * margin; 
+                const imgWidth = pageWidth - 2 * margin; // Ditetapkan lebar 277mm untuk PDF
                 const imgHeight = canvas.height * imgWidth / canvas.width;
-                let heightLeft = imgHeight;
                 
                 // =================================================================================
-                // MODIFIKASI 2: Mengganti Header Teks dengan Image Korps PDF (korps-lazisnu.png)
-                //               *PERBAIKAN BARU: Menggunakan tinggi fixed 30mm*
+                // MODIFIKASI 2: Header Image (Perbaikan Tinggi Fixed 20mm)
                 // =================================================================================
                 
                 let currentY = 5;
@@ -1025,8 +1024,8 @@
                 const korpsImageX = margin; 
                 
                 // *PERBAIKAN BARU:* Tentukan tinggi tetap yang minim distorsi
-                const korpsImageHeight = 30; // 30mm
-                const korpsImageTotalSpace = korpsImageHeight + 10; // Total ruang yang digunakan 30mm
+                const korpsImageHeight = 20; // 20mm
+                const korpsImageTotalSpace = korpsImageHeight + 5; // Total ruang yang digunakan 25mm
 
                 // 1. Tambahkan Image Korps
                 doc.addImage(korpsImagePath, 'PNG', korpsImageX, currentY, korpsImageWidth, korpsImageHeight); 
@@ -1117,7 +1116,8 @@
                     const signatureBlockHeight = 40; // Total tinggi blok tanda tangan
                     
                     // Hitung di mana konten berakhir di halaman final
-                    const availableHeightLastPage = pageHeightA4 - (doc.internal.pageSize.height - heightLeft2); 
+                    const totalHeightOnFinalPage = imgHeight2 - (imgHeight2 - heightLeft2);
+                    const availableHeightLastPage = pageHeightA4 - (totalHeightOnFinalPage + position); 
                     
                     if (availableHeightLastPage >= signatureBlockHeight + 10) { // Jika cukup ruang
                         signatureY = pageHeightA4 - signatureBlockHeight - margin; 
@@ -1186,6 +1186,3 @@
     </script>
 </body>
 </html>
-
-
-
