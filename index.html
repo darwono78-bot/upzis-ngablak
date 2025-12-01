@@ -977,190 +977,136 @@
             if (module !== 'koin') return;
 
             const tableEl = document.getElementById(`table-${module}`);
-            const tableClone = tableEl.cloneNode(true);
+            const reportHeaderEl = document.querySelector('.report-header');
             const filename = `Laporan_Koin_NU_${document.getElementById('filter-koin-bulan').selectedOptions[0].text}_${document.getElementById('filter-koin-tahun').value}.pdf`;
 
             // 1. Persiapan Tabel Clone untuk Export
+            const tableClone = tableEl.cloneNode(true);
 
-            // Hapus kolom Aksi dari clone jika ada
-            const colAksiIndex = Array.from(tableClone.querySelector('thead tr:last-child').children).findIndex(th => th.textContent.includes('(5%)')) + 1;
-            
-            // Hapus header Aksi
+            // Hapus kolom Aksi dari clone
             tableClone.querySelectorAll('thead th.col-aksi').forEach(th => th.remove());
-            // Hapus cell Aksi di body
             tableClone.querySelectorAll('tbody .col-aksi').forEach(td => td.remove());
-            // Hapus cell Aksi di footer
             tableClone.querySelectorAll('tfoot .col-aksi').forEach(td => td.remove());
 
-
-            // Koreksi colspan pada footer setelah kolom Aksi dihapus (Asumsi 6 kolom digabung)
+            // Koreksi colspan pada footer
             const tfoot = tableClone.querySelector('tfoot td:first-child');
             if (tfoot) {
                 // Digabung dari No (1) hingga Alamat (6) = 6 kolom
                 tfoot.setAttribute('colspan', '6'); 
             }
 
-            // Atur styling khusus untuk ekspor PDF agar tabel tidak melebihi lebar A4 Landscape
+            // Atur styling khusus untuk ekspor PDF pada tabel
             tableClone.style.fontSize = '8pt';
-            tableClone.style.width = 'fit-content';
-            tableClone.style.maxWidth = 'unset';
-            tableClone.style.tableLayout = 'auto';
+            tableClone.style.width = '100%'; 
+            tableClone.style.tableLayout = 'fixed'; // Gunakan fixed layout agar width kolom di HTML berfungsi
             tableClone.style.margin = '0';
             tableClone.style.borderCollapse = 'collapse';
+            
+            // Atur lebar TH di Thead secara spesifik (MENGUATKAN LEBAR AGAR ALIGNMENT ROWSPAN TIDAK RUSAK)
+            // Urutan kolom: No, Tanggal, Nama Petugas, No HP, Donatur, Alamat, Nominal, Petugas, Ranting, MWC, PC
+            const widths = ['3%', '7%', '12%', '7%', '15%', '10%', '8%', '8%', '8%', '8%', '8%']; // Total ~94%
+            tableClone.querySelectorAll('thead th').forEach((th, index) => {
+                if(th.textContent.trim() !== 'PEMBAGIAN DANA KOIN') {
+                    th.style.width = widths[index] || 'auto';
+                }
+            });
+
 
             // Buat div sementara untuk html2canvas (agar tidak terlihat di layar)
             const tempDiv = document.createElement('div');
             tempDiv.style.position = 'absolute';
             tempDiv.style.left = '-9999px'; 
-            // Paksa lebar tempDiv menjadi 1200px (agar seluruh lebar tabel tertangkap)
             tempDiv.style.width = '1200px'; 
-            tempDiv.appendChild(tableClone);
             document.body.appendChild(tempDiv);
             
-            // 2. Generate Canvas dan PDF
+            // 2. Kloning Header dan Tabel untuk Pengambilan Gambar Terpisah
+
+            // Kloning Header Laporan
+            const headerClone = reportHeaderEl.cloneNode(true);
+            headerClone.querySelector('.double-line').style.margin = '5px 0 10px 0'; // Kurangi margin garis
+            tempDiv.appendChild(headerClone);
+
+            // Tambahkan Judul Laporan di antara Header dan Tabel
+            const titleEl = document.createElement('h4');
+            const filterBulan = document.getElementById('filter-koin-bulan').selectedOptions[0].text;
+            const filterTahun = document.getElementById('filter-koin-tahun').value;
+            titleEl.textContent = `LAPORAN KOIN NU BULAN ${filterBulan.toUpperCase()} TAHUN ${filterTahun}`;
+            titleEl.style.textAlign = 'center';
+            titleEl.style.fontSize = '12pt';
+            titleEl.style.margin = '10px 0 10px 0';
+            tempDiv.appendChild(titleEl);
+            
+            // Tambahkan Tabel Clone
+            tempDiv.appendChild(tableClone);
+            
+            // Tambahkan Tanda Tangan (sebagai elemen HTML agar terbaca html2canvas)
+            const signatureEl = document.createElement('div');
+            signatureEl.style.width = '100%';
+            signatureEl.style.marginTop = '20px';
+            signatureEl.style.fontSize = '10pt';
+            signatureEl.innerHTML = `
+                <div style="float: right; text-align: right; width: 100%;">Ngablak, ${getCurrentDateIndonesian()}</div>
+                <div style="overflow: auto;">
+                    <div style="float: left; width: 40%; text-align: center; margin-top: 15px;">
+                        <p style="margin: 0; font-weight: bold;">Mengetahui,</p>
+                        <p style="margin: 0;">Ketua Ranting UPZIS-LAZISNU Ngablak</p>
+                        <br><br><br>
+                        <p style="margin: 0; font-weight: bold; text-decoration: underline;">( Nama Ketua )</p>
+                    </div>
+                    <div style="float: right; width: 40%; text-align: center; margin-top: 15px;">
+                        <p style="margin: 0; font-weight: bold;">Dibuat Oleh,</p>
+                        <p style="margin: 0;">Bendahara UPZIS-LAZISNU Ngablak</p>
+                        <br><br><br>
+                        <p style="margin: 0; font-weight: bold; text-decoration: underline;">( Nama Bendahara )</p>
+                    </div>
+                </div>
+            `;
+            tempDiv.appendChild(signatureEl);
+
+            // 3. Generate Canvas dan PDF
             html2canvas(tempDiv, { scale: 2 }).then(canvas => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('l', 'mm', 'a4'); // Landscape, mm, A4
                 const pageWidth = doc.internal.pageSize.getWidth();
                 const pageHeightA4 = doc.internal.pageSize.getHeight();
                 const margin = 10;
-                const lineHeight = 5;
 
                 const imgData = canvas.toDataURL('image/png');
                 const imgWidth = pageWidth - 2 * margin; // 277mm
                 const imgHeight = canvas.height * imgWidth / canvas.width;
 
-                // =================================================================================
-                // Header Image
-                // =================================================================================
-                let currentY = 5;
-                const korpsImagePath = 'korps-lazisnu.png'; // GANTI DENGAN NAMA FILE LOGO KORPS (JIKA ADA)
-                const korpsImageWidth = pageWidth * 0.15; // Lebar 15% dari halaman
-                const korpsImageHeight = korpsImageWidth * (236 / 236); // Asumsi rasio 1:1, sesuaikan jika perlu
-
-                // Posisi Logo Kanan
-                doc.addImage(korpsImagePath, 'PNG', pageWidth - margin - korpsImageWidth, currentY, korpsImageWidth, korpsImageHeight, 'korps-logo');
-                
-                // Posisi Logo Kiri
-                const lazisnuImagePath = 'logo-lazzisnu.png'; // GANTI DENGAN NAMA FILE LOGO LAZISNU
-                const lazisnuImageWidth = pageWidth * 0.10; // Lebar 10% dari halaman
-                const lazisnuImageHeight = lazisnuImageWidth * (182 / 173); // Rasio logo lazisnu
-
-                doc.addImage(lazisnuImagePath, 'PNG', margin, currentY + (korpsImageHeight / 2) - (lazisnuImageHeight / 2), lazisnuImageWidth, lazisnuImageHeight, 'lazisnu-logo'); // Tengah vertikal di sekitar korps logo
-
-                // Alamat Header (Dibuat Manual karena html2canvas tidak mengambil header terpisah)
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                const titleText = 'NU CARE UPZIS - LAZISNU RANTING NGABLAK';
-                const alamatText = 'Sekretariat: Jalan [Nama Jalan], Desa Ngablak, Kec. [Kecamatan], Kab. [Kabupaten].';
-                const laporanTitle = `LAPORAN KOIN NU BULAN ${document.getElementById('filter-koin-bulan').selectedOptions[0].text.toUpperCase()} TAHUN ${document.getElementById('filter-koin-tahun').value}`;
-                
-                const titleX = margin + lazisnuImageWidth + 5;
-                const titleY = currentY + (korpsImageHeight / 2) - (lineHeight / 2);
-
-                doc.text(titleText, titleX, titleY);
-                doc.setFontSize(8);
-                doc.setFont('helvetica', 'normal');
-                doc.text(alamatText, titleX, titleY + lineHeight);
-                
-                // Garis Ganda
-                currentY = currentY + korpsImageHeight + 5;
-                doc.setDrawColor('#006400');
-                doc.setLineWidth(0.5);
-                doc.line(margin, currentY, pageWidth - margin, currentY);
-                doc.line(margin, currentY + 0.8, pageWidth - margin, currentY + 0.8);
-                
-                // Judul Laporan
-                currentY += 4;
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold');
-                doc.text(laporanTitle, pageWidth / 2, currentY + lineHeight, { align: 'center' });
-                currentY += 2 * lineHeight;
-
-
-                // =================================================================================
-                // Tabel (Canvas Image)
-                // =================================================================================
-                let position = currentY; 
+                let position = margin;
                 let heightLeft = imgHeight;
 
+                // Tambahkan gambar ke PDF
                 doc.addImage(imgData, 'PNG', margin, position, imgWidth, imgHeight);
                 heightLeft -= (pageHeightA4 - position - margin);
                 position = pageHeightA4;
 
                 // Handle Multipage Table
-                while (heightLeft >= -10) { // Beri toleransi 10mm
+                while (heightLeft >= -50) { // Beri toleransi 50mm untuk menghindari footer terpotong
                     doc.addPage();
                     doc.setFontSize(8);
                     doc.setFont('helvetica', 'normal');
                     const pageNum = doc.internal.pages.length - 1;
-                    doc.text(`Halaman ${pageNum}`, pageWidth - margin, margin + lineHeight/2); // Page Number
+                    // Posisi nomor halaman
+                    doc.text(`Halaman ${pageNum}`, pageWidth - margin, margin / 2); 
 
                     let yOffset = -(imgHeight - heightLeft);
                     doc.addImage(imgData, 'PNG', margin, yOffset + margin, imgWidth, imgHeight);
                     heightLeft -= (pageHeightA4 - 2 * margin);
                 }
-
-                // =================================================================================
-                // Tanda Tangan Block (di halaman terakhir)
-                // =================================================================================
-                let currentSignY;
-                const signatureBlockHeight = 40; // Estimasi tinggi blok tanda tangan
-                const totalHeightOnFinalPage = imgHeight % (pageHeightA4 - 2 * margin); 
-                const availableHeightLastPage = pageHeightA4 - (totalHeightOnFinalPage + margin);
-                
-                // Tentukan posisi Y tanda tangan
-                // Jika tinggi sisa cukup, tempatkan di bawah tabel
-                if (availableHeightLastPage >= signatureBlockHeight + 10) {
-                    currentSignY = pageHeightA4 - signatureBlockHeight - margin;
-                } else {
-                    // Jika tidak cukup, buat halaman baru
-                    doc.addPage();
-                    currentSignY = margin + lineHeight;
-                    doc.setFontSize(8);
-                    doc.setFont('helvetica', 'normal');
-                    const pageNum = doc.internal.pages.length - 1;
-                    doc.text(`Halaman ${pageNum}`, pageWidth - margin, margin + lineHeight/2);
-                }
-                
-                // Tanda Tangan Content
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'normal');
-                const signDateText = `Ngablak, ${getCurrentDateIndonesian()}`;
-                doc.text(signDateText, pageWidth - margin, currentSignY, { align: 'right' });
-                
-                currentSignY += 2 * lineHeight;
-
-                const leftXCenter = pageWidth * 0.3; // 30% dari lebar halaman
-                const rightXCenter = pageWidth * 0.7; // 70% dari lebar halaman
-                
-                // Dibuat Oleh
-                doc.text('Mengetahui,', leftXCenter, currentSignY, { align: 'center' });
-                doc.text('Dibuat Oleh,', rightXCenter, currentSignY, { align: 'center' });
-                
-                currentSignY += 4 * lineHeight; // Space for signature line
-
-                // Nama Ketua/Bendahara (Bold)
-                doc.setFont('helvetica', 'bold');
-                doc.text('( Nama Ketua )', leftXCenter, currentSignY, { align: 'center' });
-                doc.text('( Nama Bendahara )', rightXCenter, currentSignY, { align: 'center' });
-                
-                // Jabatan
-                currentSignY += lineHeight;
-                doc.setFont('helvetica', 'normal');
-                doc.text('Ketua Ranting UPZIS-LAZISNU Ngablak', leftXCenter, currentSignY, { align: 'center' }); 
-                doc.text('Bendahara UPZIS-LAZISNU Ngablak', rightXCenter, currentSignY, { align: 'center' }); 
-                
-                // --- END Tanda Tangan Block ---
                 
                 doc.save(filename);
                 
-                // Hapus div sementara setelah PDF selesai dibuat
+                // 4. Bersihkan (Hapus div sementara setelah PDF selesai dibuat)
                 if (document.body.contains(tempDiv)) {
                     document.body.removeChild(tempDiv);
                 }
+                showToast('Ekspor PDF berhasil!', 'success');
+                
             }).catch(error => {
-                // Ensure the tempDiv is removed even if html2canvas fails
+                // Pastikan div sementara dihapus jika terjadi error
                 if (document.body.contains(tempDiv)) {
                     document.body.removeChild(tempDiv);
                 }
@@ -1174,3 +1120,4 @@
     </script>
 </body>
 </html>
+
