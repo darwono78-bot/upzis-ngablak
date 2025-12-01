@@ -602,16 +602,15 @@
 
         // 2. Format Rupiah (Tanpa Rp)
 function formatRupiah(number) {
-    let num = number === undefined || number === null ? 0 : number;
-    let numberString = Math.abs(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    if (num < 0) 
-    {
-        return `<span style="color: red; font-weight: bold;">(${numberString})</span>`;
-    }
-		return numberString;
+    // returns plain string with dot thousand separators (no HTML tags)
+    let num = number === undefined || number === null ? 0 : Number(number) || 0;
+    const sign = num < 0 ? -1 : 1;
+    num = Math.abs(num);
+    const numberString = num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return (sign < 0 ? "-" : "") + numberString;
 }
 
-        function formatTanggal(dateStr) {
+function formatTanggal(dateStr) {
             if (!dateStr) return '-';
             const date = new Date(dateStr + 'T00:00:00');
             return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -2007,8 +2006,9 @@ async function loadAllCollections(){
         const snapK = await getDocs(qk);
         // 🏆 Perbaikan: Gunakan window.koinData
         window.koinData = [];
-        snapK.forEach(d => window.koinData.push({ id: d.id, ...d.data() }));
-    } catch(e){
+        snapK.forEach(doc => window.koinData.push({ id: doc.id, ...doc.data() }));
+        koinData = window.koinData.slice();
+        } catch(e){
         console.error('load koin error', e);
     }
 
@@ -2018,8 +2018,9 @@ async function loadAllCollections(){
         const snapJ = await getDocs(qj);
         // 🏆 Perbaikan: Gunakan window.jurnalData
         window.jurnalData = [];
-        snapJ.forEach(d => window.jurnalData.push({ id: d.id, ...d.data() }));
-    } catch(e){
+        snapJ.forEach(doc => window.jurnalData.push({ id: doc.id, ...doc.data() }));
+        jurnalData = window.jurnalData.slice();
+        } catch(e){
         console.error('load jurnal error', e);
     }
 
@@ -2029,8 +2030,9 @@ async function loadAllCollections(){
         const snapT = await getDocs(qt);
         // 🏆 Perbaikan: Gunakan window.annualData
         window.annualData = [];
-        snapT.forEach(d => window.annualData.push({ id: d.id, ...d.data() }));
-    } catch(e){
+        snapT.forEach(doc => window.annualData.push({ id: doc.id, ...doc.data() }));
+        annualData = window.annualData.slice();
+        } catch(e){
         console.error('load tahunan error', e);
     }
 }
@@ -2208,7 +2210,7 @@ window.deleteAllDataGlobal = async function(module){
 window.addEventListener('DOMContentLoaded',  async () => {
     await loadAllCollections();
     populateFilterOptions && populateFilterOptions();
-    filterData && filterData('koin');
+    await filterData && await filterData('koin');
 });
 
 // Override any remaining save-to-local-storage calls by saving when window unload (keep but not needed)
