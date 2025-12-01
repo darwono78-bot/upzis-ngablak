@@ -1013,17 +1013,33 @@ async function filterData(module) { // <<< Wajib tambahkan 'async' di sini!
         renderJurnalTable(jurnalData, selectedMonth, selectedYear);
 
     } else if (module === 'tahunan') {
-        selectedYear = document.getElementById('tahunan-filter-tahun').value;
-        displayId = 'tahunan-pdf-periode-display';
-        ttdId = 'tahunan-ttd-tanggal-output';
-        document.getElementById(displayId).textContent = selectedYear;
-        
-        // 🏆 PERBAIKAN: Tambahkan 'await' di sini!
-        const annualDataFinal = await generateAnnualReportData(selectedYear); 
-        
-        renderAnnualReportTable(annualDataFinal, selectedYear);
-    }
-    document.getElementById(ttdId).textContent = formatTanggalTTD();
+    selectedYear = document.getElementById('tahunan-filter-tahun').value;
+    displayId = 'tahunan-pdf-periode-display';
+    ttdId = 'tahunan-ttd-tanggal-output';
+    
+    // Set Tahun Display
+    document.getElementById(displayId).textContent = selectedYear;
+
+    // 🏆 BLOK ASYNC BARU: Memastikan data dimuat sebelum diproses
+    (async () => {
+        try {
+            // 1. WAJIB: Memuat ulang semua koleksi (mengisi window.annualData)
+            await loadAllCollections(); 
+            
+            // 2. Memproses data Tahunan
+            const annualDataFinal = await generateAnnualReportData(selectedYear); 
+            
+            // 3. Menampilkan tabel
+            renderAnnualReportTable(annualDataFinal, selectedYear);
+            
+            // 4. Set TTD
+            document.getElementById(ttdId).textContent = formatTanggalTTD();
+            
+        } catch(e) {
+            console.error("Gagal memuat Laporan Tahunan:", e);
+        }
+    })();
+    
 }
 
         // --- CRUD DAN INPUT BARU ---
@@ -2206,7 +2222,7 @@ window.deleteAllDataGlobal = async function(module){
 };
 
 // Load initial data on page ready
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded',  async () => {
     await loadAllCollections();
     populateFilterOptions && populateFilterOptions();
     filterData && filterData('koin');
@@ -2330,6 +2346,7 @@ window.saveAnnualReportData = async function() { // 🏆 PERUBAHAN DI SINI (asyn
 
 </body>
 </html>
+
 
 
 
