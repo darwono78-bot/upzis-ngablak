@@ -8,6 +8,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script> 
+    
     <style>
         /* Variabel CSS dan Gaya Umum */
         :root {
@@ -66,7 +70,8 @@
         }
         .input-group input[type="text"], 
         .input-group input[type="number"],
-        .input-group input[type="date"] {
+        .input-group input[type="date"],
+        .input-group input[type="password"] { 
             width: 100%;
             padding: 12px; 
             border: 1px solid #c0c0c0; 
@@ -77,7 +82,8 @@
         }
         .input-group input[type="text"]:focus, 
         .input-group input[type="number"]:focus,
-        .input-group input[type="date"]:focus {
+        .input-group input[type="date"]:focus,
+        .input-group input[type="password"]:focus {
             outline: none;
             border-color: var(--color-primary); 
             box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.2); 
@@ -130,13 +136,17 @@
             background-color: #004d00; 
         }
         
-        /* Alignment untuk Hapus Semua Data (atas form, rata kiri) */
+        /* Alignment untuk Hapus Semua Data (Kiri) dan Logout (Kanan) */
         .control-buttons-bottom {
-            text-align: left;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
             margin-top: 20px; 
             margin-bottom: 10px;
         }
-        .control-buttons-bottom button {
+        
+        /* Gaya Tombol Hapus */
+        .control-buttons-bottom button:not(.logout-btn) { 
             background-color: #dc3545; 
             color: white; 
             padding: 10px 20px;
@@ -146,30 +156,81 @@
             font-weight: bold;
             transition: background-color 0.3s ease;
         }
-        .control-buttons-bottom button:hover { 
+        .control-buttons-bottom button:not(.logout-btn):hover { 
             background-color: #c82333; 
+        }
+        
+        /* Gaya Tombol Logout */
+        .control-buttons-bottom button.logout-btn {
+            background-color: #3f51b5; 
+            color: white; 
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .control-buttons-bottom button.logout-btn:hover { 
+            background-color: #303f9f; 
         }
 
         /* Gaya untuk Kolom Berdampingan (Form Input) */
         .form-row {
             display: flex;
-            gap: 15px; /* Sedikit dikurangi agar 6 kolom muat */
+            gap: 15px; 
             margin-bottom: 5px; 
-            flex-wrap: nowrap; /* Pastikan tidak turun baris jika lebar cukup */
+            flex-wrap: nowrap; 
         }
         .form-row .input-group {
-            flex: 1; /* Semua kolom memiliki lebar yang sama */
+            flex: 1; 
             margin-bottom: 15px; 
-            min-width: 150px; /* Lebar minimal untuk mencegah terlalu sempit */
+            min-width: 150px; 
         }
 
+        /* Gaya untuk Kolom Login (Diletakkan di Bawah Input) */
+        .login-section {
+            width: 100%;
+            max-width: 400px; 
+            margin: 40px auto 20px auto; 
+            padding: 25px;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background-color: var(--color-card-bg); 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); 
+            text-align: center;
+        }
+        .login-section h3 {
+            color: var(--color-primary);
+            margin-bottom: 20px;
+        }
+        .login-section .input-group {
+             text-align: left; 
+        }
+        .login-section .input-group input {
+            width: 100%;
+        }
+        .login-section button {
+            background-color: var(--color-secondary);
+            color: white;
+            padding: 10px 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .login-section button:hover {
+            background-color: #006400;
+        }
+        
         /* Responsiveness: Kembalikan ke satu kolom pada layar kecil */
-        @media (max-width: 1100px) { /* Ditingkatkan batasan lebarnya agar 6 kolom tetap pada satu baris di layar lebar */
+        @media (max-width: 1100px) { 
             .form-row {
-                flex-wrap: wrap; /* Jika tidak muat, baru turun baris */
+                flex-wrap: wrap; 
             }
             .form-row .input-group {
-                flex: 1 1 45%; /* Jika turun baris, jadikan 2 kolom per baris */
+                flex: 1 1 45%; 
             }
         }
         
@@ -239,18 +300,18 @@
         }
 
         /* Penyesuaian Alignment Teks di Body Tabel */
-        .data-table tbody td:nth-child(3), /* Nama Petugas */
-        .data-table tbody td:nth-child(5), /* Donatur/Kelompok */
-        .data-table tbody td:nth-child(6) { /* Alamat */
+        .data-table tbody td:nth-child(3), 
+        .data-table tbody td:nth-child(5), 
+        .data-table tbody td:nth-child(6) { 
             text-align: left; 
         }
 
         /* Penyesuaian Alignment Teks di Body Tabel untuk Nominal (Rupiah) */
-        .data-table tbody td:nth-child(7), /* Nominal */
-        .data-table tbody td:nth-child(8), /* Petugas */
-        .data-table tbody td:nth-child(9), /* Ranting */
-        .data-table tbody td:nth-child(10), /* MWC */
-        .data-table tbody td:nth-child(11) { /* PC */
+        .data-table tbody td:nth-child(7), 
+        .data-table tbody td:nth-child(8), 
+        .data-table tbody td:nth-child(9), 
+        .data-table tbody td:nth-child(10), 
+        .data-table tbody td:nth-child(11) { 
             text-align: right; 
         }
         
@@ -315,133 +376,178 @@
 </head>
 <body>
     <div class="container" id="export-content">
-        <div id="pdf-header">
-            <img src="logo_laziznu.png" alt="Logo LAZISNU" class="logo">
-            <div class="text-container">
-                <h3>UPZIS-LAZISNU RANTING NGABLAK</h3>
-                <p>Alamat: Jl. Raya Ngablak No. 123, Ngablak, Jawa Tengah</p>
-                <p>Email: ngablak@lazisnu.or.id | Telp: 0812-3456-7890</p>
+        
+        <div id="app-content" style="display: none;"> 
+            <div id="pdf-header">
+                <img src="logo_laziznu.png" alt="Logo LAZISNU" class="logo">
+                <div class="text-container">
+                    <h3>UPZIS-LAZISNU RANTING NGABLAK</h3>
+                    <p>Alamat: Jl. Raya Ngablak No. 123, Ngablak, Jawa Tengah</p>
+                    <p>Email: ngablak@lazisnu.or.id | Telp: 0812-3456-7890</p>
+                </div>
+                <img src="korps-laziznu.png" alt="Logo Korps NU" class="korps">
             </div>
-            <img src="korps-laziznu.png" alt="Logo Korps NU" class="korps">
-        </div>
-        
-        <div id="report-title-print">
-            LAPORAN BULANAN KOIN NU
-        </div>
-        
-        <h3>Data Pemasukan Koin NU</h3>
-        
-        <div class="control-buttons-top">
-            <button type="button" onclick="exportToPDF('koin')">⬇️ Ekspor Laporan PDF</button>
-        </div>
+            
+            <div id="report-title-print">
+                LAPORAN BULANAN KOIN NU
+            </div>
+            
+            <h3>Data Pemasukan Koin NU</h3>
+            
+            <div class="control-buttons-top">
+                <button type="button" onclick="exportToPDF('koin')">⬇️ Ekspor Laporan PDF</button>
+            </div>
 
-        <div class="data-table-wrapper" id="koin-table-wrapper">
-            <table class="data-table" id="koin-table">
-                <thead>
-                    <tr>
-                        <th rowspan="2">NO</th>
-                        <th rowspan="2">Tanggal</th>
-                        <th rowspan="2">Nama Petugas</th>
-                        <th rowspan="2">No. HP</th>
-                        <th rowspan="2">Donatur/Kelompok</th>
-                        <th rowspan="2">Alamat (RT/RW)</th>
-                        <th rowspan="2">Nominal (Rp)</th>
-                        <th colspan="4" style="text-align: center;">Pembagian Dana (100%)</th>
-                        <th rowspan="2">Aksi</th>
-                    </tr>
-                    <tr>
-                        <th>Petugas (10%)</th>
-                        <th>Ranting (60%)</th>
-                        <th>MWC (25%)</th>
-                        <th>PC (5%)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    </tbody>
-                <tfoot>
-                    <tr>
-                        <th colspan="6" style="text-align: right;">Total Pemasukan:</th>
-                        <th id="koin-total-nominal">Rp 0</th>
-                        <th id="koin-total-petugas">Rp 0</th>
-                        <th id="koin-total-ranting">Rp 0</th>
-                        <th id="koin-total-mwc">Rp 0</th>
-                        <th id="koin-total-pc">Rp 0</th>
-                        <th></th>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-        
-        <h2 id="main-title">Input Data Koin NU</h2>
-        
-        <div class="control-buttons-bottom">
-            <button type="button" onclick="clearData('koin')">❌ Hapus Semua Data</button>
-        </div>
-        
-        <div class="form-section">
-            <form id="koin-form">
-                <input type="hidden" id="koin-id" value="">
-                
-                <div class="form-row">
+            <div class="data-table-wrapper" id="koin-table-wrapper">
+                <table class="data-table" id="koin-table">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">NO</th>
+                            <th rowspan="2">Tanggal</th>
+                            <th rowspan="2">Nama Petugas</th>
+                            <th rowspan="2">No. HP</th>
+                            <th rowspan="2">Donatur/Kelompok</th>
+                            <th rowspan="2">Alamat (RT/RW)</th>
+                            <th rowspan="2">Nominal (Rp)</th>
+                            <th colspan="4" style="text-align: center;">Pembagian Dana (100%)</th>
+                            <th rowspan="2">Aksi</th>
+                        </tr>
+                        <tr>
+                            <th>Petugas (10%)</th>
+                            <th>Ranting (60%)</th>
+                            <th>MWC (25%)</th>
+                            <th>PC (5%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="6" style="text-align: right;">Total Pemasukan:</th>
+                            <th id="koin-total-nominal">Rp 0</th>
+                            <th id="koin-total-petugas">Rp 0</th>
+                            <th id="koin-total-ranting">Rp 0</th>
+                            <th id="koin-total-mwc">Rp 0</th>
+                            <th id="koin-total-pc">Rp 0</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            
+            <h2 id="main-title">Input Data Koin NU</h2>
+            
+            <div class="control-buttons-bottom">
+                <button type="button" onclick="clearData('koin')">❌ Hapus Semua Data</button>
+                <button type="button" class="logout-btn" onclick="logout()">🚪 Logout</button>
+            </div>
+            
+            <div class="form-section">
+                <form id="koin-form">
+                    <input type="hidden" id="koin-firebase-key" value=""> 
                     
-                    <div class="input-group">
-                        <label for="koin-tanggal">Tanggal:</label>
-                        <input type="date" id="koin-tanggal" required>
+                    <div class="form-row">
+                        
+                        <div class="input-group">
+                            <label for="koin-tanggal">Tanggal:</label>
+                            <input type="date" id="koin-tanggal" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="koin-nama-petugas">Nama Petugas:</label>
+                            <input type="text" id="koin-nama-petugas" placeholder="Nama Petugas" required>
+                        </div>
+                    
+                        <div class="input-group">
+                            <label for="koin-no-hp">No. HP:</label>
+                            <input type="text" id="koin-no-hp" placeholder="Nomor HP" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="koin-donatur">Donatur/Kelompok:</label>
+                            <input type="text" id="koin-donatur" placeholder="Nama Donatur/Kelompok" required>
+                        </div>
+                    
+                        <div class="input-group">
+                            <label for="koin-alamat-rtrw">Alamat (RT/RW):</label>
+                            <input type="text" id="koin-alamat-rtrw" placeholder="Contoh: Jl. Anggrek RT 01/RW 02" required>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="koin-nominal">Nominal (Rp):</label>
+                            <input type="number" id="koin-nominal" placeholder="Nominal Pemasukan" required min="1">
+                        </div>
                     </div>
                     
-                    <div class="input-group">
-                        <label for="koin-nama-petugas">Nama Petugas:</label>
-                        <input type="text" id="koin-nama-petugas" placeholder="Nama Petugas" required>
+                    <div class="control-buttons-center">
+                        <button type="submit">Simpan Data</button>
+                        <button type="button" onclick="resetForm('koin')">Batal / Reset</button>
                     </div>
-                
-                    <div class="input-group">
-                        <label for="koin-no-hp">No. HP:</label>
-                        <input type="text" id="koin-no-hp" placeholder="Nomor HP" required>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="koin-donatur">Donatur/Kelompok:</label>
-                        <input type="text" id="koin-donatur" placeholder="Nama Donatur/Kelompok" required>
-                    </div>
-                
-                    <div class="input-group">
-                        <label for="koin-alamat-rtrw">Alamat (RT/RW):</label>
-                        <input type="text" id="koin-alamat-rtrw" placeholder="Contoh: Jl. Anggrek RT 01/RW 02" required>
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="koin-nominal">Nominal (Rp):</label>
-                        <input type="number" id="koin-nominal" placeholder="Nominal Pemasukan" required min="1">
-                    </div>
+                </form>
+            </div>
+            
+            <div id="pdf-signature">
+                <div class="sign-block">
+                    <p>Ngablak, <span id="current-date">tanggal sekarang</span></p>
+                    <p>Mengetahui,</p>
+                    <p>Ketua Ranting UPZIS-LAZISNU Ngablak</p>
+                    <div class="sign-line"></div>
+                    <p><strong>( Nama Ketua )</strong></p>
                 </div>
-                
-                <div class="control-buttons-center">
-                    <button type="submit">Simpan Data</button>
-                    <button type="button" onclick="resetForm('koin')">Batal / Reset</button>
+                <div class="sign-block">
+                    <p>Dibuat Oleh,</p>
+                    <p>Bendahara Ranting UPZIS-LAZISNU Ngablak</p>
+                    <div class="sign-line"></div>
+                    <p><strong>( Nama Bendahara )</strong></p>
                 </div>
+            </div>
+        </div> <div class="login-section" id="login-section">
+            <h3>Login Pengguna</h3>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="login-username">Email/Username:</label>
+                    <input type="text" id="login-username" placeholder="Masukkan Email" required> 
+                </div>
+                <div class="input-group">
+                    <label for="login-password">Password:</label>
+                    <input type="password" id="login-password" placeholder="Masukkan Password" required>
+                </div>
+                <button type="submit">Masuk</button>
             </form>
         </div>
-        
-        <div id="pdf-signature">
-            <div class="sign-block">
-                <p>Ngablak, <span id="current-date">tanggal sekarang</span></p>
-                <p>Mengetahui,</p>
-                <p>Ketua Ranting UPZIS-LAZISNU Ngablak</p>
-                <div class="sign-line"></div>
-                <p><strong>( Nama Ketua )</strong></p>
-            </div>
-            <div class="sign-block">
-                <p>Dibuat Oleh,</p>
-                <p>Bendahara Ranting UPZIS-LAZISNU Ngablak</p>
-                <div class="sign-line"></div>
-                <p><strong>( Nama Bendahara )</strong></p>
-            </div>
-        </div>
+
     </div> <div id="toast" class="toast"></div>
 
     <script>
-        // --- DATA LOKAL ---
-        let koinData = JSON.parse(localStorage.getItem('koinData')) || [];
+        // =======================================================
+        // KONFIGURASI DAN INISIALISASI FIREBASE
+        // =======================================================
+        
+        // !!! HARAP GANTI DENGAN KONFIGURASI FIREBASE ASLI ANDA !!!
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY", 
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com", // PASTIKAN URL DATABASE BENAR
+            projectId: "YOUR_PROJECT_ID", 
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        // --------------------------------------------------------
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.database(); 
+
+        // UI Element
+        const appContent = document.getElementById('app-content');
+        const loginSection = document.getElementById('login-section');
+        const mainTitle = document.getElementById('main-title'); 
+        
+        // Data Global (akan diisi dari Firebase)
+        let koinData = []; 
         
         // --- HELPER FUNCTON ---
         function formatRupiah(number) {
@@ -464,11 +570,213 @@
             }, 3000);
         }
 
-        // --- CRUD FUNCTION ---
+        // =======================================================
+        // FUNGSI OTENTIKASI FIREBASE
+        // =======================================================
+
+        const login = (event) => {
+            event.preventDefault();
+            const email = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    showToast('Login berhasil!', 'success');
+                    document.getElementById('login-form').reset();
+                })
+                .catch((error) => {
+                    let errorMessage = "Login gagal. Cek Email dan Password Anda.";
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                        errorMessage = "Email atau Password salah.";
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = "Format Email tidak valid."; 
+                    } else {
+                        errorMessage = `Error: ${error.message}`;
+                    }
+                    showToast(errorMessage, 'error');
+                    console.error("Firebase Login Error:", error.code, error.message);
+                });
+        };
+
+        const logout = () => {
+            auth.signOut().then(() => {
+                showToast('Logout berhasil.', 'info');
+            }).catch((error) => {
+                showToast('Gagal Logout. Silakan coba lagi.', 'error');
+                console.error(error);
+            });
+        };
+
+        // =======================================================
+        // FUNGSI CRUD FIREBASE REALTIME DB (Data)
+        // =======================================================
+        
+        // 1. MEMBACA DATA (READ) - Dipanggil saat login
+        function fetchDataFromFirebase(userId) {
+            // Membuat listener real-time pada path data pengguna
+            const userRef = db.ref('koinData/' + userId);
+            
+            // Menggunakan on('value') agar setiap perubahan data akan langsung terupdate
+            userRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                koinData = [];
+
+                if (data) {
+                    // Mengubah objek data Firebase menjadi array, sambil menyimpan key Firebase
+                    koinData = Object.keys(data).map(key => ({ 
+                        ...data[key], 
+                        firebaseKey: key // Menyimpan key Firebase untuk operasi Edit/Delete
+                    }));
+                }
+                
+                // Urutkan berdasarkan tanggal terbaru
+                koinData.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
+
+                renderTable('koin');
+                showToast(`Data dimuat dari Firebase. Jumlah data: ${koinData.length}`, 'info');
+            }, (error) => {
+                 console.error("Gagal mengambil data Firebase:", error);
+                 showToast("Gagal mengambil data dari Firebase. Cek koneksi Anda.", 'error');
+                 koinData = [];
+                 renderTable('koin');
+            });
+        }
+        
+        // 2. MENYIMPAN/MEMPERBARUI DATA (CREATE/UPDATE)
+        const saveData = (module, event) => {
+            event.preventDefault();
+            const user = auth.currentUser;
+
+            if (!user) {
+                showToast('Anda harus login untuk menyimpan data!', 'error');
+                return;
+            }
+            if (module !== 'koin') return;
+
+            const firebaseKey = document.getElementById('koin-firebase-key').value;
+            const tanggal = document.getElementById('koin-tanggal').value;
+            const namaPetugas = document.getElementById('koin-nama-petugas').value;
+            const noHp = document.getElementById('koin-no-hp').value;
+            const donatur = document.getElementById('koin-donatur').value;
+            const alamatRtRw = document.getElementById('koin-alamat-rtrw').value;
+            const nominal = parseInt(document.getElementById('koin-nominal').value);
+            
+            if (!tanggal || !namaPetugas || !noHp || !donatur || !alamatRtRw || isNaN(nominal) || nominal <= 0) {
+                showToast('Semua kolom harus diisi dengan benar.', 'error');
+                return;
+            }
+
+            const dataToSave = { 
+                tanggal, 
+                namaPetugas, 
+                noHp, 
+                donatur, 
+                alamatRtRw, 
+                nominal 
+            };
+
+            const userRef = db.ref('koinData/' + user.uid);
+
+            if (firebaseKey) {
+                // UPDATE
+                userRef.child(firebaseKey).update(dataToSave)
+                    .then(() => {
+                        showToast('Data berhasil diperbarui di Firebase!', 'success');
+                        resetForm('koin');
+                    })
+                    .catch(error => {
+                        showToast('Gagal memperbarui data Firebase.', 'error');
+                        console.error("Firebase Update Error:", error);
+                    });
+            } else {
+                // CREATE (PUSH)
+                userRef.push(dataToSave)
+                    .then(() => {
+                        showToast('Data baru berhasil disimpan di Firebase!', 'success');
+                        resetForm('koin');
+                    })
+                    .catch(error => {
+                        showToast('Gagal menyimpan data ke Firebase.', 'error');
+                        console.error("Firebase Save Error:", error);
+                    });
+            }
+        };
+
+        // 3. MENGHAPUS DATA TUNGGAL (DELETE)
+        const deleteData = (module, firebaseKey) => {
+            const user = auth.currentUser;
+            if (!user) {
+                showToast('Anda harus login untuk menghapus data!', 'error');
+                return;
+            }
+            if (module !== 'koin') return;
+
+            if (confirm('Yakin ingin menghapus data ini secara permanen dari Firebase?')) {
+                db.ref('koinData/' + user.uid + '/' + firebaseKey).remove()
+                    .then(() => {
+                        showToast('Data berhasil dihapus dari Firebase!', 'success');
+                        resetForm('koin');
+                    })
+                    .catch(error => {
+                        showToast('Gagal menghapus data dari Firebase.', 'error');
+                        console.error("Firebase Delete Error:", error);
+                    });
+            }
+        };
+        
+        // 4. MENGHAPUS SEMUA DATA (CLEAR ALL)
+        const clearData = (module) => {
+            const user = auth.currentUser;
+            if (!user) {
+                showToast('Anda harus login untuk menghapus semua data!', 'error');
+                return;
+            }
+            if (module !== 'koin') return;
+
+            if (confirm('Yakin ingin menghapus SEMUA data Koin NU? Aksi ini tidak bisa dibatalkan dan akan menghapus dari Firebase!')) {
+                db.ref('koinData/' + user.uid).remove()
+                    .then(() => {
+                        showToast('Semua data Koin NU berhasil dihapus dari Firebase.', 'success');
+                        resetForm('koin');
+                    })
+                    .catch(error => {
+                        showToast('Gagal menghapus semua data dari Firebase.', 'error');
+                        console.error("Firebase Clear Data Error:", error);
+                    });
+            }
+        };
+
+        // 5. MENGISI FORM UNTUK EDIT
+        const editData = (module, firebaseKey) => {
+            const user = auth.currentUser;
+            if (!user) {
+                showToast('Anda harus login untuk mengedit data!', 'error');
+                return;
+            }
+            if (module === 'koin') {
+                const item = koinData.find(item => item.firebaseKey === firebaseKey);
+                if (item) {
+                    document.getElementById('koin-firebase-key').value = item.firebaseKey; // Simpan key Firebase
+                    document.getElementById('koin-tanggal').value = item.tanggal;
+                    document.getElementById('koin-nama-petugas').value = item.namaPetugas;
+                    document.getElementById('koin-no-hp').value = item.noHp;
+                    document.getElementById('koin-donatur').value = item.donatur;
+                    document.getElementById('koin-alamat-rtrw').value = item.alamatRtRw;
+                    document.getElementById('koin-nominal').value = item.nominal;
+                    
+                    document.querySelector('#koin-form button[type="submit"]').textContent = 'Update Data';
+                    document.getElementById('koin-form').scrollIntoView({ behavior: 'smooth' }); 
+                    showToast(`Mode Edit: Data ID ${firebaseKey.substring(1, 5)}...`, 'info');
+                }
+            }
+        };
+
+        // 6. MENAMPILKAN DATA DI TABEL (RE-RENDER)
         const renderTable = (module) => {
             if (module === 'koin') {
                 const tableBody = document.querySelector('#koin-table tbody');
-                // Elemen Total Baru
+                
+                // Footer elements
                 const totalNominalEl = document.getElementById('koin-total-nominal');
                 const totalPetugasEl = document.getElementById('koin-total-petugas');
                 const totalRantingEl = document.getElementById('koin-total-ranting');
@@ -483,16 +791,14 @@
                 let totalMwc = 0;
                 let totalPc = 0;
 
-                koinData.forEach((item) => {
+                koinData.forEach((item, index) => {
                     
-                    // Hitung Pembagian Dana Koin
                     const nominal = item.nominal;
-                    const petugas = Math.round(nominal * 0.10); // 10%
-                    const ranting = Math.round(nominal * 0.60); // 60%
-                    const mwc = Math.round(nominal * 0.25);   // 25%
-                    const pc = Math.round(nominal * 0.05);    // 5%
+                    const petugas = Math.round(nominal * 0.10); 
+                    const ranting = Math.round(nominal * 0.60);  
+                    const mwc = Math.round(nominal * 0.25);   
+                    const pc = Math.round(nominal * 0.05);   
                     
-                    // Akumulasi Total
                     totalNominal += nominal;
                     totalPetugas += petugas;
                     totalRanting += ranting;
@@ -500,18 +806,17 @@
                     totalPc += pc;
 
                     const row = tableBody.insertRow();
-                    row.dataset.id = item.id; 
+                    row.dataset.firebaseKey = item.firebaseKey; 
 
-                    row.insertCell().textContent = item.id;
+                    row.insertCell().textContent = index + 1; // NO urut tampilan
                     row.insertCell().textContent = item.tanggal;
                     row.insertCell().textContent = item.namaPetugas;
                     row.insertCell().textContent = item.noHp;
                     row.insertCell().textContent = item.donatur;
                     row.insertCell().textContent = item.alamatRtRw;
                     
-                    row.insertCell().textContent = formatRupiah(nominal); // Nominal Column
+                    row.insertCell().textContent = formatRupiah(nominal); 
                     
-                    // Kolom Pembagian
                     row.insertCell().textContent = formatRupiah(petugas);
                     row.insertCell().textContent = formatRupiah(ranting);
                     row.insertCell().textContent = formatRupiah(mwc);
@@ -523,17 +828,19 @@
                     const editBtn = document.createElement('button');
                     editBtn.textContent = 'Edit';
                     editBtn.className = 'edit';
-                    editBtn.onclick = () => editData('koin', item.id);
+                    // Menggunakan firebaseKey untuk edit
+                    editBtn.onclick = () => editData('koin', item.firebaseKey); 
                     actionCell.appendChild(editBtn);
 
                     const deleteBtn = document.createElement('button');
                     deleteBtn.textContent = 'Hapus';
                     deleteBtn.className = 'delete';
-                    deleteBtn.onclick = () => deleteData('koin', item.id);
+                    // Menggunakan firebaseKey untuk delete
+                    deleteBtn.onclick = () => deleteData('koin', item.firebaseKey); 
                     actionCell.appendChild(deleteBtn);
                 });
 
-                // Update Total di Footer
+                // Update Footer
                 totalNominalEl.textContent = formatRupiah(totalNominal);
                 totalPetugasEl.textContent = formatRupiah(totalPetugas);
                 totalRantingEl.textContent = formatRupiah(totalRanting);
@@ -542,123 +849,61 @@
             }
         };
 
-        const saveData = (module, event) => {
-            if (module === 'koin') {
-                event.preventDefault();
-                
-                const id = document.getElementById('koin-id').value;
-                const tanggal = document.getElementById('koin-tanggal').value;
-                const namaPetugas = document.getElementById('koin-nama-petugas').value;
-                const noHp = document.getElementById('koin-no-hp').value;
-                const donatur = document.getElementById('koin-donatur').value;
-                const alamatRtRw = document.getElementById('koin-alamat-rtrw').value;
-                const nominal = parseInt(document.getElementById('koin-nominal').value);
-                
-                if (!tanggal || !namaPetugas || !noHp || !donatur || !alamatRtRw || isNaN(nominal) || nominal <= 0) {
-                    showToast('Semua kolom harus diisi dengan benar.', 'error');
-                    return;
-                }
-
-                const newItem = { 
-                    id: id ? parseInt(id) : null,
-                    tanggal, 
-                    namaPetugas, 
-                    noHp, 
-                    donatur, 
-                    alamatRtRw, 
-                    nominal 
-                };
-
-                if (id) {
-                    // Update
-                    const index = koinData.findIndex(item => item.id === parseInt(id));
-                    if (index !== -1) {
-                        koinData[index] = newItem;
-                        showToast('Data berhasil diperbarui!', 'success');
-                    }
-                } else {
-                    // Tambah Baru
-                    const newId = koinData.length > 0 ? koinData[koinData.length - 1].id + 1 : 1;
-                    newItem.id = newId;
-                    koinData.push(newItem);
-                    showToast('Data berhasil disimpan!', 'success');
-                }
-
-                localStorage.setItem('koinData', JSON.stringify(koinData));
-                renderTable('koin');
-                resetForm('koin');
-            }
-        };
-
-        const editData = (module, id) => {
-            if (module === 'koin') {
-                const item = koinData.find(item => item.id === id);
-                if (item) {
-                    document.getElementById('koin-id').value = item.id;
-                    document.getElementById('koin-tanggal').value = item.tanggal;
-                    document.getElementById('koin-nama-petugas').value = item.namaPetugas;
-                    document.getElementById('koin-no-hp').value = item.noHp;
-                    document.getElementById('koin-donatur').value = item.donatur;
-                    document.getElementById('koin-alamat-rtrw').value = item.alamatRtRw;
-                    document.getElementById('koin-nominal').value = item.nominal;
-                    
-                    document.querySelector('.control-buttons-center button:first-of-type').textContent = 'Update Data';
-                    // Scroll ke form input
-                    document.getElementById('koin-form').scrollIntoView({ behavior: 'smooth' }); 
-                    showToast(`Mode Edit: Data ID ${id}`, 'info');
-                }
-            }
-        };
-
-        const deleteData = (module, id) => {
-            if (module === 'koin') {
-                if (confirm('Yakin ingin menghapus data ini?')) {
-                    koinData = koinData.filter(item => item.id !== id);
-                    localStorage.setItem('koinData', JSON.stringify(koinData));
-                    renderTable('koin');
-                    resetForm('koin');
-                    showToast('Data berhasil dihapus!', 'success');
-                }
-            }
-        };
-
-        const clearData = (module) => {
-            if (module === 'koin') {
-                if (confirm('Yakin ingin menghapus SEMUA data Koin NU? Aksi ini tidak bisa dibatalkan!')) {
-                    koinData = [];
-                    localStorage.removeItem('koinData');
-                    renderTable('koin');
-                    resetForm('koin');
-                    showToast('Semua data Koin NU berhasil dihapus.', 'success');
-                }
-            }
-        };
-
         const resetForm = (module) => {
             if (module === 'koin') {
-                document.getElementById('koin-id').value = '';
-                // Set tanggal ke tanggal hari ini secara default
+                document.getElementById('koin-firebase-key').value = ''; // Reset Firebase Key
                 document.getElementById('koin-tanggal').value = new Date().toISOString().slice(0, 10); 
                 document.getElementById('koin-nama-petugas').value = '';
                 document.getElementById('koin-no-hp').value = '';
                 document.getElementById('koin-donatur').value = '';
                 document.getElementById('koin-alamat-rtrw').value = '';
                 document.getElementById('koin-nominal').value = '';
-                document.querySelector('.control-buttons-center button:first-of-type').textContent = 'Simpan Data';
+                document.querySelector('#koin-form button[type="submit"]').textContent = 'Simpan Data';
             }
         };
         
-        // Tambahkan event listener untuk form
-        document.getElementById('koin-form').addEventListener('submit', (event) => saveData('koin', event));
+        // =======================================================
+        // EVENT LISTENERS & UI MANAGER
+        // =======================================================
 
+        document.getElementById('koin-form').addEventListener('submit', (event) => saveData('koin', event));
+        document.getElementById('login-form').addEventListener('submit', login);
+
+        // Listener untuk mengelola status UI berdasarkan status Otentikasi
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in (Logged in)
+                appContent.style.display = 'block';
+                loginSection.style.display = 'none';
+                
+                mainTitle.textContent = `Input Data Koin NU (Masuk sebagai: ${user.email})`;
+                
+                // MULAI AMBIL DATA DARI FIREBASE SETELAH LOGIN
+                fetchDataFromFirebase(user.uid); 
+            } else {
+                // User is signed out (Logged out)
+                appContent.style.display = 'none';
+                loginSection.style.display = 'block';
+                mainTitle.textContent = "Input Data Koin NU";
+                
+                // Kosongkan data lokal dan hentikan listener Firebase saat logout
+                koinData = [];
+                renderTable('koin');
+                
+                // Jika sebelumnya ada listener, hapus agar tidak memuat ulang data user lama
+                // Ini penting jika aplikasi berjalan lama
+                db.ref('koinData').off();
+            }
+        });
+        
         // --- FUNGSI UTAMA: EKSPOR PDF (Anti-Potong) ---
+        // (Fungsi ini tidak diubah dan tetap sama dengan yang sudah Anda setujui sebelumnya)
         window.exportToPDF = function(module) {
             if (module !== 'koin') {
                 showToast('Fungsi ini hanya untuk Laporan Koin NU di halaman ini.', 'error');
                 return;
             }
 
-            // 1. Ambil elemen-elemen yang diperlukan
             const contentEl = document.getElementById('export-content');
             const headerEl = document.getElementById('pdf-header');
             const titleEl = document.getElementById('report-title-print');
@@ -666,34 +911,29 @@
             const tableWrapper = document.getElementById('koin-table-wrapper');
             const tableEl = document.getElementById('koin-table');
             
-            // Simpan kondisi CSS awal untuk dikembalikan nanti
             const originalMaxHeight = tableWrapper.style.maxHeight;
             const originalOverflowY = tableWrapper.style.overflowY;
             const originalOverflowX = tableWrapper.style.overflowX;
             const originalMinWidth = tableEl.style.minWidth;
             
-            // 2. Persiapan: Tampilkan elemen cetak & sesuaikan CSS untuk layout PDF
             headerEl.style.display = 'flex'; 
             titleEl.style.display = 'block'; 
             signatureEl.style.display = 'flex'; 
             
-            // Hapus batasan tinggi & scroll pada tabel untuk memastikan semua data terbaca oleh html2canvas
             tableWrapper.style.maxHeight = 'none';
             tableWrapper.style.overflowY = 'visible';
             tableWrapper.style.overflowX = 'visible'; 
-            tableEl.style.minWidth = '0'; // Hapus min-width agar tabel mengikuti lebar kertas PDF (A4)
+            tableEl.style.minWidth = '0'; 
             
             const initialScrollY = window.scrollY;
             window.scrollTo(0, 0); 
 
-            // Set tanggal di tanda tangan
             document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric'
             });
 
-            // 3. Konversi konten ke Canvas
             html2canvas(contentEl, { 
                 scale: 2, 
                 logging: false,
@@ -712,7 +952,6 @@
                 let position = 0;
                 let heightLeft = imgHeight;
 
-                // 4. Tambahkan gambar ke PDF, bagi menjadi beberapa halaman jika terlalu panjang
                 doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pdfHeight;
 
@@ -723,11 +962,9 @@
                     heightLeft -= pdfHeight;
                 }
 
-                // 5. Unduh (Save) dokumen
                 const filename = `Laporan_Koin_NU_${new Date().toISOString().slice(0, 10)}.pdf`;
                 doc.save(filename);
 
-                // 6. [Langkah Pembersihan] Sembunyikan kembali elemen print-only dan kembalikan CSS/scroll.
                 headerEl.style.display = 'none';
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
@@ -745,7 +982,6 @@
                 console.error("Error generating canvas/PDF:", error);
                 showToast(`Gagal mengekspor PDF: ${error.message}. Cek konsol untuk detail.`, 'error');
 
-                // Pastikan elemen kembali disembunyikan jika terjadi error
                 headerEl.style.display = 'none';
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
@@ -761,7 +997,6 @@
         
         // --- INISIALISASI ---
         resetForm('koin');
-        renderTable('koin');
     </script>
 </body>
 </html>
