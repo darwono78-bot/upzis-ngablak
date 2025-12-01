@@ -44,31 +44,45 @@
             margin-bottom: 20px; 
         }
 
-        /* Form dan Input */
+        /* === Form dan Input (Tampilan Baru Sesuai Gambar) === */
         .form-section { 
             background-color: var(--color-light); 
-            padding: 15px; 
-            border-radius: 6px; 
-            margin-bottom: 20px;
+            padding: 25px; /* Padding lebih besar untuk tampilan bersih */
+            border-radius: 8px; 
+            margin-bottom: 25px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Sedikit shadow di form block */
         }
         .input-group { 
             margin-bottom: 15px; 
         }
         .input-group label { 
             display: block; 
-            margin-bottom: 5px; 
-            font-weight: bold; 
-            color: var(--color-primary);
+            margin-bottom: 8px; /* Jarak lebih luas antara label dan input */
+            font-weight: 600; /* Lebih tebal */
+            color: #444; /* Warna teks label lebih gelap */
         }
         .input-group input[type="text"], 
         .input-group input[type="number"],
         .input-group input[type="date"] {
             width: 100%;
-            padding: 10px;
-            border: 1px solid var(--color-border);
-            border-radius: 4px;
+            padding: 12px; /* Padding lebih besar di dalam input */
+            border: 1px solid #c0c0c0; /* Border abu-abu yang jelas */
+            border-radius: 6px; /* Sudut lebih halus */
             box-sizing: border-box; 
+            background-color: white; /* Pastikan background putih */
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
+
+        /* Efek Fokus (Sesuai Gambar: Border hijau dan glow) */
+        .input-group input[type="text"]:focus, 
+        .input-group input[type="number"]:focus,
+        .input-group input[type="date"]:focus {
+            outline: none;
+            border-color: var(--color-primary); 
+            box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.2); /* Soft green glow */
+        }
+        /* ==================================================== */
+        
         .control-buttons { 
             display: flex; 
             justify-content: space-between; 
@@ -520,6 +534,8 @@
                     document.getElementById('koin-nominal').value = item.nominal;
                     
                     document.querySelector('.control-buttons-center button:first-of-type').textContent = 'Update Data';
+                    // Scroll ke form input setelah edit di klik
+                    document.getElementById('koin-form').scrollIntoView({ behavior: 'smooth' }); 
                     showToast(`Mode Edit: Data ID ${id}`, 'info');
                 }
             }
@@ -552,6 +568,7 @@
         const resetForm = (module) => {
             if (module === 'koin') {
                 document.getElementById('koin-id').value = '';
+                // Set tanggal ke tanggal hari ini secara default
                 document.getElementById('koin-tanggal').value = new Date().toISOString().slice(0, 10); 
                 document.getElementById('koin-nama').value = '';
                 document.getElementById('koin-alamat').value = '';
@@ -624,7 +641,7 @@
                 heightLeft -= pdfHeight;
 
                 while (heightLeft >= 0) {
-                    position = heightLeft - pdfHeight; // Perhitungan yang lebih akurat
+                    position = heightLeft - pdfHeight; 
                     doc.addPage();
                     doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
                     heightLeft -= pdfHeight;
