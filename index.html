@@ -217,6 +217,12 @@
             vertical-align: middle !important; /* MENGUATKAN ALIGNMENT VERTICAL */
         }
         
+        /* **PERBAIKAN 1**: Untuk memastikan Rowspan terbaca tingginya saat export PDF */
+        .data-table tr {
+            min-height: 20px; /* Tambahkan tinggi minimum agar html2canvas bisa menghitung tinggi row gabungan */
+        }
+
+        
         .data-table tr:nth-child(even) { background-color: #fafafa; }
         .data-table tr:hover { background-color: #f1f8e9; }
         
@@ -972,7 +978,7 @@
             showToast('Fungsi ini tidak tersedia di halaman Laporan Koin NU.', 'info');
         };
 
-        // --- FUNGSI UTAMA: EKSPOR PDF (MEMPERBAIKI HEADER TABEL) ---
+        // --- FUNGSI UTAMA: EKSPOR PDF (FIXED - MENGHILANGKAN DUPLIKASI HEADER DAN MEMPERBAIKI ALIGNMENT KOLOM KIRI) ---
         window.exportToPDF = function(module) {
             if (module !== 'koin') return;
 
@@ -998,7 +1004,7 @@
             // Atur styling khusus untuk ekspor PDF pada tabel
             tableClone.style.fontSize = '8pt';
             tableClone.style.width = '100%'; 
-            tableClone.style.tableLayout = 'fixed'; // Gunakan fixed layout agar width kolom di HTML berfungsi
+            tableClone.style.tableLayout = 'fixed'; // PENTING: Gunakan fixed layout agar width kolom di HTML berfungsi
             tableClone.style.margin = '0';
             tableClone.style.borderCollapse = 'collapse';
             
@@ -1006,6 +1012,7 @@
             // Urutan kolom: No, Tanggal, Nama Petugas, No HP, Donatur, Alamat, Nominal, Petugas, Ranting, MWC, PC
             const widths = ['3%', '7%', '12%', '7%', '15%', '10%', '8%', '8%', '8%', '8%', '8%']; // Total ~94%
             tableClone.querySelectorAll('thead th').forEach((th, index) => {
+                // Jangan sentuh TH Pembagian Dana Koin (yang colspan 4)
                 if(th.textContent.trim() !== 'PEMBAGIAN DANA KOIN') {
                     th.style.width = widths[index] || 'auto';
                 }
@@ -1016,10 +1023,11 @@
             const tempDiv = document.createElement('div');
             tempDiv.style.position = 'absolute';
             tempDiv.style.left = '-9999px'; 
+            // Atur lebar div sekitar 1200px agar tabel wide tertangkap semua
             tempDiv.style.width = '1200px'; 
             document.body.appendChild(tempDiv);
             
-            // 2. Kloning Header dan Tabel untuk Pengambilan Gambar Terpisah
+            // 2. Kloning Header dan Tabel untuk Pengambilan Gambar Terpisah (FIXED: Tidak ada gambar manual)
 
             // Kloning Header Laporan
             const headerClone = reportHeaderEl.cloneNode(true);
@@ -1046,14 +1054,14 @@
             signatureEl.style.fontSize = '10pt';
             signatureEl.innerHTML = `
                 <div style="float: right; text-align: right; width: 100%;">Ngablak, ${getCurrentDateIndonesian()}</div>
-                <div style="overflow: auto;">
-                    <div style="float: left; width: 40%; text-align: center; margin-top: 15px;">
+                <div style="overflow: auto; margin-top: 15px;">
+                    <div style="float: left; width: 40%; text-align: center;">
                         <p style="margin: 0; font-weight: bold;">Mengetahui,</p>
                         <p style="margin: 0;">Ketua Ranting UPZIS-LAZISNU Ngablak</p>
                         <br><br><br>
                         <p style="margin: 0; font-weight: bold; text-decoration: underline;">( Nama Ketua )</p>
                     </div>
-                    <div style="float: right; width: 40%; text-align: center; margin-top: 15px;">
+                    <div style="float: right; width: 40%; text-align: center;">
                         <p style="margin: 0; font-weight: bold;">Dibuat Oleh,</p>
                         <p style="margin: 0;">Bendahara UPZIS-LAZISNU Ngablak</p>
                         <br><br><br>
@@ -1120,4 +1128,3 @@
     </script>
 </body>
 </html>
-
