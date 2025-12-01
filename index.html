@@ -1421,35 +1421,40 @@ async function generateAnnualReportData(reportYear) {
     // 🏆 PERBAIKAN FATAL: Mencegah TypeError jika window.annualData belum dimuat
     const annualDataRef = window.annualData || []; 
 
-    // 1. Ambil Saldo Awal Tahun dari annualData
-    // Menggunakan annualDataRef yang sudah dijamin bukan 'undefined'
-    const saldoBank = annualDataRef.find(d => d.id === `saldo_bank_${reportYear}`) || { id: `saldo_bank_${reportYear}`, nominal: 0 }; 
-    const saldoKas = annualDataRef.find(d => d.id === `saldo_kas_${reportYear}`) || { id: `saldo_kas_${reportYear}`, nominal: 0 }; 
-    
-    // FIX KRUSIAL: Pastikan id tetap ada saat data tidak ditemukan (untuk Simpan Perubahan)
-    const saldoBankID = saldoBank.id ? saldoBank.id : `saldo_bank_${reportYear}`;
-    const saldoKasID = saldoKas.id ? saldoKas.id : `saldo_kas_${reportYear}`;
-    
-    const totalSaldoAwal = saldoBank.nominal + saldoKas.nominal;
-    runningBalance = totalSaldoAwal;
+// 1. Ambil Saldo Awal Tahun dari annualData
+// Menggunakan annualDataRef yang sudah dijamin bukan 'undefined'
+const saldoBank = annualDataRef.find(d => d.id === `saldo_bank_${reportYear}`) || { id: `saldo_bank_${reportYear}`, nominal: 0 }; 
+const saldoKas = annualDataRef.find(d => d.id === `saldo_kas_${reportYear}`) || { id: `saldo_kas_${reportYear}`, nominal: 0 }; 
 
-    dataToRender.push({ 
-        // FIX ID: Gunakan ID yang sudah dipastikan ada
-        id: saldoBankID, no: 1, label: 'SALDO KAS BANK', type: 'saldo_bank', 
-        koinNominal: saldoBank.nominal, 
-        totalPengeluaran: 0, saldoAkhirBulanIni: saldoBank.nominal, 
-        saldoKasTahunBerjalan: saldoBank.nominal,
-        donatur: 0, pendidikan: { uang: 0, penerima: 0 }, sosial: { uang: 0, penerima: 0 }, kesehatan: { uang: 0, penerima: 0 }, ekonomi: { uang: 0, penerima: 0 }, banom: { uang: 0, keterangan: '' }, bencana: { uang: 0, penerima: 0 }, honor: { petugas: 0, mwc: 0, pc: 0 }, rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0
-    });
+// 🏆 PERBAIKAN KRUSIAL: Konversi nominal menjadi angka (number) untuk penjumlahan dan tampilan
+const nominalBank = parseFloat(saldoBank.nominal) || 0;
+const nominalKas = parseFloat(saldoKas.nominal) || 0;
     
-    dataToRender.push({ 
-        // FIX ID: Gunakan ID yang sudah dipastikan ada
-        id: saldoKasID, no: 2, label: 'SALDO KAS TUNAI', type: 'saldo_kas', 
-        koinNominal: saldoKas.nominal, 
-        totalPengeluaran: 0, saldoAkhirBulanIni: saldoKas.nominal, 
-        saldoKasTahunBerjalan: totalSaldoAwal,
-        donatur: 0, pendidikan: { uang: 0, penerima: 0 }, sosial: { uang: 0, penerima: 0 }, kesehatan: { uang: 0, penerima: 0 }, ekonomi: { uang: 0, penerima: 0 }, banom: { uang: 0, keterangan: '' }, bencana: { uang: 0, penerima: 0 }, honor: { petugas: 0, mwc: 0, pc: 0 }, rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0
-    });
+// FIX KRUSIAL: Pastikan id tetap ada saat data tidak ditemukan (untuk Simpan Perubahan)
+const saldoBankID = saldoBank.id ? saldoBank.id : `saldo_bank_${reportYear}`;
+const saldoKasID = saldoKas.id ? saldoKas.id : `saldo_kas_${reportYear}`;
+    
+// 🏆 GANTI: totalSaldoAwal = saldoBank.nominal + saldoKas.nominal
+const totalSaldoAwal = nominalBank + nominalKas;
+runningBalance = totalSaldoAwal;
+
+dataToRender.push({ 
+    // FIX ID: Gunakan ID yang sudah dipastikan ada
+    id: saldoBankID, no: 1, label: 'SALDO KAS BANK', type: 'saldo_bank', 
+    koinNominal: nominalBank, // <-- Gunakan nilai yang sudah dikonversi
+    totalPengeluaran: 0, saldoAkhirBulanIni: nominalBank, // <-- Gunakan nilai yang sudah dikonversi
+    saldoKasTahunBerjalan: nominalBank, // <-- Gunakan nilai yang sudah dikonversi
+    donatur: 0, pendidikan: { uang: 0, penerima: 0 }, sosial: { uang: 0, penerima: 0 }, kesehatan: { uang: 0, penerima: 0 }, ekonomi: { uang: 0, penerima: 0 }, banom: { uang: 0, keterangan: '' }, bencana: { uang: 0, penerima: 0 }, honor: { petugas: 0, mwc: 0, pc: 0 }, rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0
+});
+    
+dataToRender.push({ 
+    // FIX ID: Gunakan ID yang sudah dipastikan ada
+    id: saldoKasID, no: 2, label: 'SALDO KAS TUNAI', type: 'saldo_kas', 
+    koinNominal: nominalKas, // <-- Gunakan nilai yang sudah dikonversi
+    totalPengeluaran: 0, saldoAkhirBulanIni: nominalKas, // <-- Gunakan nilai yang sudah dikonversi
+    saldoKasTahunBerjalan: totalSaldoAwal, // <-- Gunakan total yang sudah benar
+    donatur: 0, pendidikan: { uang: 0, penerima: 0 }, sosial: { uang: 0, penerima: 0 }, kesehatan: { uang: 0, penerima: 0 }, ekonomi: { uang: 0, penerima: 0 }, banom: { uang: 0, keterangan: '' }, bencana: { uang: 0, penerima: 0 }, honor: { petugas: 0, mwc: 0, pc: 0 }, rapat: 0, perwtn_mlu: 0, biaya_rek_bank: 0, lain_lain_peng: 0
+});
 
     // 2. Loop per bulan (no urut 3-14)
     for (let month = 1; month <= 12; month++) {
@@ -2298,5 +2303,6 @@ window.saveAnnualReportData = async function() { // 🏆 PERUBAHAN DI SINI (asyn
 
 </body>
 </html>
+
 
 
