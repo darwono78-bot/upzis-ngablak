@@ -103,17 +103,11 @@
 
         /* Tabel Data */
         .data-table-wrapper {
-            max-height: 400px; /* Batasi tinggi untuk tampilan web */
-            overflow-y: auto; /* Aktifkan scroll di web */
+            max-height: 400px; /* Batasi tinggi untuk tampilan web (INI ASLI KODE ANDA) */
+            overflow-y: auto; /* Aktifkan scroll di web (INI ASLI KODE ANDA) */
             margin-top: 20px;
             border: 1px solid var(--color-border);
             border-radius: 4px;
-        }
-
-        /* **Perbaikan CSS untuk Eksport PDF** */
-        .data-table-wrapper-export {
-            max-height: none !important; /* Hapus batasan tinggi saat ekspor */
-            overflow-y: visible !important; /* Pastikan semua konten terlihat */
         }
 
         .data-table {
@@ -215,7 +209,7 @@
             to {bottom: 0; opacity: 0;}
         }
         
-        /* --- STYLING UNTUK PDF EXPORT SAJA --- */
+        /* --- STYLING UNTUK PDF EXPORT SAJA (ASLI KODE ANDA) --- */
 
         /* Sembunyikan secara default */
         #pdf-header, #report-title-print, #pdf-signature {
@@ -392,10 +386,10 @@
     </div> <div id="toast" class="toast"></div>
 
     <script>
-        // --- DATA LOKAL ---
+        // --- DATA LOKAL (ASLI KODE ANDA) ---
         let koinData = JSON.parse(localStorage.getItem('koinData')) || [];
         
-        // --- HELPER FUNCTON ---
+        // --- HELPER FUNCTON (ASLI KODE ANDA) ---
         function formatRupiah(number) {
             return new Intl.NumberFormat('id-ID', {
                 style: 'currency',
@@ -413,7 +407,7 @@
             }, 3000);
         }
 
-        // --- CRUD FUNCTION ---
+        // --- CRUD FUNCTION (ASLI KODE ANDA) ---
         const renderTable = (module) => {
             if (module === 'koin') {
                 const tableBody = document.querySelector('#koin-table tbody');
@@ -545,7 +539,7 @@
         // Tambahkan event listener untuk form
         document.getElementById('koin-form').addEventListener('submit', (event) => saveData('koin', event));
 
-        // --- FUNGSI UTAMA: EKSPOR PDF (Perbaikan dengan html2canvas/jsPDF) ---
+        // --- FUNGSI UTAMA: EKSPOR PDF (PERBAIKAN DENGAN html2canvas/jsPDF) ---
         window.exportToPDF = function(module) {
             if (module !== 'koin') {
                 showToast('Fungsi ini hanya untuk Laporan Koin NU di halaman ini.', 'error');
@@ -558,16 +552,24 @@
             const titleEl = document.getElementById('report-title-print');
             const signatureEl = document.getElementById('pdf-signature');
             const tableWrapper = document.getElementById('koin-table-wrapper');
-            const tableEl = document.getElementById('koin-table');
+            
+            // Simpan kondisi CSS awal untuk dikembalikan nanti
+            const originalMaxHeight = tableWrapper.style.maxHeight;
+            const originalOverflowY = tableWrapper.style.overflowY;
             
             // 2. Persiapan: Tampilkan elemen cetak & sesuaikan CSS untuk layout PDF
-            headerEl.style.display = 'flex'; // Gunakan flex untuk header/logo
-            titleEl.style.display = 'block';
-            signatureEl.style.display = 'flex'; // Gunakan flex untuk tanda tangan
+            headerEl.style.display = 'flex'; // Tampilkan Header
+            titleEl.style.display = 'block'; // Tampilkan Judul
+            signatureEl.style.display = 'flex'; // Tampilkan Tanda Tangan
             
-            // **PERBAIKAN UTAMA**: Atur CSS untuk memastikan tabel tidak terpotong dan tidak ada scrollbar
-            tableWrapper.classList.add('data-table-wrapper-export'); 
+            // **PERBAIKAN UTAMA**: Hapus batasan tinggi & scroll pada tabel untuk memastikan semua data terbaca oleh html2canvas
+            tableWrapper.style.maxHeight = 'none';
+            tableWrapper.style.overflowY = 'visible';
             
+            // Simpan posisi scroll awal untuk dikembalikan nanti
+            const initialScrollY = window.scrollY;
+            window.scrollTo(0, 0); // Gulir ke atas halaman
+
             // Set tanggal di tanda tangan
             document.getElementById('current-date').textContent = new Date().toLocaleDateString('id-ID', {
                 year: 'numeric',
@@ -575,33 +577,28 @@
                 day: 'numeric'
             });
 
-            // Simpan posisi scroll awal untuk dikembalikan nanti
-            const initialScrollY = window.scrollY;
-            window.scrollTo(0, 0); // Gulir ke atas halaman
-
             // 3. Konversi konten ke Canvas
-            // Gunakan scale yang lebih tinggi untuk resolusi lebih baik (misalnya 2)
             html2canvas(contentEl, { 
-                scale: 2,
-                logging: false, // Matikan logging
-                useCORS: true // Penting jika ada gambar dari domain lain (CDN)
+                scale: 2, // Meningkatkan kualitas gambar
+                logging: false,
+                useCORS: true
             }).then(canvas => {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
+                const doc = new jsPDF('p', 'mm', 'a4'); // Mode Portrait A4
 
-                // Dimensi A4 dalam mm (210mm x 297mm)
                 const pdfWidth = doc.internal.pageSize.getWidth();
                 const pdfHeight = doc.internal.pageSize.getHeight();
 
-                // Hitung skala dan tinggi gambar
                 const imgData = canvas.toDataURL('image/jpeg', 1.0);
-                const imgHeight = canvas.height * pdfWidth / canvas.width / 2; // Bagi 2 karena scale: 2
+                // Hitung tinggi gambar yang sesuai dengan lebar PDF
+                // Dibagi 2 karena scale: 2 di html2canvas
+                const imgHeight = canvas.height * pdfWidth / canvas.width / 2; 
                 const imgWidth = pdfWidth;
                 
                 let position = 0;
                 let heightLeft = imgHeight;
 
-                // 6. Tambahkan gambar ke PDF, bagi menjadi beberapa halaman jika terlalu panjang
+                // 4. Tambahkan gambar ke PDF, bagi menjadi beberapa halaman jika terlalu panjang
                 doc.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
                 heightLeft -= pdfHeight;
 
@@ -612,15 +609,19 @@
                     heightLeft -= pdfHeight;
                 }
 
-                // 7. Unduh (Save) dokumen
+                // 5. Unduh (Save) dokumen
                 const filename = `Laporan_Koin_NU_${new Date().toISOString().slice(0, 10)}.pdf`;
                 doc.save(filename);
 
-                // 8. **[Langkah Pembersihan]** Sembunyikan kembali elemen print-only dan kembalikan kelas/scroll.
+                // 6. [Langkah Pembersihan] Sembunyikan kembali elemen print-only dan kembalikan CSS/scroll.
                 headerEl.style.display = 'none';
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
-                tableWrapper.classList.remove('data-table-wrapper-export'); 
+                
+                // Kembalikan CSS asli ke wrapper tabel
+                tableWrapper.style.maxHeight = originalMaxHeight; 
+                tableWrapper.style.overflowY = originalOverflowY; 
+                
                 window.scrollTo(0, initialScrollY); // Kembalikan posisi scroll
                 
                 showToast(`Laporan ${filename} berhasil diunduh.`, 'success');
@@ -633,7 +634,9 @@
                 headerEl.style.display = 'none';
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
-                tableWrapper.classList.remove('data-table-wrapper-export'); 
+                
+                tableWrapper.style.maxHeight = originalMaxHeight; 
+                tableWrapper.style.overflowY = originalOverflowY; 
                 window.scrollTo(0, initialScrollY); 
             });
         };
