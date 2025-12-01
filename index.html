@@ -1628,29 +1628,41 @@ dataToRender.push({
                 const row = tableBody.insertRow();
                 let nominalDisplay = formatRupiah(data.koinNominal); 
 
-                // --- Saldo Awal Rows (1 & 2) ---
-                if(data.type === 'saldo_bank' || data.type === 'saldo_kas') {
-                    row.classList.add('annual-saldo-row');
-                    const isBank = data.type === 'saldo_bank';
-                    const label = isBank ? 'SALDO KAS BANK (Awal Tahun)' : 'SALDO KAS TUNAI (Awal Tahun)';
-                    
-                    const editableNominal = `<span class="editable-cell annual-manual-input" data-type="${data.type}" data-key="nominal" data-id="${data.id}" onclick="editAnnualData('${data.id}', 'nominal', ${data.koinNominal})">${nominalDisplay}</span>`;
-                    
-                    // Saldo Kas Tahun Berjalan hanya dihitung di baris Saldo Kas Tunai
-                    const saldoKasTahunBerjalan = isBank ? formatRupiah(data.koinNominal) : formatRupiah(dataToRender[0].koinNominal + data.koinNominal);
+               // --- Saldo Awal Rows (1 & 2) ---
+if(data.type === 'saldo_bank' || data.type === 'saldo_kas') {
+    row.classList.add('annual-saldo-row');
+    const isBank = data.type === 'saldo_bank';
+    const label = isBank ? 'SALDO KAS BANK (Awal Tahun)' : 'SALDO KAS TUNAI (Awal Tahun)';
 
-                    row.innerHTML = `
-                        <td style="text-align: center;">${data.no}</td>
-                        <td style="font-weight: bold;">${label}</td>
-                        <td class="money-col">${editableNominal}</td>
-                        <td style="text-align: center;">-</td>
-                        <td colspan="19"></td>
-                        <td class="money-col">0</td>
-                        <td class="money-col annual-saldo-row">${editableNominal}</td>
-                        <td class="money-col annual-total-row">${saldoKasTahunBerjalan}</td>
-                    `;
-                    return; // Lanjut ke baris berikutnya
-                }
+    // 🏆 PERBAIKAN 1: Ambil NILAI ASLI (raw value) untuk fungsi onclick
+    // Karena kita sudah memastikan data.koinNominal adalah angka (number) di generateAnnualReportData
+    const rawNominal = data.koinNominal || 0; 
+    
+    // 🏆 PERBAIKAN 2: Gunakan nominalDisplay yang sudah diformat rupiah
+    const displayNominal = formatRupiah(rawNominal);
+    
+    // 🏆 PERBAIKAN 3: Buat span editable dengan mengirimkan rawNominal ke onclick
+    const editableNominal = `<span class="editable-cell annual-manual-input" data-type="${data.type}" data-key="nominal" data-id="${data.id}" onclick="editAnnualData('${data.id}', 'nominal', ${rawNominal})">${displayNominal}</span>`;
+    
+    // Saldo Kas Tahun Berjalan hanya dihitung di baris Saldo Kas Tunai
+    // PERHATIAN: dataToRender[0].koinNominal seharusnya adalah Saldo Kas Bank (Baris 1)
+    const saldoKasBankNominal = dataToRender[0].koinNominal || 0;
+    const saldoKasTahunBerjalan = isBank 
+        ? formatRupiah(rawNominal) 
+        : formatRupiah(saldoKasBankNominal + rawNominal);
+
+    row.innerHTML = `
+        <td style="text-align: center;">${data.no}</td>
+        <td style="font-weight: bold;">${label}</td>
+        <td class="money-col">${editableNominal}</td>  
+        <td style="text-align: center;">-</td>
+        <td colspan="19"></td>
+        <td class="money-col">0</td>
+        <td class="money-col annual-saldo-row">${displayNominal}</td> 
+        <td class="money-col annual-total-row">${saldoKasTahunBerjalan}</td>
+    `;
+    return; 
+}
 
                 // --- Baris Bulanan (3 - 14) ---
                 row.classList.add('koin-fixed-entry');
@@ -2318,6 +2330,7 @@ window.saveAnnualReportData = async function() { // 🏆 PERUBAHAN DI SINI (asyn
 
 </body>
 </html>
+
 
 
 
