@@ -926,17 +926,19 @@ function formatRupiah(number) {
         // --- AKHIR FUNGSI renderJurnalTable (DIPERBAIKI) ---
 
         // 4c. Helper function to get expense from Jurnal Umum
-        function calculateJurnalExpense(category, month, year) {
-            const monthStr = month.toString().padStart(2, '0');
-            const filtered = jurnalData.filter(d => {
-                if (d.kategori !== category) return false;
-                const dataDate = new Date(d.tanggal + 'T00:00:00');
-                const dataMonth = (dataDate.getMonth() + 1).toString().padStart(2, '0');
-                const dataYear = dataDate.getFullYear().toString();
-                return dataMonth === monthStr && dataYear === year;
-            });
-            return filtered.reduce((sum, d) => sum + d.keluar, 0);
-        }
+        // 🏆 GANTI fungsi ini di DALAM <script type="module">
+function calculateJurnalExpense(category, month, year) {
+    const monthStr = month.toString().padStart(2, '0');
+    // 🏆 PERBAIKAN: Gunakan window.jurnalData
+    const filtered = window.jurnalData.filter(d => { 
+        if (d.kategori !== category) return false;
+        const dataDate = new Date(d.tanggal + 'T00:00:00');
+        const dataMonth = (dataDate.getMonth() + 1).toString().padStart(2, '0');
+        const dataYear = dataDate.getFullYear().toString();
+        return dataMonth === monthStr && dataYear === year;
+    });
+    return filtered.reduce((sum, d) => sum + d.keluar, 0);
+}
 
         // 5. Populate Filter Options
         function populateFilterOptions() {
@@ -2296,6 +2298,7 @@ window.saveAnnualReportData = async function() { // 🏆 PERUBAHAN DI SINI (asyn
 
 </body>
 </html>
+
 
 
 
