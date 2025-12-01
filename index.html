@@ -1385,18 +1385,23 @@ function editAnnualData(id, key, currentValue, isText = false) {
             document.getElementById('tahunan-edit-input-area').style.display = 'none';
         }
         
-        // Pastikan Kakak sudah punya import doc, updateDoc, dsb. dari Firebase
-
-async function saveAnnualReportData() { // <<< Wajib ada 'async'
+       async function saveAnnualReportData() {
+    // 🏆 DEBUG 1: Cek apakah fungsi ini benar-benar dimulai
+    console.log("--- FUNGSI SAVE DIMULAI ---"); 
     
-    // 🛑 LANGKAH PENTING 1: Cek apakah ID dan KEY ada (Perlindungan dari kegagalan)
+    // 🛑 LANGKAH PENTING 1: Cek apakah ID dan KEY ada
     if (!annualEditData || !annualEditData.id || !annualEditData.key) {
+        // Jika data kunci tidak ada, fungsi berhenti di sini.
+        console.error("Gagal menyimpan: annualEditData, ID, atau KEY hilang.");
         alert('Gagal menyimpan: Data yang diedit tidak teridentifikasi. Coba klik sel data lagi.');
         document.getElementById('tahunan-edit-input-area').style.display = 'none';
         return;
     }
     
     const { id, key, isText } = annualEditData;
+
+    // 🏆 DEBUG 2: Cek apakah Memo (ID dan Key) terisi dengan benar
+    console.log("ID Dokumen:", id, "Key Field (Loker):", key); 
 
     let newValue;
     const nominalInput = document.getElementById('annual-edit-nominal');
@@ -1412,7 +1417,7 @@ async function saveAnnualReportData() { // <<< Wajib ada 'async'
         }
     } else {
         // Mode Nominal
-        // 🏆 Perbaikan: Bersihkan input dari pemisah ribuan (titik) sebelum diproses!
+        // Bersihkan input dari pemisah ribuan (titik) sebelum diproses!
         const nominalStr = nominalInput.value.replace(/\./g, '').replace(',', '.'); 
         newValue = parseInt(nominalStr); 
         
@@ -1424,14 +1429,13 @@ async function saveAnnualReportData() { // <<< Wajib ada 'async'
     
     // 3. PERSIAPAN DATA FIREBASE
     const updateData = {};
-    // Firebase dapat mengupdate field bersarang (nested) menggunakan notasi titik (dot notation)
-    updateData[key] = newValue; 
+    updateData[key] = newValue; // Menggunakan key field yang sudah terisi
 
     // 4. UPDATE DATABASE (MENGGANTIKAN saveDataToStorage)
     try {
         const annualDocRef = doc(db, 'annual_reports', id); 
         
-        await updateDoc(annualDocRef, updateData); // <<< Wajib ada 'await'
+        await updateDoc(annualDocRef, updateData); // Wajib ada 'await'
         
         alert("Data berhasil disimpan!");
 
@@ -2242,6 +2246,7 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
 
 
