@@ -2237,8 +2237,7 @@ window.editAnnualData = function(id, key, currentValue, isText = false) { // �
     document.getElementById('tahunan-edit-input-area').scrollIntoView({ behavior: 'smooth' });
 }; // 📌 Perhatikan titik koma di sini
 
-
-// --- 3. Fungsi Simpan Data (Kurir ke Firebase) ---
+	// --- 3. Fungsi Simpan Data (Kurir ke Firebase) ---
 window.saveAnnualReportData = async function() { // 🏆 PERUBAHAN DI SINI (async function)
     console.log("--- FUNGSI SAVE DIMULAI ---"); 
     
@@ -2270,12 +2269,18 @@ window.saveAnnualReportData = async function() { // 🏆 PERUBAHAN DI SINI (asyn
     const updateData = {};
     updateData[key] = newValue; 
 
-    // 4. UPDATE DATABASE (Sekarang akan menemukan 'doc' dan 'updateDoc')
+    // 4. UPDATE DATABASE 
     try {
-        const annualDocRef = doc(db, 'laporan_tahunan', id); // Ganti COL_TAHUNAN jika berbeda
+        // Menggunakan setDoc di sini untuk mengakomodasi dokumen yang belum ada (seperti saldo_bank_2025)
+        const annualDocRef = doc(db, 'laporan_tahunan', id); 
         
-        await updateDoc(annualDocRef, updateData); 
+        // 🏆 PERBAIKAN: Ganti updateDoc menjadi setDoc dengan merge: true
+        // setDoc akan membuat dokumen jika belum ada, atau mengupdate jika sudah ada.
+        await setDoc(annualDocRef, updateData, { merge: true });
         
+        // 🛑 Perlu memuat ulang koleksi global (jika belum dilakukan di filterData)
+        await loadAllCollections();
+
         alert("Data berhasil disimpan!");
 
         // 5. CLEANUP & REFRESH
@@ -2287,22 +2292,9 @@ window.saveAnnualReportData = async function() { // 🏆 PERUBAHAN DI SINI (asyn
         alert("Gagal menyimpan perubahan. Cek console browser untuk detail error.");
     }
 }; // 📌 Perhatikan titik koma di sini
-	
+
 </script>
 <!-- ================= END FIRESTORE INTEGRATION ================= -->
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
