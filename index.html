@@ -27,16 +27,20 @@
             padding: 0; 
             background-color: var(--color-bg); 
             color: var(--color-text); 
-            overflow-x: hidden; 
+            overflow-x: hidden; /* Pastikan body tidak punya scroll horizontal */
         }
+        
+        /* === Perubahan Utama: Menghilangkan blok putih terpusat (max-width) === */
         .container { 
-            max-width: 1200px; 
-            margin: 20px auto; 
-            padding: 20px; 
+            width: 98%; /* Menggunakan hampir seluruh lebar layar */
+            margin: 10px auto; /* Margin atas/bawah sedikit dikurangi */
+            padding: 15px; /* Padding dikurangi sedikit */
             background-color: var(--color-card-bg); 
             border-radius: 8px; 
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
         }
+        /* ====================================================================== */
+        
         h2 { 
             color: var(--color-primary); 
             text-align: center; 
@@ -44,7 +48,7 @@
             margin-bottom: 20px; 
         }
 
-        /* === Form dan Input (Tampilan Bersih Sesuai Gambar) === */
+        /* === Form dan Input === */
         .form-section { 
             background-color: var(--color-light); 
             padding: 25px; 
@@ -135,7 +139,7 @@
         /* Tabel Data Wrapper */
         .data-table-wrapper {
             max-height: 400px; 
-            overflow-x: auto; 
+            overflow-x: hidden; /* MENGHILANGKAN SCROLL HORIZONTAL */
             overflow-y: auto; 
             margin-top: 20px;
             border: 1px solid var(--color-border);
@@ -145,18 +149,17 @@
         /* === Tabel Data - Excel Look (Perubahan Utama) === */
         .data-table {
             width: 100%;
-            min-width: 1200px; 
+            /* min-width: 1200px; DIHAPUS agar tabel menyesuaikan lebar kontainer */
             border-collapse: collapse;
             font-size: 0.9em;
             text-align: left;
             background-color: var(--color-card-bg);
-            /* Hapus border keliling karena sudah ada di wrapper */
         }
         .data-table th, .data-table td {
-            padding: 8px 6px; /* Padding dikurangi agar lebih padat seperti Excel */
-            border: 1px solid #c0c0c0; /* Garis tipis pada semua sisi cell */
+            padding: 8px 6px; 
+            border: 1px solid #c0c0c0; 
             vertical-align: middle; 
-            text-align: center; /* Default center align untuk semua kolom */
+            text-align: center; 
         }
 
         /* Gaya Header */
@@ -168,7 +171,7 @@
             z-index: 10;
         }
         .data-table thead th {
-            border: 1px solid rgba(255, 255, 255, 0.5); /* Border di header lebih cerah */
+            border: 1px solid rgba(255, 255, 255, 0.5); 
             vertical-align: middle;
         }
         .data-table tbody tr:nth-of-type(even) {
@@ -180,13 +183,13 @@
 
         /* Gaya Footer */
         .data-table tfoot th {
-            background-color: #f0f0f0; /* Warna latar belakang abu-abu */
+            background-color: #f0f0f0; 
             font-weight: bold;
             border: 1px solid #c0c0c0;
-            text-align: right; /* Total harus rata kanan */
+            text-align: right; 
         }
         .data-table tfoot th:first-child {
-            text-align: right; /* Kolom 'Total Pemasukan' */
+            text-align: right; 
         }
 
         /* Penyesuaian Alignment Teks di Body Tabel */
@@ -204,9 +207,7 @@
         .data-table tbody td:nth-child(11) { /* PC */
             text-align: right; 
         }
-        /* ================================================= */
         
-
         /* Kolom Aksi di Tabel */
         .action-cell {
             white-space: nowrap; 
@@ -399,7 +400,6 @@
         
         // --- HELPER FUNCTON ---
         function formatRupiah(number) {
-            // Memastikan number adalah angka sebelum diformat
             const num = Number(number);
             if (isNaN(num)) return 'Rp 0';
 
@@ -635,7 +635,7 @@
             // Hapus batasan tinggi & scroll pada tabel untuk memastikan semua data terbaca oleh html2canvas
             tableWrapper.style.maxHeight = 'none';
             tableWrapper.style.overflowY = 'visible';
-            tableWrapper.style.overflowX = 'visible'; 
+            tableWrapper.style.overflowX = 'visible'; // Diaktifkan kembali untuk keperluan PDF (agar tidak terpotong)
             tableEl.style.minWidth = '0'; // Hapus min-width agar tabel mengikuti lebar kertas PDF (A4)
             
             const initialScrollY = window.scrollY;
@@ -687,6 +687,7 @@
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
                 
+                // Kembalikan ke kondisi awal
                 tableWrapper.style.maxHeight = originalMaxHeight; 
                 tableWrapper.style.overflowY = originalOverflowY; 
                 tableWrapper.style.overflowX = originalOverflowX;
@@ -705,6 +706,7 @@
                 titleEl.style.display = 'none';
                 signatureEl.style.display = 'none';
                 
+                // Kembalikan ke kondisi awal
                 tableWrapper.style.maxHeight = originalMaxHeight; 
                 tableWrapper.style.overflowY = originalOverflowY; 
                 tableWrapper.style.overflowX = originalOverflowX;
