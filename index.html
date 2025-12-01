@@ -1330,60 +1330,72 @@ let annualEditKey = null;
 let annualEditType = null;
 let annualEditIsText = false;
 
+// Pastikan variabel global ini sudah dideklarasikan di bagian atas script Kakak:
+// let annualEditData = null; 
+
 function editAnnualData(id, key, currentValue, isText = false) {
     if (!isLoggedIn) {
         alert('Anda harus login sebagai admin untuk melakukan aksi ini.');
         return;
     }
     
-    // FIX 1: Gunakan query selector yang lebih presisi pada tabel dan tambahkan pengecekan
-    // Kita cari elemen span yang memiliki data-id dan data-key di dalam tabel tahunan
+    // 🛑 KRUSIAL 1: Isi Memo (annualEditData) yang Dibutuhkan oleh Tombol Simpan!
+    annualEditData = {
+        id: id,
+        key: key,
+        isText: isText
+    };
+
+    // Cari elemen yang diklik (kita asumsikan elemen ini ada untuk mengambil label)
     const clickedElement = document.querySelector(`#annual-data-table [data-id="${id}"][data-key="${key}"]`);
     if (!clickedElement) {
-        // Alihkan pesan kesalahan ke pesan user agar sesuai
-        alert('Data tidak ditemukan.'); 
+        alert('Data tidak ditemukan. Pastikan data-id dan data-key sudah benar.'); 
+        annualEditData = null; // Kosongkan memo jika gagal
         return;
     }
 
-    annualEditId = id;
-    annualEditKey = key;
-    annualEditType = clickedElement.getAttribute('data-type');
-    annualEditIsText = isText;
-
-    // FIX 2: Ambil Label (Kolom 2) dari baris yang bersangkutan (Permintaan User)
+    // Ambil Label (Kolom 2) dari baris yang bersangkutan
     let label = '';
     const rowElement = clickedElement.closest('tr');
     if (rowElement) {
         // Kolom 2 adalah TD kedua (indeks 1, karena indeks 0 adalah NO)
         const labelCell = rowElement.querySelectorAll('td')[1];
         if (labelCell) {
-             // Ambil teks bersih dari sel label
              label = labelCell.textContent.trim(); 
         }
     }
-    // Fallback jika label gagal terambil
+    
+    // Fallback/Default Label
     if (label === '') {
-        label = id.includes('saldo_bank') ? 'SALDO KAS BANK (Awal Tahun)' : 
-                id.includes('saldo_kas') ? 'SALDO KAS TUNAI (Awal Tahun)' : 'Data Bulanan';
+        // Jika gagal mengambil dari tabel, gunakan fallback
+        label = id.includes('saldo_bank') ? 'SALDO KAS BANK (Awal Tahun)' : 'Data Bulanan';
     }
 
 
-    document.getElementById('annual-edit-label').value = label; 
+    // Tampilkan data di form
+    // Menggunakan textContent lebih baik untuk label jika itu bukan input
+    document.getElementById('annual-edit-label').textContent = label; 
+    
     document.getElementById('annual-edit-nominal').value = isText ? '' : currentValue;
     document.getElementById('annual-edit-keterangan').value = isText ? currentValue : '';
 
     // Tampilkan/Sembunyikan field keterangan
     document.getElementById('annual-edit-keterangan-group').style.display = isText ? 'block' : 'none';
+    document.getElementById('annual-edit-nominal-group').style.display = isText ? 'none' : 'block';
+
 
     // Scroll to form
     document.getElementById('tahunan-edit-input-area').style.display = 'block';
     document.getElementById('tahunan-edit-input-area').scrollIntoView({ behavior: 'smooth' });
 }
 
-        function cancelAnnualEdit() {
-            annualEditData = null;
-            document.getElementById('tahunan-edit-input-area').style.display = 'none';
-        }
+
+// Fungsi ini juga harus diubah agar menghapus object annualEditData, bukan sekadar set ke null.
+function cancelAnnualEdit() {
+    // 🛑 KRUSIAL 2: Hapus Memo agar Tombol Simpan tidak salah baca
+    annualEditData = null; 
+    document.getElementById('tahunan-edit-input-area').style.display = 'none';
+}
         
        async function saveAnnualReportData() {
     // 🏆 DEBUG 1: Cek apakah fungsi ini benar-benar dimulai
@@ -2246,6 +2258,7 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
 
 
