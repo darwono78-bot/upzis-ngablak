@@ -204,10 +204,17 @@
             color: white; 
             font-weight: 600; 
             white-space: nowrap; 
+            /* Perbaikan Vertikal Align untuk Header Rowspan */
+            vertical-align: middle; 
         }
         /* Perubahan: Header Aksi di Tengah */
         .data-table th.col-aksi { 
             text-align: center; 
+        }
+
+        /* Styling untuk Header Rowspan agar vertikal center saat di-clone oleh html2canvas */
+        .data-table th[rowspan="2"] {
+            vertical-align: middle !important;
         }
         
         .data-table tr:nth-child(even) { background-color: #fafafa; }
@@ -976,12 +983,24 @@
 
             // 1. Persiapan HTML untuk Canvas (Cloning & Styling)
             const tableEl = document.getElementById('table-koin');
-            const tableWrapper = tableEl.parentElement; 
             const tableClone = tableEl.cloneNode(true);
             
-            // Hapus kolom Aksi dari clone
-            const colAksiIndex = tableEl.querySelector('th.col-aksi').cellIndex;
-            Array.from(tableClone.querySelectorAll(`th:nth-child(${colAksiIndex + 1}), td:nth-child(${colAksiIndex + 1})`)).forEach(el => el.remove());
+            // Hapus kolom Aksi dari clone (PERBAIKAN: Menggunakan selector kelas)
+            
+            // Iterasi melalui semua baris (thead, tbody, tfoot) untuk menghapus sel di kolom Aksi
+            Array.from(tableClone.querySelectorAll('tr')).forEach(tr => {
+                const cellToDelete = tr.querySelector('.col-aksi');
+                if (cellToDelete) {
+                    cellToDelete.remove();
+                }
+            });
+
+            // Koreksi colspan pada footer setelah kolom Aksi dihapus (colspan dari 6 menjadi 5)
+            const tfoot = tableClone.querySelector('tfoot td:first-child');
+            if (tfoot) {
+                tfoot.setAttribute('colspan', '6'); // Dikembalikan ke 6 karena kolom nominal di index 7
+                // No (1), Tanggal (2), Nama Petugas (3), No HP (4), Donatur (5), Alamat (6) = 6 kolom
+            }
             
             // Atur styling khusus untuk ekspor PDF agar tabel tidak melebihi lebar A4 Landscape
             tableClone.style.fontSize = '8pt'; 
@@ -1048,8 +1067,6 @@
                 doc.setFontSize(11);
                 doc.setFont('helvetica', 'normal');
 
-                // --- PENTING: BAGIAN PENYESUAIAN HEADER 1 BARIS DIHAPUS ---
-                // Kita gunakan langsung canvas hasil pertama (canvas), yang memiliki header 2 baris lengkap.
                 
                 const imgData2 = imgData; // Menggunakan canvas hasil pertama
                 const imgHeight2 = imgHeight; // Menggunakan tinggi hasil pertama
