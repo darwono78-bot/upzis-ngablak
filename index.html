@@ -12,6 +12,7 @@
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left; } /* Padding lebih kecil */
         th { background-color: #006400; color: white; text-align: center; }
         .text-right { text-align: right; }
+        .text-center { text-align: center; }
         .footer-total { background-color: #e6ffe6; font-weight: bold; }
         .header-group { background-color: #006400; color: white; }
         /* Style untuk kolom input */
@@ -22,13 +23,9 @@
             text-align: right; 
             box-sizing: border-box; 
             font-size: 11px; 
-            background-color: white; /* Konsisten putih */
+            background-color: white;
         }
-        .input-table th { background-color: #007bff; }
-        
-        /* Style khusus untuk baris Saldo Awal */
-        .saldo-awal-row td { background-color: #fffacd; font-weight: bold; } 
-        .input-modul-2-container { 
+        .input-form-container { 
             background-color: #e9f5ff; 
             padding: 15px; 
             border-radius: 8px; 
@@ -37,15 +34,27 @@
         .form-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; }
         .form-row > div { flex: 1; }
         .form-row label { display: block; font-weight: bold; font-size: 11px; margin-bottom: 3px; }
-        .transaction-row td { font-size: 10px; }
+        
+        /* Baris Khusus */
+        .auto-transaction-row td { background-color: #ffcccc; font-style: italic; }
+        .saldo-awal-row td { background-color: #fffacd; font-weight: bold; } 
+        .koin-nu-header { background-color: #4CAF50 !important; color: white !important; }
+        
+        /* Teks Input non-angka harus rata kiri */
+        #m1a-keterangan-input, #m2-keterangan-input, #m1a-nama-petugas-input, #m1a-donatur-input, #m1a-alamat-input {
+            text-align: left !important;
+        }
+        
     </style>
 </head>
 <body>
 
     <h1>Sistem Input & Laporan KOIN NU Interaktif (Detail Penuh)</h1>
-    <p style="color: red; font-weight: bold;">Catatan: Silakan ubah angka di Modul 1, input Transaksi di Modul 2, dan Saldo Awal di Modul 3. Semua laporan akan otomatis berubah, tetapi Modul 2 saat ini tidak mempengaruhi Modul 1/3.</p>
+    <p style="color: red; font-weight: bold;">
+        ⚠️ **PENTING:** Modul 1 dan Modul 3 saat ini TIDAK terhubung otomatis dengan Modul 1A & 2 yang transaksional. Perhitungan Modul 1A akan otomatis mengisi data Koin NU (Penerimaan dan Honor) di **Modul 2**.
+    </p>
 
-    <h2>MODUL 1: INPUT DATA BULANAN (Sumber Utama Agregasi)</h2>
+    <h2>MODUL 1: DATA AGREGAT BULANAN (Input Lama - Untuk Laporan Tahunan)</h2>
     <table id="tabel-modul-1" class="input-table">
         <thead>
             <tr>
@@ -89,10 +98,75 @@
 
     <hr>
 
+    <h2>MODUL 1A: INPUT TRANSAKSI PENERIMAAN KOIN NU DETAIL</h2>
+    <div class="input-form-container">
+        <h3 style="margin-top: 0; color: #4CAF50;">Input Transaksi Koin NU</h3>
+        <div class="form-row">
+            <div style="flex: 0 0 100px;">
+                <label for="m1a-tanggal-input">Tanggal</label>
+                <input type="date" id="m1a-tanggal-input" style="width: 100%;">
+            </div>
+            <div>
+                <label for="m1a-nama-petugas-input">Nama Petugas</label>
+                <input type="text" id="m1a-nama-petugas-input" style="width: 100%; text-align: left;">
+            </div>
+            <div style="flex: 0 0 80px;">
+                <label for="m1a-no-hp-input">No HP</label>
+                <input type="text" id="m1a-no-hp-input" style="width: 100%; text-align: left;">
+            </div>
+            <div>
+                <label for="m1a-donatur-input">Donatur/Kelompok</label>
+                <input type="text" id="m1a-donatur-input" style="width: 100%; text-align: left;">
+            </div>
+            <div>
+                <label for="m1a-alamat-input">Alamat (RT/RW)</label>
+                <input type="text" id="m1a-alamat-input" style="width: 100%; text-align: left;">
+            </div>
+            <div style="flex: 1.5;">
+                <label for="m1a-nominal-input">NOMINAL Koin NU (100%)</label>
+                <input type="number" id="m1a-nominal-input" value="" min="1" placeholder="Masukkan Nominal">
+            </div>
+        </div>
+        <button onclick="addKoinNUTransaction()" style="padding: 5px 15px; background-color: #4CAF50; color: white; border: none; cursor: pointer;">+ Tambah Koin NU</button>
+        <button onclick="clearKoinNUInputs()" style="padding: 5px 15px; background-color: #f44336; color: white; border: none; cursor: pointer;">Bersihkan Input</button>
+    </div>
+
+    <table id="tabel-modul-1a">
+        <thead>
+            <tr>
+                <th style="width: 3%;">NO</th>
+                <th style="width: 8%;">TANGGAL</th>
+                <th style="width: 15%;">NAMA PETUGAS</th>
+                <th style="width: 8%;">NO HP</th>
+                <th style="width: 18%;">DONATUR/KELOMPOK</th>
+                <th style="width: 10%;">ALAMAT (RT/RW)</th>
+                <th style="width: 10%;">NOMINAL (100%)</th>
+                <th class="koin-nu-header" style="width: 8%;">Petugas (10%)</th>
+                <th class="koin-nu-header" style="width: 8%;">MWC (25%)</th>
+                <th class="koin-nu-header" style="width: 8%;">PC (5%)</th>
+                <th class="koin-nu-header" style="width: 8%;">Ranting (60%)</th>
+            </tr>
+        </thead>
+        <tbody id="m1a-transaction-body">
+            </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="6" class="footer-total text-right">TOTAL PENERIMAAN KOIN NU</td>
+                <td id="m1a-total-nominal" class="footer-total text-right">0</td>
+                <td id="m1a-total-petugas" class="footer-total text-right">0</td>
+                <td id="m1a-total-mwc" class="footer-total text-right">0</td>
+                <td id="m1a-total-pc" class="footer-total text-right">0</td>
+                <td id="m1a-total-ranting" class="footer-total text-right">0</td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <hr>
+
     <h2>MODUL 2: INPUT DAN TAMPILAN JURNAL UMUM (Buku Kas)</h2>
 
-    <div class="input-modul-2-container">
-        <h3 style="margin-top: 0; color: #007bff;">Input Transaksi Baru (Modul 2)</h3>
+    <div class="input-form-container">
+        <h3 style="margin-top: 0; color: #007bff;">Input Transaksi Lainnya (Non-Koin NU)</h3>
         <div class="form-row">
             <div style="flex: 0 0 100px;">
                 <label for="m2-tanggal-input">Tanggal</label>
@@ -106,25 +180,19 @@
                 <label for="m2-kategori-input">Kategori</label>
                 <select id="m2-kategori-input" style="width: 100%; text-align: left; background-color: white;">
                     <option value="">-- Pilih Kategori --</option>
-                    <optgroup label="Dana Masuk (Debit)">
-                        <option value="Koin NU">Koin NU</option>
-                        <option value="Donatur">Donatur</option>
+                    <optgroup label="Dana Masuk (Debit) Non-Koin">
+                        <option value="Donatur Umum">Donatur Umum</option>
                         <option value="Zakat Maal">Zakat Maal</option>
                         <option value="Infaq dan Shodaqoh">Infaq dan Shodaqoh</option>
                         <option value="Hasil Usaha">Hasil Usaha</option>
                     </optgroup>
-                    <optgroup label="Dana Keluar Wajib (Kredit)">
-                        <option value="Pendidikan">Untuk Pendidikan</option>
-                        <option value="Sosial">Untuk Sosial</option>
-                        <option value="Ekonomi">Untuk Ekonomi</option>
-                        <option value="Kesehatan">Untuk Kesehatan</option>
-                        <option value="Subsidi Banom">Subsidi Banom & Lembaga NU</option>
-                        <option value="Bencana">Untuk Bencana</option>
-                        <option value="Honor Petugas 10%">Honor Petugas 10%</option>
-                        <option value="Honor MWC 25%">Honor MWC 25%</option>
-                        <option value="Honor PC 5%">Honor PC 5%</option>
-                    </optgroup>
                     <optgroup label="Dana Keluar Lain-Lain (Kredit)">
+                        <option value="Pendidikan (Lainnya)">Pendidikan (Lainnya)</option>
+                        <option value="Sosial (Lainnya)">Sosial (Lainnya)</option>
+                        <option value="Ekonomi (Lainnya)">Ekonomi (Lainnya)</option>
+                        <option value="Kesehatan (Lainnya)">Kesehatan (Lainnya)</option>
+                        <option value="Subsidi Banom (Lainnya)">Subsidi Banom (Lainnya)</option>
+                        <option value="Bencana (Lainnya)">Bencana (Lainnya)</option>
                         <option value="Rapat">Rapat</option>
                         <option value="Perawatan MLU">PERWTN MLU</option>
                         <option value="Biaya Bank">BIAYA REK BANK</option>
@@ -141,8 +209,8 @@
                 <input type="number" id="m2-kredit-input" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'">
             </div>
         </div>
-        <button onclick="addTransaction()" style="padding: 5px 15px; background-color: #28a745; color: white; border: none; cursor: pointer;">+ Tambah Transaksi</button>
-        <button onclick="clearTransactionInputs()" style="padding: 5px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer;">Bersihkan Input</button>
+        <button onclick="addManualTransaction()" style="padding: 5px 15px; background-color: #28a745; color: white; border: none; cursor: pointer;">+ Tambah Transaksi Lain</button>
+        <button onclick="clearManualTransactionInputs()" style="padding: 5px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer;">Bersihkan Input</button>
     </div>
 
     <table id="tabel-modul-2">
@@ -161,7 +229,7 @@
             <tr>
                 <td colspan="4" class="saldo-awal-row text-right">Input Saldo Bulan Lalu:</td>
                 <td colspan="2">
-                    <input type="number" id="m2-saldo-awal-input" value="0" min="0" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold;">
+                    <input type="number" id="m2-saldo-awal-input" value="15000000" min="0" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold;">
                 </td>
                 <td id="m2-saldo-awal-display" class="saldo-awal-row text-right">0</td>
             </tr>
@@ -178,8 +246,7 @@
 
     <hr>
 
-    <h2>MODUL 3: TAMPILAN LAPORAN TAHUNAN</h2>
-    
+    <h2>MODUL 3: TAMPILAN LAPORAN TAHUNAN (Berdasarkan Modul 1 Aggregat Lama)</h2>
     <table id="tabel-modul-3">
         <thead>
             <tr>
@@ -257,32 +324,14 @@
     </table>
 
     <script>
-        // --- DATA INITIATION (digunakan untuk mengisi input awal) ---
+        // --- GLOBAL DATA STORES ---
+        // Data Modul 1 (Input Aggregat Lama)
         const INITIAL_DATA_SOURCE = [
-            { 
-                bulan: 'Januari', penerimaan: 4000000, donatur: 200, 
-                pendUang: 500000, pendPenerima: 5, kesUang: 300000, kesPenerima: 3, 
-                ekoUang: 400000, ekoPenerima: 4, sosumUang: 300000, sosumPenerima: 10, 
-                banomUang: 300000, banomPenerima: 2, bencanaUang: 0, bencanaPenerima: 0,
-                rapat: 200000, perwtnMlu: 50000, biayaBank: 10000, lainLain: 140000,
-                honorWajibPercent: 0.40 
-            },
-            { 
-                bulan: 'Februari', penerimaan: 5000000, donatur: 250, 
-                pendUang: 600000, pendPenerima: 6, kesUang: 0, kesPenerima: 0, 
-                ekoUang: 500000, ekoPenerima: 5, sosumUang: 400000, sosumPenerima: 15, 
-                banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0,
-                rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0,
-                honorWajibPercent: 0.40 
-            },
-            { 
-                bulan: 'Maret', penerimaan: 6000000, donatur: 300, 
-                pendUang: 500000, pendPenerima: 5, kesUang: 500000, kesPenerima: 5, 
-                ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, 
-                banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0,
-                rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0,
-                honorWajibPercent: 0.40 
-            },
+            // Disederhanakan untuk contoh, data dipertahankan
+            { bulan: 'Januari', penerimaan: 4000000, donatur: 200, pendUang: 500000, pendPenerima: 5, kesUang: 300000, kesPenerima: 3, ekoUang: 400000, ekoPenerima: 4, sosumUang: 300000, sosumPenerima: 10, banomUang: 300000, banomPenerima: 2, bencanaUang: 0, bencanaPenerima: 0, rapat: 200000, perwtnMlu: 50000, biayaBank: 10000, lainLain: 140000, honorWajibPercent: 0.40 },
+            { bulan: 'Februari', penerimaan: 5000000, donatur: 250, pendUang: 600000, pendPenerima: 6, kesUang: 0, kesPenerima: 0, ekoUang: 500000, ekoPenerima: 5, sosumUang: 400000, sosumPenerima: 15, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'Maret', penerimaan: 6000000, donatur: 300, pendUang: 500000, pendPenerima: 5, kesUang: 500000, kesPenerima: 5, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            // ... (sisa bulan)
             { bulan: 'April', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
             { bulan: 'Mei', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
             { bulan: 'Juni', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
@@ -294,19 +343,28 @@
             { bulan: 'Desember', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
         ];
         
-        // Konstanta alokasi Honor (digunakan di Modul 1/3)
+        // Konstanta alokasi Honor (Digunakan di Modul 1A/2)
         const HONOR_RATES = {
             petugas: 0.10,
             mwc: 0.25,
-            pc: 0.05
+            pc: 0.05,
+            ranting: 0.60
         };
 
-        // Saldo Awal Default (Modul 3)
+        // Saldo Awal Default (Modul 3 - Laporan Tahunan)
         let initialBankBalance = 10000000;
         let initialCashBalance = 5000000;
 
-        // Data Transaksional Modul 2
-        let m2Transactions = [];
+        // Data Transaksional Modul 1A (Koin NU Detail)
+        let m1aTransactions = [
+            // Contoh data awal
+            { date: '2025-01-05', petugas: 'Amin', noHp: '0812xxx', donatur: 'Warga RT 01', alamat: 'RT 01/RW 02', nominal: 500000 },
+            { date: '2025-01-10', petugas: 'Budi', noHp: '0813xxx', donatur: 'Kumpulan Yasin', alamat: 'RT 05/RW 01', nominal: 750000 },
+        ];
+
+        // Data Transaksional Modul 2 (Non-Koin NU Manual)
+        let m2ManualTransactions = [];
+
 
         // --- HELPER FUNCTION ---
         const formatNominal = (angka) => {
@@ -317,17 +375,97 @@
         const parseInput = (id) => {
             const element = document.getElementById(id);
             if (element) {
-                // Ensure number inputs are parsed correctly, treating empty as 0
+                // Ensure number inputs are parsed correctly, treating empty/NaN as 0
                 return parseFloat(element.value) || 0;
             }
             // Khusus untuk Saldo Awal Modul 3, jika elemen belum ada, gunakan nilai default
             if (id === 'saldo-bank-awal-input') return initialBankBalance;
             if (id === 'saldo-tunai-awal-input') return initialCashBalance;
+            if (id === 'm2-saldo-awal-input') return 15000000; // Default Saldo Bulan Lalu
             return 0;
         };
+        
+        // --- MODUL 1A LOGIC: KOIN NU DETAIL ---
+        function addKoinNUTransaction() {
+            const date = document.getElementById('m1a-tanggal-input').value;
+            const petugas = document.getElementById('m1a-nama-petugas-input').value.trim();
+            const noHp = document.getElementById('m1a-no-hp-input').value.trim();
+            const donatur = document.getElementById('m1a-donatur-input').value.trim();
+            const alamat = document.getElementById('m1a-alamat-input').value.trim();
+            const nominal = parseFloat(document.getElementById('m1a-nominal-input').value) || 0;
+
+            if (!date || !petugas || !nominal || nominal <= 0) {
+                alert("Mohon isi Tanggal, Nama Petugas, dan Nominal Koin NU dengan benar.");
+                return;
+            }
+
+            const newTransaction = { date, petugas, noHp, donatur, alamat, nominal };
+            m1aTransactions.push(newTransaction);
+            
+            clearKoinNUInputs();
+            recalculateAllReports(); 
+        }
+
+        function clearKoinNUInputs() {
+            document.getElementById('m1a-tanggal-input').value = '';
+            document.getElementById('m1a-nama-petugas-input').value = '';
+            document.getElementById('m1a-no-hp-input').value = '';
+            document.getElementById('m1a-donatur-input').value = '';
+            document.getElementById('m1a-alamat-input').value = '';
+            document.getElementById('m1a-nominal-input').value = '';
+        }
+
+        function getKoinNUAggregateData() {
+            let totalNominal = 0;
+            const sortedTransactions = m1aTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // 1. Render Modul 1A Table
+            const tableBody = document.getElementById('m1a-transaction-body');
+            tableBody.innerHTML = '';
+
+            sortedTransactions.forEach((t, index) => {
+                totalNominal += t.nominal;
+                
+                const honorPetugas = t.nominal * HONOR_RATES.petugas;
+                const honorMWC = t.nominal * HONOR_RATES.mwc;
+                const honorPC = t.nominal * HONOR_RATES.pc;
+                const danaRanting = t.nominal * HONOR_RATES.ranting;
+
+                const row = tableBody.insertRow(-1);
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${t.date}</td>
+                    <td>${t.petugas}</td>
+                    <td>${t.noHp}</td>
+                    <td>${t.donatur}</td>
+                    <td>${t.alamat}</td>
+                    <td class="text-right">${formatNominal(t.nominal)}</td>
+                    <td class="text-right">${formatNominal(honorPetugas)}</td>
+                    <td class="text-right">${formatNominal(honorMWC)}</td>
+                    <td class="text-right">${formatNominal(honorPC)}</td>
+                    <td class="text-right">${formatNominal(danaRanting)}</td>
+                `;
+            });
+            
+            // 2. Calculate Aggregates
+            const totalHonorPetugas = totalNominal * HONOR_RATES.petugas;
+            const totalHonorMWC = totalNominal * HONOR_RATES.mwc;
+            const totalHonorPC = totalNominal * HONOR_RATES.pc;
+            const totalDanaRanting = totalNominal * HONOR_RATES.ranting;
+            
+            // 3. Update Modul 1A Footer
+            document.getElementById('m1a-total-nominal').textContent = formatNominal(totalNominal);
+            document.getElementById('m1a-total-petugas').textContent = formatNominal(totalHonorPetugas);
+            document.getElementById('m1a-total-mwc').textContent = formatNominal(totalHonorMWC);
+            document.getElementById('m1a-total-pc').textContent = formatNominal(totalHonorPC);
+            document.getElementById('m1a-total-ranting').textContent = formatNominal(totalDanaRanting);
+
+            return { totalNominal, totalHonorPetugas, totalHonorMWC, totalHonorPC, totalDanaRanting };
+        }
+
 
         // --- MODUL 2 LOGIC: JURNAL UMUM ---
-        function addTransaction() {
+        function addManualTransaction() {
             const date = document.getElementById('m2-tanggal-input').value;
             const keterangan = document.getElementById('m2-keterangan-input').value.trim();
             const kategori = document.getElementById('m2-kategori-input').value;
@@ -343,16 +481,14 @@
                 return;
             }
 
-            const newTransaction = { date, keterangan, kategori, debit, kredit };
-            m2Transactions.push(newTransaction);
+            const newTransaction = { date, keterangan, kategori, debit, kredit, isAuto: false };
+            m2ManualTransactions.push(newTransaction);
             
-            // Clear inputs after adding
-            clearTransactionInputs();
-            
-            updateJurnalUmum(); 
+            clearManualTransactionInputs();
+            recalculateAllReports(); 
         }
 
-        function clearTransactionInputs() {
+        function clearManualTransactionInputs() {
             document.getElementById('m2-tanggal-input').value = '';
             document.getElementById('m2-keterangan-input').value = '';
             document.getElementById('m2-kategori-input').value = '';
@@ -362,30 +498,87 @@
 
         function updateJurnalUmum() {
             const transactionBody = document.getElementById('m2-transaction-body');
-            // Hapus semua baris transaksi kecuali baris Saldo Awal yang statis
-            const rowsToRemove = transactionBody.querySelectorAll('.transaction-row');
-            rowsToRemove.forEach(row => row.remove());
             
-            // Ambil Saldo Bulan Lalu (Input Statis di tabel)
+            // Hapus semua baris transaksi kecuali baris Saldo Awal (yaitu baris 0)
+            while (transactionBody.rows.length > 1) {
+                transactionBody.deleteRow(1);
+            }
+            
+            // 1. Ambil Data Agregat dari Modul 1A
+            const koinNUData = getKoinNUAggregateData();
+            const totalNominalKoin = koinNUData.totalNominal;
+            
+            // 2. Buat Transaksi Otomatis (Auto-Generated Transactions)
+            const autoTransactions = [];
+            
+            if (totalNominalKoin > 0) {
+                const transactionDate = new Date().toISOString().slice(0, 10); // Gunakan tanggal hari ini
+                
+                // Baris 1: Penerimaan Koin NU (100% Masuk)
+                autoTransactions.push({ 
+                    date: transactionDate, 
+                    keterangan: 'Penerimaan Koin NU (100% dari Modul 1A)', 
+                    kategori: 'Koin NU', 
+                    debit: totalNominalKoin, 
+                    kredit: 0,
+                    isAuto: true
+                });
+                
+                // Baris 2: Honor Petugas (10%)
+                autoTransactions.push({ 
+                    date: transactionDate, 
+                    keterangan: 'Pengeluaran Honor Petugas (10%)', 
+                    kategori: 'Honor Petugas 10%', 
+                    debit: 0, 
+                    kredit: koinNUData.totalHonorPetugas,
+                    isAuto: true
+                });
+
+                // Baris 3: Honor MWC (25%)
+                autoTransactions.push({ 
+                    date: transactionDate, 
+                    keterangan: 'Pengeluaran Honor MWC (25%)', 
+                    kategori: 'Honor MWC 25%', 
+                    debit: 0, 
+                    kredit: koinNUData.totalHonorMWC,
+                    isAuto: true
+                });
+
+                // Baris 4: Honor PC (5%)
+                autoTransactions.push({ 
+                    date: transactionDate, 
+                    keterangan: 'Pengeluaran Honor PC (5%)', 
+                    kategori: 'Honor PC 5%', 
+                    debit: 0, 
+                    kredit: koinNUData.totalHonorPC,
+                    isAuto: true
+                });
+            }
+
+            // 3. Gabungkan dan Urutkan Semua Transaksi
+            // Saldo Bulan Lalu tetap di baris 0 (sudah ada)
+            let allTransactions = autoTransactions.concat(m2ManualTransactions);
+            allTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            // 4. Proses dan Render Transaksi
             let runningSaldo = parseInput('m2-saldo-awal-input');
             let totalMasuk = 0;
             let totalKeluar = 0;
 
             document.getElementById('m2-saldo-awal-display').textContent = formatNominal(runningSaldo);
 
-            // Sortir transaksi berdasarkan tanggal
-            m2Transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            m2Transactions.forEach((t, index) => {
+            allTransactions.forEach((t, index) => {
                 const no = index + 1;
                 runningSaldo += t.debit - t.kredit;
                 totalMasuk += t.debit;
                 totalKeluar += t.kredit;
 
                 const row = transactionBody.insertRow(-1); // Insert at the end
-                row.classList.add('transaction-row');
+                if (t.isAuto) {
+                    row.classList.add('auto-transaction-row');
+                }
                 row.innerHTML = `
-                    <td>${no}</td>
+                    <td class="text-center">${no}</td>
                     <td>${t.date}</td>
                     <td style="text-align: left;">${t.keterangan}</td>
                     <td style="text-align: left;">${t.kategori}</td>
@@ -395,14 +588,15 @@
                 `;
             });
 
-            // Update Footer
+            // 5. Update Footer
             document.getElementById('m2-total-masuk').textContent = formatNominal(totalMasuk);
             document.getElementById('m2-total-keluar').textContent = formatNominal(totalKeluar);
             document.getElementById('m2-footer-saldo-total').textContent = formatNominal(runningSaldo);
         }
 
-        // --- MODUL 1 & 3 LOGIC (unchanged) ---
+        // --- MODUL 1 & 3 LOGIC (unchanged - based on old aggregate input) ---
         function gatherInputData() {
+            // Function to gather data from Modul 1's aggregated table
             const data = [];
             INITIAL_DATA_SOURCE.forEach((monthData, index) => {
                 const prefix = `m1-${index}-`;
@@ -410,7 +604,6 @@
                     bulan: monthData.bulan,
                     penerimaan: parseInput(prefix + 'penerimaan'),
                     donatur: parseInput(prefix + 'donatur'),
-                    // Dana Sosial
                     pendUang: parseInput(prefix + 'pendUang'),
                     pendPenerima: parseInput(prefix + 'pendPenerima'),
                     kesUang: parseInput(prefix + 'kesUang'),
@@ -423,7 +616,6 @@
                     banomPenerima: parseInput(prefix + 'banomPenerima'),
                     bencanaUang: parseInput(prefix + 'bencanaUang'),
                     bencanaPenerima: parseInput(prefix + 'bencanaPenerima'),
-                    // Operasional
                     rapat: parseInput(prefix + 'rapat'),
                     perwtnMlu: parseInput(prefix + 'perwtnMlu'),
                     biayaBank: parseInput(prefix + 'biayaBank'),
@@ -439,13 +631,13 @@
         }
 
         function updateLaporanTahunan(data) {
+            // Logic to update Modul 3 based on Modul 1 (Aggregat)
             const tableBody = document.getElementById('m3-data-body');
             tableBody.innerHTML = ''; 
 
             const saldoBankAwal = parseInput('saldo-bank-awal-input');
             const saldoTunaiAwal = parseInput('saldo-tunai-awal-input');
 
-            // Simpan nilai input yang baru
             initialBankBalance = saldoBankAwal;
             initialCashBalance = saldoTunaiAwal;
 
@@ -542,7 +734,7 @@
                 // Buat Baris Data Bulanan
                 const row = tableBody.insertRow();
                 row.innerHTML = `
-                    <td>${no}</td>
+                    <td class="text-center">${no}</td>
                     <td>${dataBulan.bulan.toUpperCase()}</td>
                     <td class="text-right">${formatNominal(dataBulan.penerimaan)}</td>
                     <td class="text-right">${formatNominal(dataBulan.donatur)}</td>
@@ -596,10 +788,10 @@
 
         // --- MAIN CONTROL FUNCTION ---
         function recalculateAllReports() {
-            // Update Modul 2 (Jurnal Umum)
+            // 1. Update Modul 1A & Modul 2
             updateJurnalUmum(); 
 
-            // Update Modul 1 dan Modul 3
+            // 2. Update Modul 1 dan Modul 3
             const currentData = gatherInputData();
             updateLaporanTahunan(currentData);
             
@@ -615,12 +807,12 @@
         function initializeLaporan() {
             const inputBody = document.getElementById('m1-input-body');
             
-            // 1. Generate Input Fields (Modul 1)
+            // 1. Generate Input Fields (Modul 1) - Old Aggregat System
             INITIAL_DATA_SOURCE.forEach((data, index) => {
                 const prefix = `m1-${index}-`;
                 const row = inputBody.insertRow();
                 row.innerHTML = `
-                    <td>${data.bulan.toUpperCase()}</td>
+                    <td class="text-center">${data.bulan.toUpperCase()}</td>
                     <td><input type="number" id="${prefix}penerimaan" value="${data.penerimaan}" min="0"></td>
                     <td><input type="number" id="${prefix}donatur" value="${data.donatur}" min="0"></td>
                     
@@ -649,13 +841,13 @@
                 `;
             });
             
-            // 2. Attach Event Listeners to static input fields (Modul 1)
-            const staticInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"]');
+            // 2. Attach Event Listeners to Modul 1 & Modul 2 Saldo Awal input
+            const staticInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"], #m2-saldo-awal-input');
             staticInputs.forEach(input => {
                 input.addEventListener('input', recalculateAllReports);
             });
 
-            // 3. Run initial calculation (This will generate the Modul 3 and Modul 2 inputs for the first time)
+            // 3. Run initial calculation
             recalculateAllReports();
         }
 
