@@ -1,78 +1,674 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import {
-    getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import {
-    getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-// 1. KONFIGURASI FIREBASE
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY", // GANTI DENGAN PUNYA KAKAK
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
-
-// 2. INISIALISASI
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// 3. VARIABEL GLOBAL
-const COL_KOIN = 'laporan_koin_nu';
-let koinData = []; // Array untuk menyimpan data koin yang dimuat
-
-// 4. ELEMEN DOM
-const authStatus = document.getElementById('user-status');
-const loginBtn = document.getElementById('login-button');
-const logoutBtn = document.getElementById('logout-button');
-const submitKoinBtn = document.getElementById('submit-koin');
-
-
-// 5. PENANGANAN OTENTIKASI (HANYA UNTUK MENGIZINKAN WRITE/UPDATE)
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        authStatus.textContent = `Admin (${user.email}) sudah Login`;
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = 'inline-block';
-        submitKoinBtn.disabled = false; // Izinkan tombol simpan
-    } else {
-        authStatus.textContent = 'Belum Login';
-        loginBtn.style.display = 'inline-block';
-        logoutBtn.style.display = 'none';
-        submitKoinBtn.disabled = true; // Nonaktifkan tombol simpan
-    }
-});
-
-// Fungsi Login (Definisi di Window agar bisa dipanggil HTML)
-window.handleLogin = async function() {
-    const email = prompt("Masukkan Email Admin:");
-    const password = prompt("Masukkan Password Admin:");
-
-    if (email && password) {
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            alert("Login Berhasil!");
-        } catch (error) {
-            alert("Login Gagal: " + error.message);
-            console.error(error);
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembukuan Dana Koin NU</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load JS for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+        .btn-nu { background-color: #006400; color: white; transition: background-color 0.2s; }
+        .btn-nu:hover { background-color: #004d00; }
+        .shadow-nu { box-shadow: 0 4px 6px -1px rgba(0, 100, 0, 0.1), 0 2px 4px -2px rgba(0, 100, 0, 0.06); }
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-    }
-};
+        /* Style for better table readability */
+        table th, table td { white-space: nowrap; }
+    </style>
+</head>
+<body>
 
-// Fungsi Logout (Definisi di Window agar bisa dipanggil HTML)
-window.handleLogout = async function() {
-    try {
-        await signOut(auth);
-        alert("Logout Berhasil!");
-    } catch (error) {
-        alert("Logout Gagal: " + error.message);
-    }
-};
+    <div class="container mx-auto p-4 md:p-8">
+        <!-- HEADER & AUTH STATUS -->
+        <header class="mb-6 shadow-nu p-4 bg-white rounded-lg">
+            <h1 class="text-3xl font-bold text-center text-green-800">Pembukuan Dana Koin NU</h1>
+            <p class="text-center text-sm text-gray-600 mb-2">UPZIS Ranting Ngablak | Proyek Baru dari Nol</p>
+            <div id="auth-status" class="text-sm text-center p-2 bg-yellow-100 text-yellow-800 rounded-md">
+                Status: <span id="user-status" class="font-semibold">Memuat...</span>
+            </div>
+        </header>
 
-// Hubungkan tombol HTML ke fungsi (karena kita pakai module)
-loginBtn.onclick = window.handleLogin;
-logoutBtn.onclick = window.handleLogout;
+        <!-- KONTROL (FILTER & EKSPORT) -->
+        <div class="flex flex-wrap justify-between items-center mb-6 p-4 bg-white rounded-lg shadow-md">
+            <!-- Filter Kiri -->
+            <div class="flex flex-wrap gap-2 items-center mb-4 md:mb-0">
+                <label for="filter-month" class="text-gray-700 text-sm font-medium">Filter Bulan & Tahun:</label>
+                <select id="filter-month" class="p-2 border border-gray-300 rounded-md"></select>
+                <select id="filter-year" class="p-2 border border-gray-300 rounded-md"></select>
+                <button id="btn-reset-filter" class="px-3 py-2 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Reset</button>
+            </div>
+            <!-- Ekspor Kanan -->
+            <div>
+                <button id="btn-export-pdf" class="px-4 py-2 btn-nu rounded-md text-sm font-semibold">
+                    <i class="fa fa-file-pdf"></i> Unduh PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- AREA TABEL DATA KOIN -->
+        <!-- Gunakan overflow-x-auto untuk responsivitas tabel di layar kecil -->
+        <div class="bg-white p-4 rounded-lg shadow-md overflow-x-auto mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-green-700">Daftar Pemasukan Koin</h2>
+            <table id="koin-data-table" class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50 sticky-header">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NO</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TANGGAL</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PETUGAS</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NO HP</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DONATUR/KELOMPOK</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ALAMAT (RT/RW)</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NOMINAL (Rp)</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" colspan="4">PEMBAGIAN (10%-60%-25%-5%)</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AKSI</th>
+                    </tr>
+                    <tr class="bg-gray-100 text-center">
+                        <td colspan="7"></td>
+                        <td class="px-2 py-1 text-xs font-medium text-gray-600">Petugas (10%)</td>
+                        <td class="px-2 py-1 text-xs font-medium text-gray-600">Ranting (60%)</td>
+                        <td class="px-2 py-1 text-xs font-medium text-gray-600">MWC (25%)</td>
+                        <td class="px-2 py-1 text-xs font-medium text-gray-600">PC (5%)</td>
+                        <td></td>
+                    </tr>
+                </thead>
+                <tbody id="koin-data-tbody" class="bg-white divide-y divide-gray-200">
+                    <tr><td colspan="12" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
+                </tbody>
+                <tfoot>
+                    <tr class="bg-gray-100 font-bold">
+                        <td colspan="6" class="px-4 py-2 text-right">TOTAL</td>
+                        <td id="total-nominal" class="px-4 py-2 text-left">Rp 0</td>
+                        <td id="total-petugas" class="px-2 py-1">Rp 0</td>
+                        <td id="total-ranting" class="px-2 py-1">Rp 0</td>
+                        <td id="total-mwc" class="px-2 py-1">Rp 0</td>
+                        <td id="total-pc" class="px-2 py-1">Rp 0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- KONTROL (LOGOUT & RESET) -->
+        <div class="flex justify-between items-center mb-6 p-4 bg-white rounded-lg shadow-md">
+            <button id="btn-reset-data" class="px-4 py-2 bg-red-600 text-white rounded-md font-semibold text-sm hover:bg-red-700" disabled>Reset Data (Hapus Semua)</button>
+            <button id="btn-logout" class="px-4 py-2 bg-yellow-600 text-white rounded-md font-semibold text-sm hover:bg-yellow-700" style="display: none;">Logout</button>
+            <button id="btn-login" class="px-4 py-2 btn-nu rounded-md font-semibold text-sm">Login Admin</button>
+        </div>
+
+        <!-- FORM INPUT DATA KOIN -->
+        <div class="bg-white p-6 rounded-lg shadow-xl">
+            <h2 class="text-xl font-semibold mb-4 text-green-700">Input Data Koin Baru</h2>
+            <!-- Menggunakan grid-cols-1 untuk mobile dan md:grid-cols-3 untuk desktop -->
+            <form id="koin-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="date" id="input-tanggal" required class="p-3 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" title="Tanggal">
+                <input type="text" id="input-no-hp" placeholder="No HP" class="p-3 border border-gray-300 rounded-md" title="No HP">
+                <input type="text" id="input-donatur" placeholder="Donatur/Kelompok" required class="p-3 border border-gray-300 rounded-md" title="Donatur/Kelompok">
+                <input type="text" id="input-alamat" placeholder="Alamat (RT/RW)" class="p-3 border border-gray-300 rounded-md" title="Alamat">
+                <input type="number" id="input-nominal" placeholder="Nominal (Rp)" required class="p-3 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500" title="Nominal">
+                <button type="submit" id="submit-koin" class="p-3 btn-nu rounded-md font-bold text-lg md:col-span-1" disabled>Simpan Data</button>
+            </form>
+        </div>
+
+        <!-- Modal for Edit -->
+        <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
+            <div class="bg-white p-6 rounded-lg shadow-2xl w-full max-w-md">
+                <h3 class="text-xl font-bold mb-4">Edit Data Koin</h3>
+                <form id="edit-form" class="grid grid-cols-1 gap-4">
+                    <input type="hidden" id="edit-id">
+                    <label>Tanggal:</label>
+                    <input type="date" id="edit-tanggal" required class="p-2 border rounded">
+                    <label>Donatur/Kelompok:</label>
+                    <input type="text" id="edit-donatur" required class="p-2 border rounded">
+                    <label>Alamat (RT/RW):</label>
+                    <input type="text" id="edit-alamat" class="p-2 border rounded">
+                    <label>Nominal (Rp):</label>
+                    <input type="number" id="edit-nominal" required class="p-2 border rounded">
+                    <div class="flex justify-end gap-2 mt-4">
+                        <button type="button" id="btn-cancel-edit" class="px-4 py-2 bg-gray-300 rounded">Batal</button>
+                        <button type="submit" class="px-4 py-2 btn-nu rounded">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div> <!-- End Container -->
+
+    <!-- Kode JavaScript dan Firebase di sini -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import {
+            getFirestore, collection, addDoc, getDocs, doc, deleteDoc, updateDoc, query, orderBy
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import {
+            getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // 1. KONFIGURASI FIREBASE KAKAK (Sudah dimasukkan)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
+            authDomain: "upzis-ngablak.firebaseapp.com",
+            projectId: "upzis-ngablak",
+            storageBucket: "upzis-ngablak.firebasestorage.app",
+            messagingSenderId: "869549648344",
+            appId: "1:869549648344:web:a531a37cce3a87bb672aad"
+        };
+
+        // 2. INISIALISASI
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // 3. VARIABEL GLOBAL & KONSTANTA
+        const COL_KOIN = 'laporan_koin_nu';
+        let koinData = []; // Data yang dimuat dari Firestore
+        let currentUserEmail = ''; // Email pengguna yang sedang login
+
+        // Persentase Pembagian Dana
+        const PERSENTASE = {
+            petugas: 0.10, // 10%
+            ranting: 0.60, // 60%
+            mwc: 0.25,     // 25%
+            pc: 0.05       // 5%
+        };
+
+        // 4. ELEMEN DOM (Ditempatkan di dalam module)
+        const authStatusSpan = document.getElementById('user-status');
+        const loginBtn = document.getElementById('btn-login');
+        const logoutBtn = document.getElementById('btn-logout');
+        const submitKoinBtn = document.getElementById('submit-koin');
+        const resetDataBtn = document.getElementById('btn-reset-data');
+        const koinForm = document.getElementById('koin-form');
+        const tbody = document.getElementById('koin-data-tbody');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+        const filterMonth = document.getElementById('filter-month');
+        const filterYear = document.getElementById('filter-year');
+
+
+        // =================================================================
+        // 5. FUNGSI OTENTIKASI & UI
+        // =================================================================
+
+        // Fungsi Login (ditempelkan ke window agar bisa dipanggil dari HTML atau tombol)
+        window.handleLogin = async function() {
+            // Gunakan email yang sudah ditentukan untuk admin
+            const ADMIN_EMAIL = "darwono78@gmail.com"; 
+            const password = prompt(`Masukkan Password Admin untuk ${ADMIN_EMAIL}:`);
+
+            if (password) {
+                try {
+                    // Karena email admin sudah fix, kita langsung gunakan
+                    await signInWithEmailAndPassword(auth, ADMIN_EMAIL, password);
+                    alert("Login Berhasil! Anda sekarang dapat menyimpan dan menghapus data.");
+                } catch (error) {
+                    alert("Login Gagal: Cek password Anda. Detail: " + error.message);
+                }
+            }
+        };
+
+        // Fungsi Logout (ditempelkan ke window agar bisa dipanggil dari tombol)
+        window.handleLogout = async function() {
+            try {
+                await signOut(auth);
+                alert("Logout Berhasil!");
+            } catch (error) {
+                alert("Logout Gagal: " + error.message);
+            }
+        };
+
+        // Mengatur status UI berdasarkan status login
+        onAuthStateChanged(auth, (user) => {
+            const ADMIN_EMAIL = "darwono78@gmail.com"; 
+
+            if (user && user.email === ADMIN_EMAIL) {
+                currentUserEmail = user.email;
+                authStatusSpan.textContent = `Admin (${user.email}) | Aktif`;
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+                submitKoinBtn.disabled = false;
+                resetDataBtn.disabled = false;
+            } else {
+                currentUserEmail = '';
+                authStatusSpan.textContent = 'Belum Login Admin (Akses Tulis Dibatasi)';
+                loginBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+                submitKoinBtn.disabled = true;
+                resetDataBtn.disabled = true;
+            }
+            window.loadKoinData(); // Muat ulang data setiap kali status auth berubah
+        });
+
+
+        // =================================================================
+        // 6. FUNGSI UTILITAS (PDF, Format, dll.)
+        // =================================================================
+
+        const formatRupiah = (number) => {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+            }).format(number);
+        };
+
+        window.populateFilterOptions = function(data) {
+            const months = new Set();
+            const years = new Set();
+            data.forEach(d => {
+                const date = new Date(d.tanggal);
+                months.add(date.getMonth() + 1); // 1-12
+                years.add(date.getFullYear());
+            });
+
+            // Populate Month
+            filterMonth.innerHTML = '<option value="">Semua Bulan</option>';
+            const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            Array.from(months).sort((a, b) => a - b).forEach(m => {
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = monthNames[m - 1];
+                filterMonth.appendChild(option);
+            });
+
+            // Populate Year
+            filterYear.innerHTML = '<option value="">Semua Tahun</option>';
+            Array.from(years).sort((a, b) => a - b).forEach(y => {
+                const option = document.createElement('option');
+                option.value = y;
+                option.textContent = y;
+                filterYear.appendChild(option);
+            });
+        };
+
+        window.handlePDFExport = function() {
+            if (typeof window.jsPDF === 'undefined' || typeof window.html2canvas === 'undefined') {
+                alert('Library PDF belum dimuat sempurna. Coba muat ulang halaman.');
+                return;
+            }
+            
+            alert('Proses export PDF dimulai. Mungkin memerlukan waktu beberapa detik...');
+
+            const doc = new window.jsPDF.jsPDF({
+                orientation: 'landscape',
+                unit: 'pt',
+                format: 'a4'
+            });
+
+            const element = document.getElementById('koin-data-table');
+            
+            // Sembunyikan kolom aksi sebelum export
+            const actionColumns = element.querySelectorAll('th:last-child, td:last-child');
+            actionColumns.forEach(el => el.style.display = 'none');
+            
+            // Konfigurasi html2canvas
+            const options = {
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                allowTaint: true
+            };
+
+            window.html2canvas(element, options).then((canvas) => {
+                const imgWidth = doc.internal.pageSize.getWidth() - 20; // Margin
+                
+                doc.text('Laporan Pembukuan Dana Koin NU', 10, 20);
+                doc.setFontSize(10);
+                doc.text(`Periode: ${filterMonth.options[filterMonth.selectedIndex].text} ${filterYear.value || 'Semua Tahun'}`, 10, 35);
+
+                const dataUri = canvas.toDataURL('image/jpeg', 1.0);
+                
+                // Kalkulasi tinggi agar tidak terpotong (sangat basic, mungkin perlu library tambahan untuk tabel besar)
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                doc.addImage(dataUri, 'JPEG', 10, 50, imgWidth, imgHeight);
+
+                doc.save('Laporan_Koin_NU.pdf');
+
+                // Tampilkan kembali kolom aksi
+                actionColumns.forEach(el => el.style.display = '');
+
+            }).catch(error => {
+                console.error("Error during PDF generation:", error);
+                alert("Gagal membuat PDF. Cek console browser.");
+                // Tampilkan kembali kolom aksi jika error
+                actionColumns.forEach(el => el.style.display = '');
+            });
+        };
+
+
+        // =================================================================
+        // 7. FUNGSI CRUD & RENDER
+        // =================================================================
+        
+        // Fungsi pembantu untuk mendapatkan waktu dalam milidetik, baik dari Firestore Timestamp atau Date biasa
+        const getTimestampInMs = (timestampField) => {
+            if (!timestampField) return 0;
+
+            // Cek apakah ini adalah objek Timestamp Firestore (punya metode toDate)
+            if (typeof timestampField.toDate === 'function') {
+                return timestampField.toDate().getTime();
+            }
+
+            // Cek apakah ini objek Date JavaScript biasa
+            if (timestampField instanceof Date) {
+                return timestampField.getTime();
+            }
+
+            // Fallback: Jika tipe lain, asumsikan 0 atau coba parsing (meski riskan)
+            return 0;
+        }
+
+        // Render Tabel setelah data dimuat atau difilter
+        window.renderKoinTable = function(dataToRender = koinData) {
+            tbody.innerHTML = '';
+            
+            if (dataToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-gray-500">Tidak ada data Koin yang ditampilkan.</td></tr>';
+                document.getElementById('total-nominal').textContent = 'Rp 0';
+                document.getElementById('total-petugas').textContent = 'Rp 0';
+                document.getElementById('total-ranting').textContent = 'Rp 0';
+                document.getElementById('total-mwc').textContent = 'Rp 0';
+                document.getElementById('total-pc').textContent = 'Rp 0';
+                return;
+            }
+
+            let totalNominal = 0;
+            let totalPetugas = 0;
+            let totalRanting = 0;
+            let totalMWC = 0;
+            let totalPC = 0;
+            
+            // Data diurutkan di sisi client: inputan baru (tanggal terbaru) selalu di bawah
+            dataToRender.sort((a, b) => {
+                // Urutkan berdasarkan Tanggal (primary sort)
+                if (a.tanggal < b.tanggal) return -1;
+                if (a.tanggal > b.tanggal) return 1;
+                
+                // JIKA TANGGAL SAMA: Urutkan berdasarkan Timestamp (secondary sort)
+                const timeA = getTimestampInMs(a.timestamp);
+                const timeB = getTimestampInMs(b.timestamp);
+                
+                return timeA - timeB;
+            });
+
+            dataToRender.forEach((d, index) => {
+                // Gunakan 0 jika nominal tidak ada untuk menghindari NaN
+                const nominal = d.nominal ? (typeof d.nominal === 'number' ? d.nominal : parseInt(d.nominal) || 0) : 0; 
+                
+                // Perhitungan Pembagian Dana
+                const sharePetugas = Math.round(nominal * PERSENTASE.petugas);
+                const shareRanting = Math.round(nominal * PERSENTASE.ranting);
+                const shareMWC = Math.round(nominal * PERSENTASE.mwc);
+                const sharePC = Math.round(nominal * PERSENTASE.pc);
+
+                // Akumulasi Total
+                totalNominal += nominal;
+                totalPetugas += sharePetugas;
+                totalRanting += shareRanting;
+                totalMWC += shareMWC;
+                totalPC += sharePC;
+
+                const row = tbody.insertRow();
+                row.className = 'hover:bg-green-50';
+
+                const formattedDate = new Date(d.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
+
+                row.insertCell().textContent = index + 1; // NO
+                row.insertCell().textContent = formattedDate; // TANGGAL
+                row.insertCell().textContent = d.petugas || 'N/A'; // NAMA PETUGAS
+                row.insertCell().textContent = d.noHp || '-'; // NO HP
+                row.insertCell().textContent = d.donatur; // DONATUR/KELOMPOK
+                row.insertCell().textContent = d.alamat || '-'; // ALAMAT (RT/RW)
+                row.insertCell().textContent = formatRupiah(nominal); // NOMINAL
+
+                // Kolom Pembagian
+                row.insertCell().textContent = formatRupiah(sharePetugas);
+                row.insertCell().textContent = formatRupiah(shareRanting);
+                row.insertCell().textContent = formatRupiah(shareMWC);
+                row.insertCell().textContent = formatRupiah(sharePC);
+
+                // Kolom Aksi
+                // Gunakan flex-col di mobile dan flex-row di desktop untuk tombol aksi
+                const actionCell = row.insertCell();
+                actionCell.className = 'flex flex-col md:flex-row gap-1';
+                
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Edit';
+                editBtn.className = 'px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 disabled:opacity-50';
+                editBtn.disabled = !currentUserEmail; // Non-aktif jika bukan Admin
+                editBtn.onclick = () => window.openEditModal(d);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = 'Hapus';
+                deleteBtn.className = 'px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 disabled:opacity-50';
+                deleteBtn.disabled = !currentUserEmail; // Non-aktif jika bukan Admin
+                deleteBtn.onclick = () => window.deleteKoinData(d.id, d.donatur);
+
+                actionCell.appendChild(editBtn);
+                actionCell.appendChild(deleteBtn);
+            });
+
+            // Update Total Footer
+            document.getElementById('total-nominal').textContent = formatRupiah(totalNominal);
+            document.getElementById('total-petugas').textContent = formatRupiah(totalPetugas);
+            document.getElementById('total-ranting').textContent = formatRupiah(totalRanting);
+            document.getElementById('total-mwc').textContent = formatRupiah(totalMWC);
+            document.getElementById('total-pc').textContent = formatRupiah(totalPC);
+        };
+
+        // Muat data dari Firestore
+        window.loadKoinData = async function() {
+            try {
+                // Ambil data tanpa filter tanggal di Firestore, karena sorting dan filtering dilakukan di klien
+                const q = query(collection(db, COL_KOIN));
+                const querySnapshot = await getDocs(q);
+                
+                koinData = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // Simpan data, pastikan data memiliki timestamp. 
+                    // TIDAK LAGI menggunakan fallback new Date() di sini, karena data baru yang disimpan sudah memiliki timestamp.
+                    koinData.push({ id: doc.id, ...data }); 
+                });
+
+                // Populate filter options based on all data
+                window.populateFilterOptions(koinData);
+                
+                // Render semua data saat load awal
+                window.renderKoinTable(koinData);
+
+            } catch (e) {
+                console.error("Error memuat data Koin: ", e);
+                tbody.innerHTML = '<tr><td colspan="12" class="text-center py-4 text-red-600">Gagal memuat data. Cek koneksi & aturan Firebase Anda.</td></tr>';
+            }
+        };
+
+        // Filter data di sisi klien
+        window.handleFilter = function() {
+            const selectedMonth = filterMonth.value;
+            const selectedYear = filterYear.value;
+
+            const filteredData = koinData.filter(d => {
+                const date = new Date(d.tanggal);
+                const matchMonth = !selectedMonth || date.getMonth() + 1 === parseInt(selectedMonth);
+                const matchYear = !selectedYear || date.getFullYear() === parseInt(selectedYear);
+                return matchMonth && matchYear;
+            });
+
+            window.renderKoinTable(filteredData);
+        };
+
+        // Hapus satu data
+        window.deleteKoinData = async function(id, donatur) {
+            if (!currentUserEmail) {
+                alert("Anda harus login sebagai Admin untuk menghapus data.");
+                return;
+            }
+            if (!confirm(`Yakin ingin menghapus data dari Donatur: ${donatur}?`)) return;
+
+            try {
+                await deleteDoc(doc(db, COL_KOIN, id));
+                alert("Data berhasil dihapus!");
+                await window.loadKoinData(); 
+            } catch (e) {
+                console.error("Error menghapus data: ", e);
+                alert("Gagal menghapus data. Kemungkinan masalah Izin Firebase. Cek Console.");
+            }
+        };
+        
+        // Hapus semua data (Reset)
+        window.resetAllData = async function() {
+            if (!currentUserEmail) {
+                alert("Anda harus login sebagai Admin untuk melakukan aksi ini.");
+                return;
+            }
+            if (!confirm('Yakin ingin menghapus SEMUA DATA KOIN? Tindakan ini tidak bisa dibatalkan.')) return;
+
+            try {
+                const snap = await getDocs(collection(db, COL_KOIN));
+                const promises = [];
+                snap.forEach(d => promises.push(deleteDoc(doc(db, COL_KOIN, d.id))));
+                await Promise.all(promises);
+                
+                alert('Semua data Koin berhasil dihapus.');
+                await window.loadKoinData();
+            } catch(e){ 
+                console.error("Error menghapus semua data:", e); 
+                alert('Gagal menghapus semua data: Kemungkinan Izin Ditolak.'); 
+            }
+        };
+
+
+        // =================================================================
+        // 8. FUNGIONALITAS EDIT (UPDATE)
+        // =================================================================
+        
+        let editingDocId = null; // Menyimpan ID dokumen yang sedang di-edit
+
+        window.openEditModal = function(data) {
+            if (!currentUserEmail) {
+                alert("Anda harus login sebagai Admin untuk mengedit data.");
+                return;
+            }
+            editingDocId = data.id;
+            document.getElementById('edit-tanggal').value = data.tanggal;
+            document.getElementById('edit-donatur').value = data.donatur;
+            document.getElementById('edit-alamat').value = data.alamat || '';
+            document.getElementById('edit-nominal').value = data.nominal;
+            editModal.style.display = 'flex';
+        };
+        
+        document.getElementById('btn-cancel-edit').onclick = function() {
+            editModal.style.display = 'none';
+            editingDocId = null;
+        };
+
+        editForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentUserEmail || !editingDocId) {
+                alert("Otentikasi atau ID dokumen hilang. Silakan login ulang.");
+                return;
+            }
+
+            const newNominal = parseInt(document.getElementById('edit-nominal').value);
+
+            if (isNaN(newNominal) || newNominal < 0) {
+                 alert("Nominal tidak valid.");
+                 return;
+            }
+
+            try {
+                const docRef = doc(db, COL_KOIN, editingDocId);
+                
+                // Objek data yang di-update
+                const updateData = {
+                    tanggal: document.getElementById('edit-tanggal').value,
+                    donatur: document.getElementById('edit-donatur').value,
+                    alamat: document.getElementById('edit-alamat').value,
+                    nominal: newNominal,
+                    // Tidak mengupdate petugas atau timestamp
+                };
+
+                await updateDoc(docRef, updateData);
+                
+                alert("Data berhasil diperbarui!");
+                editModal.style.display = 'none';
+                await window.loadKoinData(); // Muat ulang data untuk refresh tabel
+
+            } catch (e) {
+                console.error("Error update data:", e);
+                alert("Gagal menyimpan perubahan. Cek izin Firebase Anda.");
+            }
+        };
+
+
+        // =================================================================
+        // 9. EVENT LISTENERS
+        // =================================================================
+
+        // Tambah Data Koin Baru
+        koinForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!auth.currentUser) {
+                alert("Anda harus login sebagai Admin untuk menyimpan data.");
+                return;
+            }
+            
+            const tanggal = document.getElementById('input-tanggal').value;
+            const donatur = document.getElementById('input-donatur').value;
+            const noHp = document.getElementById('input-no-hp').value;
+            const alamat = document.getElementById('input-alamat').value;
+            const nominal = parseInt(document.getElementById('input-nominal').value);
+            
+            if (!tanggal || !donatur || isNaN(nominal) || nominal <= 0) {
+                alert("Semua field penting harus diisi dengan benar.");
+                return;
+            }
+
+            try {
+                // Data yang akan disimpan ke Firestore
+                const newKoinData = {
+                    tanggal: tanggal, 
+                    donatur: donatur,
+                    noHp: noHp || '',
+                    alamat: alamat || '',
+                    nominal: nominal,
+                    petugas: auth.currentUser.email, 
+                    // Penting: Gunakan Server Timestamp di data baru untuk pengurutan
+                    timestamp: new Date() 
+                };
+
+                await addDoc(collection(db, COL_KOIN), newKoinData);
+                
+                alert("Data Koin berhasil disimpan ke Firestore!");
+                koinForm.reset(); 
+                await window.loadKoinData(); 
+                
+            } catch (e) {
+                console.error("Error menambah data: ", e);
+                alert("Gagal menyimpan data. Kemungkinan masalah Izin Firebase. Cek Console.");
+            }
+        });
+
+        // Hubungkan Tombol Logout, Login, Reset, Export
+        loginBtn.onclick = window.handleLogin;
+        logoutBtn.onclick = window.handleLogout;
+        resetDataBtn.onclick = window.resetAllData;
+        document.getElementById('btn-export-pdf').onclick = window.handlePDFExport;
+        document.getElementById('btn-reset-filter').onclick = () => {
+            filterMonth.value = '';
+            filterYear.value = '';
+            window.handleFilter();
+        };
+
+        // Event listener untuk Filter
+        filterMonth.onchange = window.handleFilter;
+        filterYear.onchange = window.handleFilter;
+    </script>
+</body>
+</html>
