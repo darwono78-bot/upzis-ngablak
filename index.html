@@ -44,7 +44,16 @@
         #m1a-keterangan-input, #m2-keterangan-input, #m1a-nama-petugas-input, #m1a-donatur-input, #m1a-alamat-input {
             text-align: left !important;
         }
-        
+        /* Style untuk tombol aksi */
+        .action-btn { 
+            padding: 2px 5px; 
+            font-size: 10px; 
+            border: none; 
+            cursor: pointer; 
+            margin: 1px;
+        }
+        .edit-btn { background-color: #ffc107; color: black; }
+        .delete-btn { background-color: #dc3545; color: white; }
     </style>
 </head>
 <body>
@@ -98,7 +107,7 @@
 
     <hr>
 
-    <h2>MODUL 1A: INPUT TRANSAKSI PENERIMAAN KOIN NU DETAIL</h2>
+    <h2>MODUL 1A: INPUT & TRANSAKSI PENERIMAAN KOIN NU DETAIL</h2>
     <div class="input-form-container">
         <h3 style="margin-top: 0; color: #4CAF50;">Input Transaksi Koin NU</h3>
         <div class="form-row">
@@ -138,14 +147,14 @@
                 <th style="width: 8%;">TANGGAL</th>
                 <th style="width: 15%;">NAMA PETUGAS</th>
                 <th style="width: 8%;">NO HP</th>
-                <th style="width: 18%;">DONATUR/KELOMPOK</th>
+                <th style="width: 15%;">DONATUR/KELOMPOK</th>
                 <th style="width: 10%;">ALAMAT (RT/RW)</th>
                 <th style="width: 10%;">NOMINAL (100%)</th>
-                <th class="koin-nu-header" style="width: 8%;">Petugas (10%)</th>
-                <th class="koin-nu-header" style="width: 8%;">MWC (25%)</th>
-                <th class="koin-nu-header" style="width: 8%;">PC (5%)</th>
-                <th class="koin-nu-header" style="width: 8%;">Ranting (60%)</th>
-            </tr>
+                <th class="koin-nu-header" style="width: 7%;">Petugas (10%)</th>
+                <th class="koin-nu-header" style="width: 7%;">MWC (25%)</th>
+                <th class="koin-nu-header" style="width: 6%;">PC (5%)</th>
+                <th class="koin-nu-header" style="width: 7%;">Ranting (60%)</th>
+                <th style="width: 4%;">AKSI</th> </tr>
         </thead>
         <tbody id="m1a-transaction-body">
             </tbody>
@@ -157,7 +166,7 @@
                 <td id="m1a-total-mwc" class="footer-total text-right">0</td>
                 <td id="m1a-total-pc" class="footer-total text-right">0</td>
                 <td id="m1a-total-ranting" class="footer-total text-right">0</td>
-            </tr>
+                <td class="footer-total text-center">-</td> </tr>
         </tfoot>
     </table>
 
@@ -220,10 +229,10 @@
                 <th style="width: 10%;">TANGGAL</th>
                 <th style="width: 25%;">KETERANGAN</th>
                 <th style="width: 15%;">KATEGORI</th>
-                <th style="width: 15%;">DANA MASUK (DEBIT)</th>
-                <th style="width: 15%;">DANA KELUAR (KREDIT)</th>
+                <th style="width: 13%;">DANA MASUK (DEBIT)</th>
+                <th style="width: 13%;">DANA KELUAR (KREDIT)</th>
                 <th style="width: 17%;">SALDO</th>
-            </tr>
+                <th style="width: 4%;">AKSI</th> </tr>
         </thead>
         <tbody id="m2-transaction-body">
             <tr>
@@ -232,7 +241,7 @@
                     <input type="number" id="m2-saldo-awal-input" value="15000000" min="0" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold;">
                 </td>
                 <td id="m2-saldo-awal-display" class="saldo-awal-row text-right">0</td>
-            </tr>
+                <td class="saldo-awal-row text-center">-</td> </tr>
             </tbody>
         <tfoot>
             <tr>
@@ -240,7 +249,7 @@
                 <td id="m2-total-masuk" class="footer-total text-right">0</td>
                 <td id="m2-total-keluar" class="footer-total text-right">0</td>
                 <td id="m2-footer-saldo-total" class="footer-total text-right">0</td>
-            </tr>
+                <td class="footer-total text-center">-</td> </tr>
         </tfoot>
     </table>
 
@@ -327,11 +336,9 @@
         // --- GLOBAL DATA STORES ---
         // Data Modul 1 (Input Aggregat Lama)
         const INITIAL_DATA_SOURCE = [
-            // Disederhanakan untuk contoh, data dipertahankan
             { bulan: 'Januari', penerimaan: 4000000, donatur: 200, pendUang: 500000, pendPenerima: 5, kesUang: 300000, kesPenerima: 3, ekoUang: 400000, ekoPenerima: 4, sosumUang: 300000, sosumPenerima: 10, banomUang: 300000, banomPenerima: 2, bencanaUang: 0, bencanaPenerima: 0, rapat: 200000, perwtnMlu: 50000, biayaBank: 10000, lainLain: 140000, honorWajibPercent: 0.40 },
             { bulan: 'Februari', penerimaan: 5000000, donatur: 250, pendUang: 600000, pendPenerima: 6, kesUang: 0, kesPenerima: 0, ekoUang: 500000, ekoPenerima: 5, sosumUang: 400000, sosumPenerima: 15, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
             { bulan: 'Maret', penerimaan: 6000000, donatur: 300, pendUang: 500000, pendPenerima: 5, kesUang: 500000, kesPenerima: 5, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
-            // ... (sisa bulan)
             { bulan: 'April', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
             { bulan: 'Mei', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
             { bulan: 'Juni', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
@@ -343,7 +350,7 @@
             { bulan: 'Desember', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
         ];
         
-        // Konstanta alokasi Honor (Digunakan di Modul 1A/2)
+        // Konstanta alokasi Honor
         const HONOR_RATES = {
             petugas: 0.10,
             mwc: 0.25,
@@ -357,13 +364,15 @@
 
         // Data Transaksional Modul 1A (Koin NU Detail)
         let m1aTransactions = [
-            // Contoh data awal
             { date: '2025-01-05', petugas: 'Amin', noHp: '0812xxx', donatur: 'Warga RT 01', alamat: 'RT 01/RW 02', nominal: 500000 },
             { date: '2025-01-10', petugas: 'Budi', noHp: '0813xxx', donatur: 'Kumpulan Yasin', alamat: 'RT 05/RW 01', nominal: 750000 },
         ];
 
         // Data Transaksional Modul 2 (Non-Koin NU Manual)
-        let m2ManualTransactions = [];
+        let m2ManualTransactions = [
+            { date: '2025-01-15', keterangan: 'Biaya fotokopi laporan', kategori: 'Lain-Lain', debit: 0, kredit: 25000, isAuto: false },
+            { date: '2025-01-20', keterangan: 'Infaq dari acara Maulid', kategori: 'Infaq dan Shodaqoh', debit: 400000, kredit: 0, isAuto: false },
+        ];
 
 
         // --- HELPER FUNCTION ---
@@ -375,17 +384,41 @@
         const parseInput = (id) => {
             const element = document.getElementById(id);
             if (element) {
-                // Ensure number inputs are parsed correctly, treating empty/NaN as 0
                 return parseFloat(element.value) || 0;
             }
-            // Khusus untuk Saldo Awal Modul 3, jika elemen belum ada, gunakan nilai default
             if (id === 'saldo-bank-awal-input') return initialBankBalance;
             if (id === 'saldo-tunai-awal-input') return initialCashBalance;
-            if (id === 'm2-saldo-awal-input') return 15000000; // Default Saldo Bulan Lalu
+            if (id === 'm2-saldo-awal-input') return 15000000;
             return 0;
         };
         
+        // ===================================
         // --- MODUL 1A LOGIC: KOIN NU DETAIL ---
+        // ===================================
+        function deleteKoinNUTxn(index) {
+            if (confirm(`Yakin ingin menghapus transaksi Koin NU #${index + 1}?`)) {
+                m1aTransactions.splice(index, 1);
+                recalculateAllReports();
+            }
+        }
+
+        function editKoinNUTxn(index) {
+            const tx = m1aTransactions[index];
+            
+            // Populate form
+            document.getElementById('m1a-tanggal-input').value = tx.date;
+            document.getElementById('m1a-nama-petugas-input').value = tx.petugas;
+            document.getElementById('m1a-no-hp-input').value = tx.noHp;
+            document.getElementById('m1a-donatur-input').value = tx.donatur;
+            document.getElementById('m1a-alamat-input').value = tx.alamat;
+            document.getElementById('m1a-nominal-input').value = tx.nominal;
+
+            // Remove old transaction
+            m1aTransactions.splice(index, 1);
+            recalculateAllReports();
+            alert('Data dipindahkan ke form input. Silakan edit dan klik "Tambah Koin NU" lagi.');
+        }
+
         function addKoinNUTransaction() {
             const date = document.getElementById('m1a-tanggal-input').value;
             const petugas = document.getElementById('m1a-nama-petugas-input').value.trim();
@@ -417,6 +450,7 @@
 
         function getKoinNUAggregateData() {
             let totalNominal = 0;
+            // Sortir transaksi berdasarkan tanggal
             const sortedTransactions = m1aTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
             // 1. Render Modul 1A Table
@@ -433,7 +467,7 @@
 
                 const row = tableBody.insertRow(-1);
                 row.innerHTML = `
-                    <td>${index + 1}</td>
+                    <td class="text-center">${index + 1}</td>
                     <td>${t.date}</td>
                     <td>${t.petugas}</td>
                     <td>${t.noHp}</td>
@@ -444,6 +478,10 @@
                     <td class="text-right">${formatNominal(honorMWC)}</td>
                     <td class="text-right">${formatNominal(honorPC)}</td>
                     <td class="text-right">${formatNominal(danaRanting)}</td>
+                    <td class="text-center">
+                        <button onclick="editKoinNUTxn(${index})" class="action-btn edit-btn">Edit</button>
+                        <button onclick="deleteKoinNUTxn(${index})" class="action-btn delete-btn">Hapus</button>
+                    </td>
                 `;
             });
             
@@ -464,7 +502,32 @@
         }
 
 
+        // ===================================
         // --- MODUL 2 LOGIC: JURNAL UMUM ---
+        // ===================================
+        function deleteManualTxn(index) {
+            if (confirm(`Yakin ingin menghapus transaksi manual #${index + 1}?`)) {
+                m2ManualTransactions.splice(index, 1);
+                recalculateAllReports();
+            }
+        }
+
+        function editManualTxn(index) {
+            const tx = m2ManualTransactions[index];
+            
+            // Populate form
+            document.getElementById('m2-tanggal-input').value = tx.date;
+            document.getElementById('m2-keterangan-input').value = tx.keterangan;
+            document.getElementById('m2-kategori-input').value = tx.kategori;
+            document.getElementById('m2-debit-input').value = tx.debit;
+            document.getElementById('m2-kredit-input').value = tx.kredit;
+
+            // Remove old transaction
+            m2ManualTransactions.splice(index, 1);
+            recalculateAllReports();
+            alert('Data dipindahkan ke form input Transaksi Lainnya. Silakan edit dan klik "Tambah Transaksi Lain" lagi.');
+        }
+        
         function addManualTransaction() {
             const date = document.getElementById('m2-tanggal-input').value;
             const keterangan = document.getElementById('m2-keterangan-input').value.trim();
@@ -507,12 +570,12 @@
             // 1. Ambil Data Agregat dari Modul 1A
             const koinNUData = getKoinNUAggregateData();
             const totalNominalKoin = koinNUData.totalNominal;
+            const transactionDate = new Date().toISOString().slice(0, 10); // Gunakan tanggal hari ini (atau bisa diset manual)
             
             // 2. Buat Transaksi Otomatis (Auto-Generated Transactions)
             const autoTransactions = [];
             
             if (totalNominalKoin > 0) {
-                const transactionDate = new Date().toISOString().slice(0, 10); // Gunakan tanggal hari ini
                 
                 // Baris 1: Penerimaan Koin NU (100% Masuk)
                 autoTransactions.push({ 
@@ -556,7 +619,6 @@
             }
 
             // 3. Gabungkan dan Urutkan Semua Transaksi
-            // Saldo Bulan Lalu tetap di baris 0 (sudah ada)
             let allTransactions = autoTransactions.concat(m2ManualTransactions);
             allTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -564,6 +626,7 @@
             let runningSaldo = parseInput('m2-saldo-awal-input');
             let totalMasuk = 0;
             let totalKeluar = 0;
+            let manualIndex = -1;
 
             document.getElementById('m2-saldo-awal-display').textContent = formatNominal(runningSaldo);
 
@@ -572,6 +635,16 @@
                 runningSaldo += t.debit - t.kredit;
                 totalMasuk += t.debit;
                 totalKeluar += t.kredit;
+                
+                let actionButtons = '-';
+
+                if (!t.isAuto) {
+                    manualIndex++;
+                    actionButtons = `
+                        <button onclick="editManualTxn(${manualIndex})" class="action-btn edit-btn">Edit</button>
+                        <button onclick="deleteManualTxn(${manualIndex})" class="action-btn delete-btn">Hapus</button>
+                    `;
+                }
 
                 const row = transactionBody.insertRow(-1); // Insert at the end
                 if (t.isAuto) {
@@ -585,6 +658,7 @@
                     <td class="text-right">${formatNominal(t.debit)}</td>
                     <td class="text-right">${formatNominal(t.kredit)}</td>
                     <td class="text-right">${formatNominal(runningSaldo)}</td>
+                    <td class="text-center">${actionButtons}</td>
                 `;
             });
 
