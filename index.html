@@ -60,8 +60,42 @@
             padding: 15px 0;
         }
         
+        /* === NEW: TABLE SCROLL WRAPPER === */
+        .table-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto; /* Enable horizontal scrolling */
+            margin-bottom: 20px;
+        }
+        
         /* Tabel Styles */
-        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; background-color: white; font-size: 11px; table-layout: fixed; } 
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 1000px; 
+            background-color: white; 
+            font-size: 11px; 
+            table-layout: auto; /* PERUBAHAN UTAMA: Memungkinkan kolom menyesuaikan lebar konten */
+        } 
+        /* Modul 3 perlu lebih lebar minimum */
+        #tabel-modul-3 {
+            min-width: 2500px; /* Lebar Minimum diperbesar */
+        }
+        
+        /* Style Kolom Uang agar memiliki minimum width */
+        .col-nominal {
+            min-width: 100px; /* Lebar minimum untuk nominal uang di M1A/M2 */
+        }
+        .col-aksi {
+            width: 40px; /* Tetapkan lebar tetap untuk kolom aksi */
+        }
+        /* Overrides untuk kolom-kolom yang tidak boleh terlalu kecil */
+        #tabel-modul-2 th:nth-child(3) { min-width: 200px; } /* KETERANGAN */
+        #tabel-modul-2 th:nth-child(5), /* DEBIT */
+        #tabel-modul-2 th:nth-child(6), /* KREDIT */
+        #tabel-modul-2 th:nth-child(7) { /* SALDO */
+            min-width: 120px; /* Lebar minimum lebih besar untuk nominal di M2 */
+        }
+
         th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left; word-wrap: break-word; } 
         th { background-color: #006400; color: white; text-align: center; }
         .text-right { text-align: right; }
@@ -102,11 +136,12 @@
         
         /* Style untuk tombol aksi */
         .action-btn { 
-            padding: 2px 5px; 
-            font-size: 10px; 
+            padding: 1px 3px; 
+            font-size: 9px; 
             border: none; 
             cursor: pointer; 
-            margin: 1px;
+            margin: 0; 
+            flex-shrink: 0;
         }
         .edit-btn { background-color: #ffc107; color: black; }
         .delete-btn { background-color: #dc3545; color: white; }
@@ -117,12 +152,12 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            background-color: #343a40; /* Dark background */
+            background-color: #343a40; 
             color: white;
             padding: 8px 20px;
             box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
             display: flex;
-            justify-content: flex-end; /* Align content to the right */
+            justify-content: flex-end; 
             align-items: center;
             box-sizing: border-box;
             z-index: 1000;
@@ -176,8 +211,6 @@
             cursor: pointer; 
             font-size: 12px;
         }
-
-        /* FIX VISIBILITY: Hapus class .admin-only dari CSS, kendalikan sepenuhnya via JS inline style */
     </style>
 </head>
 <body>
@@ -200,40 +233,40 @@
 
         <div id="modul-1a-section" class="module-section">
             <h2>MODUL 1A: JURNAL PENERIMAAN KOIN NU DETAIL</h2>
-
-            <table id="tabel-modul-1a">
-                <thead>
-                    <tr>
-                        <th style="width: 3%;">NO</th>
-                        <th style="width: 8%;">TANGGAL</th>
-                        <th style="width: 15%;">NAMA PETUGAS</th>
-                        <th style="width: 8%;">NO HP</th>
-                        <th style="width: 15%;">DONATUR/KELOMPOK</th>
-                        <th style="width: 10%;">ALAMAT (RT/RW)</th>
-                        <th style="width: 10%;">NOMINAL (100%)</th>
-                        <th class="koin-nu-header" style="width: 7%;">Petugas (10%)</th>
-                        <th class="koin-nu-header" style="width: 7%;">MWC (25%)</th>
-                        <th class="koin-nu-header" style="width: 6%;">PC (5%)</th>
-                        <th class="koin-nu-header" style="width: 7%;">Ranting (60%)</th>
-                        <th id="th-m1a-aksi" style="width: 4%;" class="admin-only">AKSI</th> 
-                    </tr>
-                </thead>
-                <tbody id="m1a-transaction-body">
-                    </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="6" class="footer-total text-right">TOTAL PENERIMAAN KOIN NU</td>
-                        <td id="m1a-total-nominal" class="footer-total text-right">0</td>
-                        <td id="m1a-total-petugas" class="footer-total text-right">0</td>
-                        <td id="m1a-total-mwc" class="footer-total text-right">0</td>
-                        <td id="m1a-total-pc" class="footer-total text-right">0</td>
-                        <td id="m1a-total-ranting" class="footer-total text-right">0</td>
-                        <td id="tf-m1a-aksi" class="footer-total text-center admin-only">-</td> 
-                    </tr>
-                </tfoot>
-            </table>
-
-            <div class="input-form-container admin-only">
+            
+            <div class="table-scroll-wrapper">
+                <table id="tabel-modul-1a">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;">NO</th>
+                            <th style="width: 80px;">TANGGAL</th>
+                            <th style="min-width: 100px;">NAMA PETUGAS</th>
+                            <th style="width: 70px;">NO HP</th>
+                            <th style="min-width: 120px;">DONATUR/KELOMPOK</th>
+                            <th>ALAMAT (RT/RW)</th>
+                            <th class="col-nominal">NOMINAL (100%)</th>
+                            <th class="koin-nu-header col-nominal">Petugas (10%)</th>
+                            <th class="koin-nu-header col-nominal">MWC (25%)</th>
+                            <th class="koin-nu-header col-nominal">PC (5%)</th>
+                            <th class="koin-nu-header col-nominal">Ranting (60%)</th>
+                            <th id="th-m1a-aksi" class="col-aksi">AKSI</th> 
+                        </tr>
+                    </thead>
+                    <tbody id="m1a-transaction-body">
+                        </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" class="footer-total text-right">TOTAL PENERIMAAN KOIN NU</td>
+                            <td id="m1a-total-nominal" class="footer-total text-right">0</td>
+                            <td id="m1a-total-petugas" class="footer-total text-right">0</td>
+                            <td id="m1a-total-mwc" class="footer-total text-right">0</td>
+                            <td id="m1a-total-pc" class="footer-total text-right">0</td>
+                            <td id="m1a-total-ranting" class="footer-total text-right">0</td>
+                            <td id="tf-m1a-aksi" class="footer-total text-center">-</td> 
+                        </tr>
+                    </tfoot>
+                </table>
+            </div> <div class="input-form-container admin-only">
                 <h3 style="margin-top: 0; color: #4CAF50;">Input Transaksi Koin NU</h3>
                 <div class="form-row">
                     <div class="flex-fix">
@@ -268,44 +301,44 @@
 
         <div id="modul-2-section" class="module-section" style="display: none;">
             <h2>MODUL 2: JURNAL UMUM (Buku Kas)</h2>
-
-            <table id="tabel-modul-2">
-                <thead>
-                    <tr>
-                        <th style="width: 3%;">NO</th>
-                        <th style="width: 10%;">TANGGAL</th>
-                        <th style="width: 25%;">KETERANGAN</th>
-                        <th style="width: 15%;">KATEGORI</th>
-                        <th style="width: 13%;">DANA MASUK (DEBIT)</th>
-                        <th style="width: 13%;">DANA KELUAR (KREDIT)</th>
-                        <th style="width: 17%;">SALDO</th>
-                        <th id="th-m2-aksi" style="width: 4%;" class="admin-only">AKSI</th> 
-                    </tr>
-                </thead>
-                <tbody id="m2-transaction-body">
-                    <tr>
-                        <td colspan="4" class="saldo-awal-row text-right">Saldo Bulan Lalu:</td>
-                        <td colspan="2">
-                            <div id="m2-saldo-awal-display-container" class="admin-only" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 0; box-sizing: border-box;">
-                                <input type="number" id="m2-saldo-awal-input" value="15000000" min="0" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 2px;">
-                            </div>
-                            <div id="m2-saldo-awal-static" class="saldo-awal-row text-right" style="padding: 2px 6px; display: none;"></div> </td>
-                        <td id="m2-saldo-awal-display" class="saldo-awal-row text-right">0</td>
-                        <td id="td-m2-saldo-awal-aksi" class="saldo-awal-row text-center admin-only">-</td> 
-                    </tr>
-                    </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="4" class="footer-total text-right">TOTAL</td>
-                        <td id="m2-total-masuk" class="footer-total text-right">0</td>
-                        <td id="m2-total-keluar" class="footer-total text-right">0</td>
-                        <td id="m2-footer-saldo-total" class="footer-total text-right">0</td>
-                        <td id="tf-m2-aksi" class="footer-total text-center admin-only">-</td> 
-                    </tr>
-                </tfoot>
-            </table>
-
-            <div class="input-form-container admin-only">
+            
+            <div class="table-scroll-wrapper">
+                <table id="tabel-modul-2">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;">NO</th>
+                            <th style="width: 90px;">TANGGAL</th>
+                            <th style="min-width: 200px;">KETERANGAN</th>
+                            <th>KATEGORI</th>
+                            <th style="min-width: 120px;">DANA MASUK (DEBIT)</th>
+                            <th style="min-width: 120px;">DANA KELUAR (KREDIT)</th>
+                            <th style="min-width: 120px;">SALDO</th>
+                            <th id="th-m2-aksi" class="col-aksi">AKSI</th> 
+                        </tr>
+                    </thead>
+                    <tbody id="m2-transaction-body">
+                        <tr>
+                            <td colspan="4" class="saldo-awal-row text-right">Saldo Bulan Lalu:</td>
+                            <td colspan="2">
+                                <div id="m2-saldo-awal-display-container" class="admin-only" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 0; box-sizing: border-box;">
+                                    <input type="number" id="m2-saldo-awal-input" value="15000000" min="0" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 2px;">
+                                </div>
+                                <div id="m2-saldo-awal-static" class="saldo-awal-row text-right" style="padding: 2px 6px; display: none;"></div> </td>
+                            <td id="m2-saldo-awal-display" class="saldo-awal-row text-right">0</td>
+                            <td id="td-m2-saldo-awal-aksi" class="saldo-awal-row text-center">-</td> 
+                        </tr>
+                        </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="footer-total text-right">TOTAL</td>
+                            <td id="m2-total-masuk" class="footer-total text-right">0</td>
+                            <td id="m2-total-keluar" class="footer-total text-right">0</td>
+                            <td id="m2-footer-saldo-total" class="footer-total text-right">0</td>
+                            <td id="tf-m2-aksi" class="footer-total text-center">-</td> 
+                        </tr>
+                    </tfoot>
+                </table>
+            </div> <div class="input-form-container admin-only">
                 <h3 style="margin-top: 0; color: #007bff;">Input Transaksi Lainnya (Non-Koin NU)</h3>
                 <div class="form-row">
                     <div class="flex-fix">
@@ -356,126 +389,130 @@
         
         <div id="modul-3-section" class="module-section" style="display: none;">
             <h2>MODUL 3: TAMPILAN LAPORAN TAHUNAN</h2>
-            <table id="tabel-modul-3">
-                <thead>
-                    <tr>
-                        <th rowspan="3" style="width: 2%;">NO</th>
-                        <th rowspan="3" style="width: 5%;">BULAN</th>
-                        <th colspan="2">PENERIMAAN</th>
-                        <th colspan="12">PENGELUARAN SOSIAL (JML UANG/JML PENERIMA)</th>
-                        <th colspan="4">PENGELUARAN OPERASIONAL</th>
-                        <th rowspan="3" style="width: 4%;">Honor Wajib (40%)</th>
-                        <th rowspan="3" style="width: 5%;">JML PENGELUARAN (7)</th>
-                        <th rowspan="3" style="width: 5%;">SALDO AKHIR BULAN INI (8)</th>
-                        <th rowspan="3" style="width: 6%;">SALDO KAS TAHUN BERJALAN (9)</th>
-                    </tr>
-                    <tr>
-                        <th rowspan="2" style="width: 5%;">Total Koin (3)</th>
-                        <th rowspan="2" style="width: 4%;">JML Donatur (4)</th>
-                        <th colspan="2">Pendidikan</th>
-                        <th colspan="2">Kesehatan</th>
-                        <th colspan="2">Ekonomi</th>
-                        <th colspan="2">Sosial Umum</th>
-                        <th colspan="2">Subsidi Banom & Lembaga NU</th>
-                        <th colspan="2">Bencana</th>
-                        <th rowspan="2">Rapat</th>
-                        <th rowspan="2">PERWTN MLU</th>
-                        <th rowspan="2">BIAYA REK BANK</th>
-                        <th rowspan="2">Lain - Lain</th>
-                    </tr>
-                    <tr>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                    </tr>
-                </thead>
-                <tbody id="m3-data-body">
-                    </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="2" class="footer-total text-right">TOTAL TAHUNAN</td>
-                        <td class="footer-total text-right" id="m3-total-penerimaan">0</td>
-                        <td class="footer-total text-right" id="m3-total-donatur">0</td>
-                        <td class="footer-total text-right" id="m3-total-pend-uang">0</td>
-                        <td class="footer-total text-right" id="m3-total-pend-pnm">0</td>
-                        <td class="footer-total text-right" id="m3-total-kes-uang">0</td>
-                        <td class="footer-total text-right" id="m3-total-kes-pnm">0</td>
-                        <td class="footer-total text-right" id="m3-total-eko-uang">0</td>
-                        <td class="footer-total text-right" id="m3-total-eko-pnm">0</td>
-                        <td class="footer-total text-right" id="m3-total-sosum-uang">0</td>
-                        <td class="footer-total text-right" id="m3-total-sosum-pnm">0</td>
-                        <td class="footer-total text-right" id="m3-total-banom-uang">0</td>
-                        <td class="footer-total text-right" id="m3-total-banom-pnm">0</td>
-                        <td class="footer-total text-right" id="m3-total-bencana-uang">0</td>
-                        <td class="footer-total text-right" id="m3-total-bencana-pnm">0</td>
-                        <td class="footer-total text-right" id="m3-total-rapat">0</td>
-                        <td class="footer-total text-right" id="m3-total-perwtn">0</td>
-                        <td class="footer-total text-right" id="m3-total-bank">0</td>
-                        <td class="footer-total text-right" id="m3-total-lain">0</td>
-                        <td class="footer-total text-right" id="m3-total-honor">0</td>
-                        <td class="footer-total text-right" id="m3-total-pengeluaran">0</td>
-                        <td class="footer-total text-right" id="m3-footer-saldo-akhir">0</td>
-                        <td class="footer-total text-right" id="m3-footer-saldo-kas">0</td>
-                    </tr>
-                </tfoot>
-            </table>
-            <input type="hidden" id="saldo-bank-awal-input" value="10000000">
+            
+            <div class="table-scroll-wrapper">
+                <table id="tabel-modul-3">
+                    <thead>
+                        <tr>
+                            <th rowspan="3" style="width: 20px;">NO</th>
+                            <th rowspan="3" style="width: 70px;">BULAN</th>
+                            <th colspan="2">PENERIMAAN</th>
+                            <th colspan="12">PENGELUARAN SOSIAL (JML UANG/JML PENERIMA)</th>
+                            <th colspan="4">PENGELUARAN OPERASIONAL</th>
+                            <th rowspan="3" style="min-width: 80px;">Honor Wajib (40%)</th>
+                            <th rowspan="3" style="min-width: 80px;">JML PENGELUARAN (7)</th>
+                            <th rowspan="3" style="min-width: 80px;">SALDO AKHIR BULAN INI (8)</th>
+                            <th rowspan="3" style="min-width: 80px;">SALDO KAS TAHUN BERJALAN (9)</th>
+                        </tr>
+                        <tr>
+                            <th rowspan="2" style="min-width: 80px;">Total Koin (3)</th>
+                            <th rowspan="2" style="width: 50px;">JML Donatur (4)</th>
+                            <th colspan="2">Pendidikan</th>
+                            <th colspan="2">Kesehatan</th>
+                            <th colspan="2">Ekonomi</th>
+                            <th colspan="2">Sosial Umum</th>
+                            <th colspan="2">Subsidi Banom & Lembaga NU</th>
+                            <th colspan="2">Bencana</th>
+                            <th rowspan="2">Rapat</th>
+                            <th rowspan="2">PERWTN MLU</th>
+                            <th rowspan="2">BIAYA REK BANK</th>
+                            <th rowspan="2">Lain - Lain</th>
+                        </tr>
+                        <tr>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="m3-data-body">
+                        </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="footer-total text-right">TOTAL TAHUNAN</td>
+                            <td class="footer-total text-right" id="m3-total-penerimaan">0</td>
+                            <td class="footer-total text-right" id="m3-total-donatur">0</td>
+                            <td class="footer-total text-right" id="m3-total-pend-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-pend-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-kes-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-kes-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-eko-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-eko-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-sosum-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-sosum-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-banom-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-banom-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-bencana-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-bencana-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-rapat">0</td>
+                            <td class="footer-total text-right" id="m3-total-perwtn">0</td>
+                            <td class="footer-total text-right" id="m3-total-bank">0</td>
+                            <td class="footer-total text-right" id="m3-total-lain">0</td>
+                            <td class="footer-total text-right" id="m3-total-honor">0</td>
+                            <td class="footer-total text-right" id="m3-total-pengeluaran">0</td>
+                            <td class="footer-total text-right" id="m3-footer-saldo-akhir">0</td>
+                            <td class="footer-total text-right" id="m3-footer-saldo-kas">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div> <input type="hidden" id="saldo-bank-awal-input" value="10000000">
             <input type="hidden" id="saldo-tunai-awal-input" value="5000000">
         </div>
 
         <div id="modul-1-section" class="module-section" style="display: none;">
             <h2 class="admin-only">MODUL 1: DATA AGREGAT BULANAN (Input Lama - Untuk Laporan Tahunan)</h2>
             <p class="admin-only" style="color: blue; font-style: italic;">(Data di modul ini hanya digunakan untuk laporan tahunan, tidak terhubung dengan Modul 1A/2)</p>
-            <table id="tabel-modul-1" class="input-table admin-only">
-                <thead>
-                    <tr>
-                        <th rowspan="3">BULAN</th>
-                        <th colspan="2">PENERIMAAN</th>
-                        <th colspan="12">PENGELUARAN DANA SOSIAL/BANTUAN</th>
-                        <th colspan="4">PENGELUARAN OPERASIONAL</th>
-                    </tr>
-                    <tr>
-                        <th rowspan="2">TOTAL KOIN</th>
-                        <th rowspan="2">JML DONATUR</th>
-                        <th colspan="2">Pendidikan</th>
-                        <th colspan="2">Kesehatan</th>
-                        <th colspan="2">Ekonomi</th>
-                        <th colspan="2">Sosial Umum</th>
-                        <th colspan="2">Subsidi Banom & Lembaga NU</th>
-                        <th colspan="2">Bencana</th>
-                        <th rowspan="2">Rapat</th>
-                        <th rowspan="2">PERWTN MLU</th>
-                        <th rowspan="2">BIAYA REK BANK</th>
-                        <th rowspan="2">Lain - Lain</th>
-                    </tr>
-                    <tr>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Pnm</th>
-                    </tr>
-                </thead>
-                <tbody id="m1-input-body">
-                    </tbody>
-            </table>
-        </div>
+            
+            <div class="table-scroll-wrapper">
+                <table id="tabel-modul-1" class="input-table admin-only">
+                    <thead>
+                        <tr>
+                            <th rowspan="3">BULAN</th>
+                            <th colspan="2">PENERIMAAN</th>
+                            <th colspan="12">PENGELUARAN DANA SOSIAL/BANTUAN</th>
+                            <th colspan="4">PENGELUARAN OPERASIONAL</th>
+                        </tr>
+                        <tr>
+                            <th rowspan="2" style="min-width: 80px;">TOTAL KOIN</th>
+                            <th rowspan="2" style="width: 50px;">JML DONATUR</th>
+                            <th colspan="2">Pendidikan</th>
+                            <th colspan="2">Kesehatan</th>
+                            <th colspan="2">Ekonomi</th>
+                            <th colspan="2">Sosial Umum</th>
+                            <th colspan="2">Subsidi Banom & Lembaga NU</th>
+                            <th colspan="2">Bencana</th>
+                            <th rowspan="2">Rapat</th>
+                            <th rowspan="2">PERWTN MLU</th>
+                            <th rowspan="2">BIAYA REK BANK</th>
+                            <th rowspan="2">Lain - Lain</th>
+                        </tr>
+                        <tr>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="m1-input-body">
+                        </tbody>
+                </table>
+            </div> </div>
     </div>
     
     <div id="login-container-bar">
@@ -527,14 +564,14 @@
 
         // Data Transaksional Modul 1A (Koin NU Detail)
         let m1aTransactions = [
-            { date: '2025-01-05', petugas: 'Amin', noHp: '0812xxx', donatur: 'Warga RT 01', alamat: 'RT 01/RW 02', nominal: 500000 },
-            { date: '2025-01-10', petugas: 'Budi', noHp: '0813xxx', donatur: 'Kumpulan Yasin', alamat: 'RT 05/RW 01', nominal: 750000 },
+            { date: '2025-01-05', petugas: 'Amin', noHp: '0812xxx', donatur: 'Warga RT 01', alamat: 'RT 01/RW 02', nominal: 50000000 },
+            { date: '2025-01-10', petugas: 'Budi', noHp: '0813xxx', donatur: 'Kumpulan Yasin', alamat: 'RT 05/RW 01', nominal: 75000000 },
         ];
 
         // Data Transaksional Modul 2 (Non-Koin NU Manual)
         let m2ManualTransactions = [
-            { date: '2025-01-15', keterangan: 'Biaya fotokopi laporan', kategori: 'Lain-Lain', debit: 0, kredit: 25000, isAuto: false },
-            { date: '2025-01-20', keterangan: 'Infaq dari acara Maulid', kategori: 'Infaq dan Shodaqoh', debit: 400000, kredit: 0, isAuto: false },
+            { date: '2025-01-15', keterangan: 'Biaya fotokopi laporan dan ATK', kategori: 'Lain-Lain', debit: 0, kredit: 25000000, isAuto: false },
+            { date: '2025-01-20', keterangan: 'Infaq dari acara Maulid Nabi Agung', kategori: 'Infaq dan Shodaqoh', debit: 40000000, kredit: 0, isAuto: false },
         ];
 
 
@@ -620,8 +657,19 @@
                 if (el.tagName === 'TABLE') {
                      el.style.display = loggedIn ? 'table' : 'none';
                 }
+                // Khusus untuk table rows/cells yang perlu disembunyikan/ditampilkan
+                if (el.tagName === 'TD' || el.tagName === 'TH') {
+                    el.style.display = loggedIn ? 'table-cell' : 'none';
+                }
             });
 
+            // Handle visibility for TH/TD Aksi columns explicitly
+            const aksiHeaders = document.querySelectorAll('#th-m1a-aksi, #th-m2-aksi');
+            const aksiFooters = document.querySelectorAll('#tf-m1a-aksi, #tf-m2-aksi');
+
+            aksiHeaders.forEach(th => th.style.display = loggedIn ? 'table-cell' : 'none');
+            aksiFooters.forEach(td => td.style.display = loggedIn ? 'table-cell' : 'none');
+            
             // 2. Toggle visibility of login/logout bar content
             const loginBar = document.getElementById('login-form-content-bar');
             const logoutBar = document.getElementById('logout-form-content-bar');
@@ -730,10 +778,14 @@
                 const honorPC = t.nominal * HONOR_RATES.pc;
                 const danaRanting = t.nominal * HONOR_RATES.ranting;
                 
+                // === START NEW: ACTION BUTTONS SIDE-BY-SIDE ===
                 const actionButtons = isLoggedIn ? `
-                    <button onclick="editKoinNUTxn(${index})" class="action-btn edit-btn">Edit</button>
-                    <button onclick="deleteKoinNUTxn(${index})" class="action-btn delete-btn">Hapus</button>
+                    <div style="display: flex; gap: 2px; justify-content: center;">
+                        <button onclick="editKoinNUTxn(${index})" class="action-btn edit-btn">Edit</button>
+                        <button onclick="deleteKoinNUTxn(${index})" class="action-btn delete-btn">Hapus</button>
+                    </div>
                 ` : '-';
+                // === END NEW ===
                 
                 const aksiVisibilityStyle = isLoggedIn ? '' : 'display: none;';
 
@@ -920,10 +972,14 @@
                 if (!t.isAuto) {
                     manualIndex++;
                     if (isLoggedIn) {
+                        // === START NEW: ACTION BUTTONS SIDE-BY-SIDE ===
                         actionButtons = `
-                            <button onclick="editManualTxn(${manualIndex})" class="action-btn edit-btn">Edit</button>
-                            <button onclick="deleteManualTxn(${manualIndex})" class="action-btn delete-btn">Hapus</button>
+                            <div style="display: flex; gap: 2px; justify-content: center;">
+                                <button onclick="editManualTxn(${manualIndex})" class="action-btn edit-btn">Edit</button>
+                                <button onclick="deleteManualTxn(${manualIndex})" class="action-btn delete-btn">Hapus</button>
+                            </div>
                         `;
+                        // === END NEW ===
                     } else {
                         actionButtons = '-';
                     }
@@ -1032,7 +1088,7 @@
             rowBank.classList.add('saldo-awal-row');
 
             const bankSaldoContent = isLoggedIn ? 
-                `<input type="number" id="saldo-bank-awal-input" value="${saldoBankAwal}" min="0" style="width: 100%; font-size: 11px;">` : 
+                `<input type="number" id="saldo-bank-awal-input" value="${saldoBankAwal}" min="0" oninput="recalculateAllReports()" style="width: 100%; font-size: 11px;">` : 
                 formatNominal(saldoBankAwal);
 
             rowBank.innerHTML = `
@@ -1053,7 +1109,7 @@
             rowTunai.classList.add('saldo-awal-row');
 
             const tunaiSaldoContent = isLoggedIn ? 
-                `<input type="number" id="saldo-tunai-awal-input" value="${saldoTunaiAwal}" min="0" style="width: 100%; font-size: 11px;">` : 
+                `<input type="number" id="saldo-tunai-awal-input" value="${saldoTunaiAwal}" min="0" oninput="recalculateAllReports()" style="width: 100%; font-size: 11px;">` : 
                 formatNominal(saldoTunaiAwal);
 
             rowTunai.innerHTML = `
