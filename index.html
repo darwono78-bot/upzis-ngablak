@@ -52,11 +52,318 @@
 
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
 
-        <div id="login-screen" class="min-h-screen flex items-center justify-center bg-gray-50 p-4 hidden">
-            <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl space-y-6">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl sm:text-4xl font-bold text-nu-dark">Pembukuan Dana Koin NU</h1>
+            <p class="text-sm text-gray-500">Laporan Keuangan UPZIS Ngablak</p>
+        </header>
+
+        <div class="flex flex-wrap justify-center space-x-2 sm:space-x-4 mb-6" id="nav-tabs">
+            <button class="tab-button active px-4 py-2 rounded-lg font-semibold transition duration-150 shadow-md text-sm sm:text-base" data-target="laporan-koin">Laporan Koin</button>
+            <button class="tab-button px-4 py-2 rounded-lg font-semibold transition duration-150 shadow-md text-sm sm:text-base" data-target="jurnal-umum">Jurnal Umum</button>
+            <button class="tab-button px-4 py-2 rounded-lg font-semibold transition duration-150 shadow-md text-sm sm:text-base" data-target="laporan-tahunan">Laporan Tahunan</button>
+        </div>
+
+        <div id="content-area">
+            
+            <div id="laporan-koin" class="tab-content">
+                <div class="flex flex-wrap justify-between items-center mb-4 space-y-2 sm:space-y-0">
+                    <div id="filter-koin" class="flex space-x-2 w-full sm:w-auto">
+                        <input type="month" id="filter-bulan-koin" class="p-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto" value="">
+                    </div>
+                    <button id="download-koin-pdf" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md flex items-center text-sm w-full sm:w-auto justify-center">
+                        <i data-lucide="download" class="w-4 h-4 mr-2"></i> Unduh PDF
+                    </button>
+                </div>
+                
+                <div class="card p-0 table-responsive shadow-custom">
+                    <table class="w-full table-auto-width text-xs sm:text-sm" id="table-laporan-koin">
+                        <thead class="sticky-header bg-nu-light">
+                            <tr>
+                                <th rowspan="2" class="center-text">No</th>
+                                <th rowspan="2" class="center-text">Tanggal</th>
+                                <th rowspan="2" class="center-text">Nama Petugas</th>
+                                <th rowspan="2" class="center-text">No HP</th>
+                                <th rowspan="2" class="center-text">Donatur/Kelompok</th>
+                                <th rowspan="2" class="center-text">Alamat (RT/RW)</th>
+                                <th rowspan="2" class="center-text">Nominal</th>
+                                <th colspan="4" class="center-text bg-nu-green text-black">Pembagian Dana Koin</th>
+                                <th rowspan="2" class="center-text">Aksi</th>
+                            </tr>
+                            <tr>
+                                <th class="center-text">Ranting (60%)</th>
+                                <th class="center-text">Petugas (10%)</th>
+                                <th class="center-text">MWC (25%)</th>
+                                <th class="center-text">PC (5%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-laporan-koin">
+                            <tr><td colspan="12" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="jurnal-umum" class="tab-content hidden">
+                <div class="flex flex-wrap justify-end items-center mb-4 space-y-2 sm:space-y-0">
+                    <div id="filter-jurnal" class="flex space-x-2 w-full sm:w-auto justify-end">
+                        <input type="month" id="filter-bulan-jurnal" class="p-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto" value="">
+                    </div>
+                </div>
+
+                <div class="card p-0 table-responsive shadow-custom">
+                    <table class="w-full table-auto-width text-xs sm:text-sm" id="table-jurnal-umum">
+                        <thead class="sticky-header bg-nu-light">
+                            <tr>
+                                <th rowspan="3" class="center-text">No</th>
+                                <th rowspan="3" class="center-text">Tanggal</th>
+                                <th rowspan="3" class="center-text">Keterangan</th>
+                                <th colspan="7" class="center-text bg-nu-green text-black">Jml Penerima</th>
+                                <th rowspan="3" class="center-text">Kategori</th>
+                                <th rowspan="3" class="center-text">Dana Masuk</th>
+                                <th rowspan="3" class="center-text">Dana Keluar</th>
+                                <th rowspan="3" class="center-text">Saldo</th>
+                                <th rowspan="3" class="center-text">Aksi</th>
+                            </tr>
+                            <tr>
+                                <th class="center-text" colspan="7">Bidang</th>
+                            </tr>
+                            <tr>
+                                <th class="center-text">Donatur</th>
+                                <th class="center-text">Pendidikan</th>
+                                <th class="center-text">Kesehatan</th>
+                                <th class="center-text">Ekonomi</th>
+                                <th class="center-text">Sosial</th>
+                                <th class="center-text">Subsidi</th>
+                                <th class="center-text">Bencana</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-jurnal-umum">
+                            <tr><td colspan="16" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
+                        </tbody>
+                        <tfoot id="tfoot-jurnal-umum" class="font-bold">
+                            <tr class="bg-gray-200">
+                                <td colspan="11" class="text-right">TOTAL</td>
+                                <td id="total-masuk" class="text-right text-nu-green">0</td>
+                                <td id="total-keluar" class="text-right text-red-600">0</td>
+                                <td id="saldo-akhir" class="text-right">0</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <div id="laporan-tahunan" class="tab-content hidden">
+                <div class="flex flex-wrap justify-start items-center mb-4 space-y-2 sm:space-y-0">
+                    <div id="filter-tahunan" class="flex space-x-2 w-full sm:w-auto">
+                        <select id="filter-tahun" class="p-2 border border-gray-300 rounded-lg text-sm bg-white w-full sm:w-auto"></select>
+                    </div>
+                </div>
+
+                <div class="card p-0 table-responsive shadow-custom">
+                    <table class="w-full table-auto-width text-xs sm:text-sm" id="table-laporan-tahunan">
+                        <thead class="sticky-header bg-nu-light">
+                            <tr>
+                                <th rowspan="4" class="center-text">No (1)</th>
+                                <th rowspan="4" class="center-text">Bulan (2)</th>
+                                <th rowspan="4" class="center-text">Total Penerimaan (3)</th>
+                                <th colspan="12" class="center-text bg-nu-green text-black">Pengeluaran Wajib (5)</th>
+                                <th colspan="4" class="center-text bg-blue-500 text-white">Pengeluaran Lain-lain (6)</th>
+                                <th rowspan="4" class="center-text">Jumlah Pengeluaran (7)</th>
+                                <th rowspan="4" class="center-text">Saldo Akhir Bulan Ini (8)</th>
+                                <th rowspan="4" class="center-text">Saldo Kas Tahun Berjalan (9)</th>
+                            </tr>
+                            <tr>
+                                <th colspan="10" class="center-text">Rincian Per Bidang (Pengeluaran Wajib)</th>
+                                <th colspan="3" class="center-text">Honor Wajib Koin NU</th>
+                                <th colspan="4" rowspan="2" class="center-text">Rincian Lain-lain</th>
+                            </tr>
+                            <tr>
+                                <th colspan="2" class="center-text">Pendidikan</th>
+                                <th colspan="2" class="center-text">Kesehatan</th>
+                                <th colspan="2" class="center-text">Ekonomi</th>
+                                <th colspan="2" class="center-text">Sosial</th>
+                                <th colspan="2" class="center-text">Bencana</th>
+                                <th rowspan="2" class="center-text">Subsidi Banom & Lembaga NU</th>
+                                <th class="center-text">Petugas (10%)</th>
+                                <th class="center-text">MWC (25%)</th>
+                                <th class="center-text">PC (5%)</th>
+                            </tr>
+                            <tr>
+                                <th class="center-text">Uang</th>
+                                <th class="center-text">Penerima</th>
+                                <th class="center-text">Uang</th>
+                                <th class="center-text">Penerima</th>
+                                <th class="center-text">Uang</th>
+                                <th class="center-text">Penerima</th>
+                                <th class="center-text">Uang</th>
+                                <th class="center-text">Penerima</th>
+                                <th class="center-text">Uang</th>
+                                <th class="center-text">Penerima</th>
+                                <th class="center-text">Uang</th>
+                                <th class="center-text">Uang</th>
+                                <th class="center-text">Uang</th>
+                                <th class="center-text">Rapat</th>
+                                <th class="center-text">PERWTN MLU</th>
+                                <th class="center-text">BIAYA REK BANK</th>
+                                <th class="center-text">Lain - Lain</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-laporan-tahunan">
+                            <tr><td colspan="23" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="admin-controls-area" class="mt-8 hidden">
+            
+            <div class="flex justify-end mb-4">
+                <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-lg text-sm transition duration-150 shadow-md flex items-center">
+                    <i data-lucide="log-out" class="w-4 h-4 mr-1"></i> Logout
+                </button>
+            </div>
+
+            <div id="input-koin-wrapper">
+                <div class="card mt-6">
+                    <h2 class="text-xl font-bold text-nu-dark mb-4">Input Data Koin Baru</h2>
+                    <form id="form-laporan-koin" class="space-y-4">
+                        <input type="hidden" id="koin-doc-id" value="">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="koin-tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                                <input type="date" id="koin-tanggal" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                            <div>
+                                <label for="koin-petugas" class="block text-sm font-medium text-gray-700">Nama Petugas</label>
+                                <input type="text" id="koin-petugas" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="koin-nohp" class="block text-sm font-medium text-gray-700">No HP</label>
+                                <input type="text" id="koin-nohp" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                            <div>
+                                <label for="koin-donatur" class="block text-sm font-medium text-gray-700">Donatur/Kelompok</label>
+                                <input type="text" id="koin-donatur" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="koin-alamat" class="block text-sm font-medium text-gray-700">Alamat (RT/RW)</label>
+                            <input type="text" id="koin-alamat" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </div>
+                        <div>
+                            <label for="koin-nominal" class="block text-sm font-medium text-gray-700">Nominal (Wajib Angka)</label>
+                            <input type="number" id="koin-nominal" required min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-lg font-bold">
+                        </div>
+                        <button type="submit" class="w-full bg-nu-green hover:bg-nu-dark text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md" id="koin-submit-btn">Tambah Data Koin</button>
+                        <button type="button" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md mt-2 hidden" id="koin-cancel-btn">Batal Edit</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="input-jurnal-wrapper" class="mt-8">
+                <div class="flex justify-start mb-4">
+                    <button id="reset-data-jurnal" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md text-sm flex items-center w-full sm:w-auto justify-center">
+                        <i data-lucide="alert-circle" class="w-4 h-4 mr-2"></i> Reset Data (Manual)
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <h2 class="text-xl font-bold text-nu-dark mb-4">Input Jurnal Baru (Manual)</h2>
+                    <form id="form-jurnal-umum" class="space-y-4">
+                        <input type="hidden" id="jurnal-doc-id" value="">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label for="jurnal-tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                                <input type="date" id="jurnal-tanggal" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                            </div>
+                            <div>
+                                <label for="jurnal-kategori" class="block text-sm font-medium text-gray-700">Kategori</label>
+                                <select id="jurnal-kategori" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-white">
+                                    <optgroup label="Dana Masuk">
+                                        <option value="Donatur">Donatur (Non Koin)</option>
+                                        <option value="Zakat Mall">Zakat Mall</option>
+                                        <option value="Infaq dan Shodaqoh">Infaq dan Shodaqoh</option>
+                                        <option value="Hasil Usaha">Hasil Usaha</option>
+                                    </optgroup>
+                                    <optgroup label="Dana Keluar Wajib">
+                                        <option value="Untuk Pendidikan">Untuk Pendidikan</option>
+                                        <option value="Untuk Sosial">Untuk Sosial</option>
+                                        <option value="Untuk Ekonomi">Untuk Ekonomi</option>
+                                        <option value="Untuk Kesehatan">Untuk Kesehatan</option>
+                                        <option value="Subsidi Banom dan Lembaga NU">Subsidi Banom dan Lembaga NU</option>
+                                        <option value="Untuk Bencana">Untuk Bencana</option>
+                                    </optgroup>
+                                    <optgroup label="Dana Keluar Lain-lain">
+                                        <option value="Rapat">Rapat</option>
+                                        <option value="PERWTN MLU">PERWTN MLU</option>
+                                        <option value="BIAYA REK BANK">BIAYA REK BANK</option>
+                                        <option value="Lain - Lain">Lain - Lain</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="jurnal-jenis" class="block text-sm font-medium text-gray-700">Jenis Transaksi</label>
+                                <select id="jurnal-jenis" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-white">
+                                    <option value="MASUK">Dana Masuk</option>
+                                    <option value="KELUAR">Dana Keluar</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="jurnal-keterangan" class="block text-sm font-medium text-gray-700">Keterangan</label>
+                            <input type="text" id="jurnal-keterangan" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label for="jurnal-nominal" class="block text-sm font-medium text-gray-700">Nominal (Masuk/Keluar)</label>
+                                <input type="number" id="jurnal-nominal" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-lg font-bold">
+                            </div>
+                            <div>
+                                <label for="jurnal-penerima" class="block text-sm font-medium text-gray-700">Jml Penerima (Opsional, isi JSON)</label>
+                                <textarea id="jurnal-penerima" placeholder='{"pendidikan": 2, "kesehatan": 1, "ekonomi": 0}' class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-sm h-20"></textarea>
+                                <p class="text-xs text-gray-500 mt-1">Format JSON: {"bidang": jumlah_penerima}. Bidang: donatur, pendidikan, kesehatan, ekonomi, sosial, subsidi, bencana</p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-nu-green hover:bg-nu-dark text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md" id="jurnal-submit-btn">Tambah Data Jurnal</button>
+                        <button type="button" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md mt-2 hidden" id="jurnal-cancel-btn">Batal Edit</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="input-tahunan-wrapper" class="mt-8">
+                <div class="flex justify-start mb-4">
+                    <button id="edit-saldo-awal" class="bg-nu-yellow hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md flex items-center text-sm w-full sm:w-auto justify-center">
+                        <i data-lucide="wallet" class="w-4 h-4 mr-2"></i> Edit Saldo Awal Tahun
+                    </button>
+                </div>
+
+                <div id="saldo-awal-input" class="card hidden mb-6">
+                    <h2 class="text-xl font-bold text-nu-yellow mb-4">Edit Saldo Awal Tahun</h2>
+                    <form id="form-saldo-awal" class="space-y-4">
+                        <div>
+                            <label for="saldo-bank" class="block text-sm font-medium text-gray-700">SALDO KAS BANK (Manual Input)</label>
+                            <input type="number" id="saldo-bank" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </div>
+                        <div>
+                            <label for="saldo-tunai" class="block text-sm font-medium text-gray-700">SALDO KAS TUNAI (Manual Input)</label>
+                            <input type="number" id="saldo-tunai" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+                        </div>
+                        <button type="submit" class="w-full bg-nu-yellow hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md">Simpan Saldo Awal</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div id="login-screen" class="w-full max-w-md mx-auto mt-10 p-4">
+            <div class="bg-white p-6 rounded-xl shadow-2xl space-y-4 border border-gray-200">
                 <header class="text-center">
-                    <h1 class="text-3xl font-bold text-nu-dark">Koin NU Login</h1>
-                    <p class="text-sm text-gray-500">UPZIS Ngablak Pembukuan</p>
+                    <h2 class="text-2xl font-bold text-nu-dark">Login Admin</h2>
+                    <p class="text-sm text-gray-500">Akses untuk Input Data</p>
                 </header>
                 <form id="login-form" class="space-y-4">
                     <div>
@@ -72,306 +379,6 @@
                     </button>
                     <p id="login-message" class="text-center text-sm text-red-600 font-medium pt-2"></p>
                 </form>
-            </div>
-        </div>
-        <div id="app-content" class="hidden">
-            
-            <header class="text-center mb-6">
-                <h1 class="text-3xl sm:text-4xl font-bold text-nu-dark">Pembukuan Dana Koin NU</h1>
-                <p class="text-sm text-gray-500" id="user-info">Memuat data pengguna...</p>
-            </header>
-
-            <div class="flex justify-end mb-4">
-                <div class="flex items-center space-x-4 bg-white p-2 rounded-lg shadow-sm">
-                    <p class="text-xs text-gray-500 hidden sm:block">User ID: <span id="user-id-display" class="font-mono text-gray-900">N/A</span></p>
-                    <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-lg text-sm transition duration-150 shadow-md flex items-center">
-                        <i data-lucide="log-out" class="w-4 h-4 mr-1"></i> Logout
-                    </button>
-                </div>
-            </div>
-
-            <div class="flex flex-wrap justify-center space-x-2 sm:space-x-4 mb-6" id="nav-tabs">
-                <button class="tab-button active px-4 py-2 rounded-lg font-semibold transition duration-150 shadow-md text-sm sm:text-base" data-target="laporan-koin">Laporan Koin</button>
-                <button class="tab-button px-4 py-2 rounded-lg font-semibold transition duration-150 shadow-md text-sm sm:text-base" data-target="jurnal-umum">Jurnal Umum</button>
-                <button class="tab-button px-4 py-2 rounded-lg font-semibold transition duration-150 shadow-md text-sm sm:text-base" data-target="laporan-tahunan">Laporan Tahunan</button>
-            </div>
-
-            <div id="content-area">
-                
-                <div id="laporan-koin" class="tab-content">
-                    <div class="flex flex-wrap justify-between items-center mb-4 space-y-2 sm:space-y-0">
-                        <div id="filter-koin" class="flex space-x-2 w-full sm:w-auto">
-                            <input type="month" id="filter-bulan-koin" class="p-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto" value="">
-                        </div>
-                        <button id="download-koin-pdf" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md flex items-center text-sm w-full sm:w-auto justify-center">
-                            <i data-lucide="download" class="w-4 h-4 mr-2"></i> Unduh PDF
-                        </button>
-                    </div>
-                    
-                    <div class="card p-0 table-responsive shadow-custom">
-                        <table class="w-full table-auto-width text-xs sm:text-sm" id="table-laporan-koin">
-                            <thead class="sticky-header bg-nu-light">
-                                <tr>
-                                    <th rowspan="2" class="center-text">No</th>
-                                    <th rowspan="2" class="center-text">Tanggal</th>
-                                    <th rowspan="2" class="center-text">Nama Petugas</th>
-                                    <th rowspan="2" class="center-text">No HP</th>
-                                    <th rowspan="2" class="center-text">Donatur/Kelompok</th>
-                                    <th rowspan="2" class="center-text">Alamat (RT/RW)</th>
-                                    <th rowspan="2" class="center-text">Nominal</th>
-                                    <th colspan="4" class="center-text bg-nu-green text-black">Pembagian Dana Koin</th>
-                                    <th rowspan="2" class="center-text">Aksi</th>
-                                </tr>
-                                <tr>
-                                    <th class="center-text">Ranting (60%)</th>
-                                    <th class="center-text">Petugas (10%)</th>
-                                    <th class="center-text">MWC (25%)</th>
-                                    <th class="center-text">PC (5%)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-laporan-koin">
-                                <tr><td colspan="11" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="card mt-6">
-                        <h2 class="text-xl font-bold text-nu-dark mb-4">Input Data Koin Baru</h2>
-                        <form id="form-laporan-koin" class="space-y-4">
-                            <input type="hidden" id="koin-doc-id" value="">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="koin-tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                                    <input type="date" id="koin-tanggal" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                                </div>
-                                <div>
-                                    <label for="koin-petugas" class="block text-sm font-medium text-gray-700">Nama Petugas</label>
-                                    <input type="text" id="koin-petugas" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="koin-nohp" class="block text-sm font-medium text-gray-700">No HP</label>
-                                    <input type="text" id="koin-nohp" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                                </div>
-                                <div>
-                                    <label for="koin-donatur" class="block text-sm font-medium text-gray-700">Donatur/Kelompok</label>
-                                    <input type="text" id="koin-donatur" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                                </div>
-                            </div>
-                            <div>
-                                <label for="koin-alamat" class="block text-sm font-medium text-gray-700">Alamat (RT/RW)</label>
-                                <input type="text" id="koin-alamat" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                            </div>
-                            <div>
-                                <label for="koin-nominal" class="block text-sm font-medium text-gray-700">Nominal (Wajib Angka)</label>
-                                <input type="number" id="koin-nominal" required min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-lg font-bold">
-                            </div>
-                            <button type="submit" class="w-full bg-nu-green hover:bg-nu-dark text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md" id="koin-submit-btn">Tambah Data Koin</button>
-                            <button type="button" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md mt-2 hidden" id="koin-cancel-btn">Batal Edit</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div id="jurnal-umum" class="tab-content hidden">
-                    <div class="flex flex-wrap justify-between items-center mb-4 space-y-2 sm:space-y-0">
-                        <button id="reset-data-jurnal" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md text-sm flex items-center w-full sm:w-auto justify-center">
-                            <i data-lucide="alert-circle" class="w-4 h-4 mr-2"></i> Reset Data (Manual)
-                        </button>
-                        <div id="filter-jurnal" class="flex space-x-2 w-full sm:w-auto justify-end">
-                            <input type="month" id="filter-bulan-jurnal" class="p-2 border border-gray-300 rounded-lg text-sm w-full sm:w-auto" value="">
-                        </div>
-                    </div>
-
-                    <div class="card p-0 table-responsive shadow-custom">
-                        <table class="w-full table-auto-width text-xs sm:text-sm" id="table-jurnal-umum">
-                            <thead class="sticky-header bg-nu-light">
-                                <tr>
-                                    <th rowspan="3" class="center-text">No</th>
-                                    <th rowspan="3" class="center-text">Tanggal</th>
-                                    <th rowspan="3" class="center-text">Keterangan</th>
-                                    <th colspan="7" class="center-text bg-nu-green text-black">Jml Penerima</th>
-                                    <th rowspan="3" class="center-text">Kategori</th>
-                                    <th rowspan="3" class="center-text">Dana Masuk</th>
-                                    <th rowspan="3" class="center-text">Dana Keluar</th>
-                                    <th rowspan="3" class="center-text">Saldo</th>
-                                    <th rowspan="3" class="center-text">Aksi</th>
-                                </tr>
-                                <tr>
-                                    <th class="center-text" colspan="7">Bidang</th>
-                                </tr>
-                                <tr>
-                                    <th class="center-text">Donatur</th>
-                                    <th class="center-text">Pendidikan</th>
-                                    <th class="center-text">Kesehatan</th>
-                                    <th class="center-text">Ekonomi</th>
-                                    <th class="center-text">Sosial</th>
-                                    <th class="center-text">Subsidi</th>
-                                    <th class="center-text">Bencana</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-jurnal-umum">
-                                <tr><td colspan="16" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
-                            </tbody>
-                            <tfoot id="tfoot-jurnal-umum" class="font-bold">
-                                <tr class="bg-gray-200">
-                                    <td colspan="11" class="text-right">TOTAL</td>
-                                    <td id="total-masuk" class="text-right text-nu-green">0</td>
-                                    <td id="total-keluar" class="text-right text-red-600">0</td>
-                                    <td id="saldo-akhir" class="text-right">0</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    <div class="card mt-6">
-                        <h2 class="text-xl font-bold text-nu-dark mb-4">Input Jurnal Baru (Manual)</h2>
-                        <form id="form-jurnal-umum" class="space-y-4">
-                            <input type="hidden" id="jurnal-doc-id" value="">
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div>
-                                    <label for="jurnal-tanggal" class="block text-sm font-medium text-gray-700">Tanggal</label>
-                                    <input type="date" id="jurnal-tanggal" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                                </div>
-                                <div>
-                                    <label for="jurnal-kategori" class="block text-sm font-medium text-gray-700">Kategori</label>
-                                    <select id="jurnal-kategori" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-white">
-                                        <optgroup label="Dana Masuk">
-                                            <option value="Donatur">Donatur (Non Koin)</option>
-                                            <option value="Zakat Mall">Zakat Mall</option>
-                                            <option value="Infaq dan Shodaqoh">Infaq dan Shodaqoh</option>
-                                            <option value="Hasil Usaha">Hasil Usaha</option>
-                                        </optgroup>
-                                        <optgroup label="Dana Keluar Wajib">
-                                            <option value="Untuk Pendidikan">Untuk Pendidikan</option>
-                                            <option value="Untuk Sosial">Untuk Sosial</option>
-                                            <option value="Untuk Ekonomi">Untuk Ekonomi</option>
-                                            <option value="Untuk Kesehatan">Untuk Kesehatan</option>
-                                            <option value="Subsidi Banom dan Lembaga NU">Subsidi Banom dan Lembaga NU</option>
-                                            <option value="Untuk Bencana">Untuk Bencana</option>
-                                        </optgroup>
-                                        <optgroup label="Dana Keluar Lain-lain">
-                                            <option value="Rapat">Rapat</option>
-                                            <option value="PERWTN MLU">PERWTN MLU</option>
-                                            <option value="BIAYA REK BANK">BIAYA REK BANK</option>
-                                            <option value="Lain - Lain">Lain - Lain</option>
-                                        </optgroup>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="jurnal-jenis" class="block text-sm font-medium text-gray-700">Jenis Transaksi</label>
-                                    <select id="jurnal-jenis" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border bg-white">
-                                        <option value="MASUK">Dana Masuk</option>
-                                        <option value="KELUAR">Dana Keluar</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label for="jurnal-keterangan" class="block text-sm font-medium text-gray-700">Keterangan</label>
-                                <input type="text" id="jurnal-keterangan" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="jurnal-nominal" class="block text-sm font-medium text-gray-700">Nominal (Masuk/Keluar)</label>
-                                    <input type="number" id="jurnal-nominal" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-lg font-bold">
-                                </div>
-                                <div>
-                                    <label for="jurnal-penerima" class="block text-sm font-medium text-gray-700">Jml Penerima (Opsional, isi JSON)</label>
-                                    <textarea id="jurnal-penerima" placeholder='{"pendidikan": 2, "kesehatan": 1, "ekonomi": 0}' class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-sm h-20"></textarea>
-                                    <p class="text-xs text-gray-500 mt-1">Format JSON: {"bidang": jumlah_penerima}. Bidang: donatur, pendidikan, kesehatan, ekonomi, sosial, subsidi, bencana</p>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="w-full bg-nu-green hover:bg-nu-dark text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md" id="jurnal-submit-btn">Tambah Data Jurnal</button>
-                            <button type="button" class="w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md mt-2 hidden" id="jurnal-cancel-btn">Batal Edit</button>
-                        </form>
-                    </div>
-                </div>
-
-                <div id="laporan-tahunan" class="tab-content hidden">
-                    <div class="flex flex-wrap justify-between items-center mb-4 space-y-2 sm:space-y-0">
-                        <div id="filter-tahunan" class="flex space-x-2 w-full sm:w-auto">
-                            <select id="filter-tahun" class="p-2 border border-gray-300 rounded-lg text-sm bg-white w-full sm:w-auto"></select>
-                        </div>
-                        <button id="edit-saldo-awal" class="bg-nu-yellow hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-150 shadow-md flex items-center text-sm w-full sm:w-auto justify-center">
-                            <i data-lucide="wallet" class="w-4 h-4 mr-2"></i> Edit Saldo Awal Tahun
-                        </button>
-                    </div>
-
-                    <div id="saldo-awal-input" class="card hidden mb-6">
-                        <h2 class="text-xl font-bold text-nu-yellow mb-4">Edit Saldo Awal Tahun</h2>
-                        <form id="form-saldo-awal" class="space-y-4">
-                            <div>
-                                <label for="saldo-bank" class="block text-sm font-medium text-gray-700">SALDO KAS BANK (Manual Input)</label>
-                                <input type="number" id="saldo-bank" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                            </div>
-                            <div>
-                                <label for="saldo-tunai" class="block text-sm font-medium text-gray-700">SALDO KAS TUNAI (Manual Input)</label>
-                                <input type="number" id="saldo-tunai" required min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
-                            </div>
-                            <button type="submit" class="w-full bg-nu-yellow hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition duration-150 shadow-md">Simpan Saldo Awal</button>
-                        </form>
-                    </div>
-
-                    <div class="card p-0 table-responsive shadow-custom">
-                        <table class="w-full table-auto-width text-xs sm:text-sm" id="table-laporan-tahunan">
-                            <thead class="sticky-header bg-nu-light">
-                                <tr>
-                                    <th rowspan="4" class="center-text">No (1)</th>
-                                    <th rowspan="4" class="center-text">Bulan (2)</th>
-                                    <th rowspan="4" class="center-text">Total Penerimaan (3)</th>
-                                    <th colspan="12" class="center-text bg-nu-green text-black">Pengeluaran Wajib (5)</th>
-                                    <th colspan="4" class="center-text bg-blue-500 text-white">Pengeluaran Lain-lain (6)</th>
-                                    <th rowspan="4" class="center-text">Jumlah Pengeluaran (7)</th>
-                                    <th rowspan="4" class="center-text">Saldo Akhir Bulan Ini (8)</th>
-                                    <th rowspan="4" class="center-text">Saldo Kas Tahun Berjalan (9)</th>
-                                </tr>
-                                <tr>
-                                    <th colspan="10" class="center-text">Rincian Per Bidang (Pengeluaran Wajib)</th>
-                                    <th colspan="3" class="center-text">Honor Wajib Koin NU</th>
-                                    <th colspan="4" rowspan="2" class="center-text">Rincian Lain-lain</th>
-                                </tr>
-                                <tr>
-                                    <th colspan="2" class="center-text">Pendidikan</th>
-                                    <th colspan="2" class="center-text">Kesehatan</th>
-                                    <th colspan="2" class="center-text">Ekonomi</th>
-                                    <th colspan="2" class="center-text">Sosial</th>
-                                    <th colspan="2" class="center-text">Bencana</th>
-                                    <th rowspan="2" class="center-text">Subsidi Banom & Lembaga NU</th>
-                                    <th class="center-text">Petugas (10%)</th>
-                                    <th class="center-text">MWC (25%)</th>
-                                    <th class="center-text">PC (5%)</th>
-                                </tr>
-                                <tr>
-                                    <th class="center-text">Uang</th>
-                                    <th class="center-text">Penerima</th>
-                                    <th class="center-text">Uang</th>
-                                    <th class="center-text">Penerima</th>
-                                    <th class="center-text">Uang</th>
-                                    <th class="center-text">Penerima</th>
-                                    <th class="center-text">Uang</th>
-                                    <th class="center-text">Penerima</th>
-                                    <th class="center-text">Uang</th>
-                                    <th class="center-text">Penerima</th>
-                                    <th class="center-text">Uang</th>
-                                    <th class="center-text">Uang</th>
-                                    <th class="center-text">Uang</th>
-                                    <th class="center-text">Rapat</th>
-                                    <th class="center-text">PERWTN MLU</th>
-                                    <th class="center-text">BIAYA REK BANK</th>
-                                    <th class="center-text">Lain - Lain</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tbody-laporan-tahunan">
-                                <tr><td colspan="23" class="text-center py-4 text-gray-500">Memuat data...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
             </div>
         </div>
         </div>
@@ -417,10 +424,12 @@
         
         const collectionPath = (col) => {
             if (!userId) {
-                console.error("User ID tidak tersedia. Gagal membuat path koleksi.");
-                return null;
+                // Saat tidak login, gunakan path default atau umum, tapi karena kita mau data per user, kita blok input jika tidak login.
+                // Untuk read only data, kita bisa gunakan userId statis (misal 'public_view'), tapi karena arsitektur per user, kita biarkan error jika diperlukan
+                // Namun, untuk mode publik, kita akan menginisialisasi listener sebelum login, jadi kita akan buat asumsi userId public.
+                return `/artifacts/${appId}/users/public_view/${col}`; 
             }
-            // Menggunakan path private per user (default dari lingkungan)
+            // Menggunakan path private per user
             return `/artifacts/${appId}/users/${userId}/${col}`;
         };
 
@@ -432,44 +441,51 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
                 
-                const appContent = document.getElementById('app-content');
                 const loginScreen = document.getElementById('login-screen');
+                const adminControls = document.getElementById('admin-controls-area');
+
+                // Inisialisasi tampilan awal sebelum auth selesai
+                setupDataListeners(true); // Load data publik terlebih dahulu
+                populateYearFilter();
 
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         // USER LOGGED IN
                         userId = user.uid;
-                        document.getElementById('user-id-display').textContent = userId;
-                        document.getElementById('user-info').textContent = `Selamat datang! ID Pengguna: ${userId}`;
+                        // document.getElementById('user-id-display').textContent = userId; // ID Display dihapus dari header
                         
-                        // Tampilkan Konten Aplikasi, Sembunyikan Layar Login
-                        appContent.classList.remove('hidden');
+                        // Tampilkan Area Input, Sembunyikan Layar Login
+                        adminControls.classList.remove('hidden');
                         loginScreen.classList.add('hidden');
                         isAuthReady = true;
                         document.getElementById('login-message').textContent = ''; // Clear message on success
                         
-                        setupDataListeners();
-                        populateYearFilter();
+                        // Setup listener dengan User ID yang sebenarnya
+                        setupDataListeners(false); 
 
                     } else {
                         // USER LOGGED OUT
                         userId = null;
                         
-                        // Sembunyikan Konten Aplikasi, Tampilkan Layar Login
-                        appContent.classList.add('hidden');
+                        // Sembunyikan Area Input, Tampilkan Layar Login
+                        adminControls.classList.add('hidden');
                         loginScreen.classList.remove('hidden');
                         isAuthReady = false;
 
-                        // Hentikan semua listener data saat logout
+                        // Hentikan listener berbayar
                         currentKoinUnsubscribe();
                         currentJurnalUnsubscribe();
                         currentSaldoUnsubscribe();
+                        
+                        // Muat ulang data mode publik (jika ada data publik)
+                        setupDataListeners(true);
                     }
+                    lucide.createIcons();
                 });
 
             } catch (error) {
                 console.error("Error initializing Firebase:", error);
-                document.getElementById('user-info').textContent = `Kesalahan: Gagal menginisialisasi Firebase. Cek konsol.`;
+                document.querySelector('header p').textContent = `Kesalahan: Gagal menginisialisasi Firebase. Cek konsol.`;
             }
         };
         
@@ -485,7 +501,7 @@
             try {
                 // Gunakan signInWithEmailAndPassword
                 await signInWithEmailAndPassword(auth, email, password);
-                loginMessage.textContent = 'Login berhasil. Memuat data...';
+                loginMessage.textContent = 'Login berhasil. Memuat data Admin...';
                 loginMessage.classList.remove('text-yellow-600');
                 loginMessage.classList.add('text-nu-green');
             } catch (error) {
@@ -506,7 +522,7 @@
 
         const handleLogout = async () => {
             try {
-                // Fungsi logout murni, onAuthStateChanged akan menangani tampilan selanjutnya
+                // Fungsi logout murni
                 await signOut(auth);
             } catch (error) {
                 console.error("Error during logout:", error);
@@ -535,22 +551,31 @@
                 
                 currentModule = target;
                 
-                if (isAuthReady) {
-                    if (target === 'laporan-tahunan') {
-                        renderLaporanTahunan();
-                    }
-                    // Koin dan Jurnal akan di-render otomatis oleh listener
+                // Panggil render laporan tahunan jika tabnya dipilih
+                if (target === 'laporan-tahunan') {
+                    renderLaporanTahunan();
                 }
+                // Koin dan Jurnal akan di-render otomatis oleh listener
             });
         });
 
         // --- FIREBASE DATA LISTENERS (onSnapshot) ---
 
-        const setupDataListeners = () => {
-            if (!isAuthReady) return;
+        const setupDataListeners = (isPublicMode) => {
+            // Hentikan semua listener yang mungkin sudah ada
+            currentKoinUnsubscribe();
+            currentJurnalUnsubscribe();
+            currentSaldoUnsubscribe();
+            
+            // Tentukan path untuk mode publik (read only)
+            const basePath = `/artifacts/${appId}/users/public_view`;
+
+            // Jika isPublicMode, gunakan basePath, jika tidak, gunakan basePath dengan userId yang sebenarnya.
+            const koinPath = isPublicMode ? `${basePath}/laporan_koin_nu` : collectionPath('laporan_koin_nu');
+            const jurnalPath = isPublicMode ? `${basePath}/jurnal_umum` : collectionPath('jurnal_umum');
+            const saldoDocPath = isPublicMode ? doc(db, `${basePath}/laporan_tahunan`, 'saldo_awal_tahun') : doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun');
 
             // 1. Laporan Koin Listener
-            currentKoinUnsubscribe();
             const dateFilterKoin = document.getElementById('filter-bulan-koin').value;
             let qKoin;
 
@@ -560,24 +585,23 @@
                 dateEnd.setMonth(dateEnd.getMonth() + 1);
                 const end = dateEnd.toISOString().substring(0, 10);
                 
-                qKoin = query(collection(db, collectionPath('laporan_koin_nu')), 
+                qKoin = query(collection(db, koinPath), 
                               where('tanggal', '>=', start),
                               where('tanggal', '<', end),
                               orderBy('tanggal', 'desc'));
             } else {
-                qKoin = query(collection(db, collectionPath('laporan_koin_nu')), orderBy('tanggal', 'desc'));
+                qKoin = query(collection(db, koinPath), orderBy('tanggal', 'desc'));
             }
 
             currentKoinUnsubscribe = onSnapshot(qKoin, (snapshot) => {
                 const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderLaporanKoin(data);
+                renderLaporanKoin(data, isPublicMode);
             }, (error) => {
                 console.error("Error listening to Laporan Koin:", error);
-                document.getElementById('tbody-laporan-koin').innerHTML = `<tr><td colspan="11" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
+                document.getElementById('tbody-laporan-koin').innerHTML = `<tr><td colspan="12" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
             });
 
             // 2. Jurnal Umum Listener
-            currentJurnalUnsubscribe();
             const dateFilterJurnal = document.getElementById('filter-bulan-jurnal').value;
             let qJurnal;
 
@@ -587,12 +611,12 @@
                 dateEnd.setMonth(dateEnd.getMonth() + 1);
                 const end = dateEnd.toISOString().substring(0, 10);
 
-                qJurnal = query(collection(db, collectionPath('jurnal_umum')), 
+                qJurnal = query(collection(db, jurnalPath), 
                                 where('tanggal', '>=', start),
                                 where('tanggal', '<', end),
                                 orderBy('tanggal', 'asc')); // ASC untuk saldo berjalan
             } else {
-                qJurnal = query(collection(db, collectionPath('jurnal_umum')), orderBy('tanggal', 'asc')); // ASC untuk saldo berjalan
+                qJurnal = query(collection(db, jurnalPath), orderBy('tanggal', 'asc')); // ASC untuk saldo berjalan
             }
 
 
@@ -606,14 +630,14 @@
                 const end = dateEnd.toISOString().substring(0, 10);
 
                 // Ambil data Koin bulan ini untuk menghitung otomatis
-                const qKoinForJurnal = query(collection(db, collectionPath('laporan_koin_nu')), 
+                const qKoinForJurnal = query(collection(db, koinPath), 
                                             where('tanggal', '>=', start),
                                             where('tanggal', '<', end));
                 
-                const koinSnapshot = await getDocs(qKoinForJugaforJurnal);
+                const koinSnapshot = await getDocs(qKoinForJurnal);
                 const koinData = koinSnapshot.docs.map(doc => doc.data());
 
-                renderJurnalUmum(data, koinData, currentMonth);
+                renderJurnalUmum(data, koinData, currentMonth, isPublicMode);
 
             }, (error) => {
                 console.error("Error listening to Jurnal Umum:", error);
@@ -621,12 +645,13 @@
             });
             
             // 3. Saldo Awal Listener (untuk Laporan Tahunan)
-            currentSaldoUnsubscribe();
-            const saldoDocRef = doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun');
-            currentSaldoUnsubscribe = onSnapshot(saldoDocRef, (docSnap) => {
+            currentSaldoUnsubscribe = onSnapshot(saldoDocPath, (docSnap) => {
                 const data = docSnap.exists() ? docSnap.data() : { bank: 0, tunai: 0 };
-                document.getElementById('saldo-bank').value = data.bank || 0;
-                document.getElementById('saldo-tunai').value = data.tunai || 0;
+                // Hanya isi input form jika mode admin
+                if (!isPublicMode) {
+                    document.getElementById('saldo-bank').value = data.bank || 0;
+                    document.getElementById('saldo-tunai').value = data.tunai || 0;
+                }
 
                 if (currentModule === 'laporan-tahunan') {
                      renderLaporanTahunan();
@@ -639,12 +664,12 @@
         // --- RENDER FUNCTIONS ---
 
         // Modul 1: Laporan Dana Koin
-        const renderLaporanKoin = (data) => {
+        const renderLaporanKoin = (data, isPublicMode) => {
             const tbody = document.getElementById('tbody-laporan-koin');
             tbody.innerHTML = '';
             
             if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-gray-500">Belum ada data Koin.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="12" class="text-center py-4 text-gray-500">Belum ada data Koin.</td></tr>`;
                 lucide.createIcons();
                 return;
             }
@@ -661,6 +686,19 @@
                 const diff = total - (ranting + petugas + mwc + pc);
                 const finalRanting = ranting + diff; // Tambahkan selisih ke Ranting
 
+                let aksiHtml = 'Publik';
+                if (!isPublicMode) {
+                    aksiHtml = `
+                        <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.editKoin('${item.id}', '${item.tanggal}', '${item.nama_petugas}', '${item.no_hp || ''}', '${item.donatur_kelompok}', '${item.alamat_rtrw || ''}', ${total})">
+                            <i data-lucide="edit" class="w-4 h-4 inline-block"></i>
+                        </button>
+                        <button class="text-red-500 hover:text-red-700" onclick="window.deleteKoin('${item.id}', ${total})">
+                            <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
+                        </button>
+                    `;
+                }
+
+
                 const row = `
                     <tr class="hover:bg-gray-50">
                         <td class="center-text">${data.length - index}</td>
@@ -674,14 +712,7 @@
                         <td class="text-right">${formatRupiah(petugas)}</td>
                         <td class="text-right">${formatRupiah(mwc)}</td>
                         <td class="text-right">${formatRupiah(pc)}</td>
-                        <td class="center-text">
-                            <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.editKoin('${item.id}', '${item.tanggal}', '${item.nama_petugas}', '${item.no_hp || ''}', '${item.donatur_kelompok}', '${item.alamat_rtrw || ''}', ${total})">
-                                <i data-lucide="edit" class="w-4 h-4 inline-block"></i>
-                            </button>
-                            <button class="text-red-500 hover:text-red-700" onclick="window.deleteKoin('${item.id}', ${total})">
-                                <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
-                            </button>
-                        </td>
+                        <td class="center-text">${aksiHtml}</td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', row);
@@ -690,7 +721,7 @@
         };
 
         // Modul 2: Jurnal Umum
-        const renderJurnalUmum = async (data, koinData, currentMonth) => {
+        const renderJurnalUmum = async (data, koinData, currentMonth, isPublicMode) => {
             const tbody = document.getElementById('tbody-jurnal-umum');
             const tfootMasuk = document.getElementById('total-masuk');
             const tfootKeluar = document.getElementById('total-keluar');
@@ -698,10 +729,11 @@
 
             tbody.innerHTML = '';
             
-            // 1. Dapatkan Saldo Bulan Lalu (Manual Input)
-            let saldoBulanLaluValue = 0;
-            const saldoRef = doc(db, collectionPath('jurnal_umum'), `saldo_awal_${currentMonth}`); // Saldo disimpan per bulan
+            // 1. Dapatkan Saldo Bulan Lalu (Manual Input) - Gunakan path yang sesuai
+            const saldoRefPath = isPublicMode ? `/artifacts/${appId}/users/public_view/jurnal_umum` : collectionPath('jurnal_umum');
+            const saldoRef = doc(db, saldoRefPath, `saldo_awal_${currentMonth}`);
             
+            let saldoBulanLaluValue = 0;
             try {
                 const saldoSnap = await getDoc(saldoRef);
                 if (saldoSnap.exists()) {
@@ -725,12 +757,14 @@
             
             // A. SALDO BULAN LALU (Input Manual)
             currentSaldo += saldoBulanLaluValue;
+            let aksiSaldo = isPublicMode ? 'Publik' : `<button class="text-nu-yellow hover:text-yellow-700" onclick="window.editSaldoBulanLalu('${currentMonth}', ${saldoBulanLaluValue})"><i data-lucide="edit" class="w-4 h-4 inline-block"></i></button>`;
+
             manualRows.push({
                 keterangan: 'SALDO BULAN LALU (Input Manual)',
                 dana_masuk: saldoBulanLaluValue,
                 dana_keluar: 0,
                 kategori: 'SALDO',
-                aksi: `<button class="text-nu-yellow hover:text-yellow-700" onclick="window.editSaldoBulanLalu('${currentMonth}', ${saldoBulanLaluValue})"><i data-lucide="edit" class="w-4 h-4 inline-block"></i></button>`,
+                aksi: aksiSaldo,
                 saldo: currentSaldo,
                 style: 'bg-yellow-100 font-bold',
                 no: '-'
@@ -817,6 +851,19 @@
                 // Ganti formatTanggalIndonesia agar tidak ada penambahan hari
                 const displayDate = new Date(item.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
 
+                let aksiJurnal = 'Publik';
+                if (!isPublicMode) {
+                    aksiJurnal = `
+                        <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.editJurnal('${item.id}', '${item.tanggal}', '${item.keterangan}', '${item.jenis_transaksi}', '${item.kategori}', ${masuk > 0 ? masuk : keluar}, '${JSON.stringify(penerimaObj).replace(/"/g, '&quot;')}')">
+                            <i data-lucide="edit" class="w-4 h-4 inline-block"></i>
+                        </button>
+                        <button class="text-red-500 hover:text-red-700" onclick="window.deleteJurnal('${item.id}')">
+                            <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
+                        </button>
+                    `;
+                }
+
+
                 const row = `
                     <tr class="hover:bg-gray-50">
                         <td class="center-text">${rowNoCounter++}</td>
@@ -827,14 +874,7 @@
                         <td class="text-right text-nu-green">${item.jenis_transaksi === 'MASUK' ? formatRupiah(masuk) : ''}</td>
                         <td class="text-right text-red-600">${item.jenis_transaksi === 'KELUAR' ? formatRupiah(keluar) : ''}</td>
                         <td class="text-right font-bold">${formatRupiah(currentSaldo)}</td>
-                        <td class="center-text">
-                            <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.editJurnal('${item.id}', '${item.tanggal}', '${item.keterangan}', '${item.jenis_transaksi}', '${item.kategori}', ${masuk > 0 ? masuk : keluar}, '${JSON.stringify(penerimaObj).replace(/"/g, '&quot;')}')">
-                                <i data-lucide="edit" class="w-4 h-4 inline-block"></i>
-                            </button>
-                            <button class="text-red-500 hover:text-red-700" onclick="window.deleteJurnal('${item.id}')">
-                                <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
-                            </button>
-                        </td>
+                        <td class="center-text">${aksiJurnal}</td>
                     </tr>
                 `;
                 tbody.insertAdjacentHTML('beforeend', row);
@@ -850,8 +890,6 @@
 
         // Modul 3: Laporan Tahunan
         const renderLaporanTahunan = async () => {
-            if (!isAuthReady) return;
-
             const tbody = document.getElementById('tbody-laporan-tahunan');
             tbody.innerHTML = '';
             
@@ -861,8 +899,15 @@
                 return;
             }
 
+            // Tentukan path untuk mode publik atau admin (read only)
+            const isPublicMode = !userId;
+            const basePath = isPublicMode ? `/artifacts/${appId}/users/public_view` : `/artifacts/${appId}/users/${userId}`;
+            const jurnalPath = `${basePath}/jurnal_umum`;
+            const koinPath = `${basePath}/laporan_koin_nu`;
+            const saldoDocPath = doc(db, `${basePath}/laporan_tahunan`, 'saldo_awal_tahun');
+
             // 1. Dapatkan Saldo Awal Tahun
-            const saldoAwalDoc = await getDoc(doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun'));
+            const saldoAwalDoc = await getDoc(saldoDocPath);
             const saldoAwal = saldoAwalDoc.exists() ? saldoAwalDoc.data() : { bank: 0, tunai: 0 };
             const totalSaldoAwal = (saldoAwal.bank || 0) + (saldoAwal.tunai || 0);
 
@@ -871,7 +916,7 @@
             const endYear = `${parseInt(selectedYear) + 1}-01-01`;
 
             const qJurnalTahunan = query(
-                collection(db, collectionPath('jurnal_umum')),
+                collection(db, jurnalPath),
                 where('tanggal', '>=', startYear),
                 where('tanggal', '<', endYear),
                 orderBy('tanggal', 'asc')
@@ -884,7 +929,7 @@
 
             // 4. Hitung Saldo Koin per bulan (Total Penerimaan Koin)
             const qKoinTahunan = query(
-                collection(db, collectionPath('laporan_koin_nu')),
+                collection(db, koinPath),
                 where('tanggal', '>=', startYear),
                 where('tanggal', '<', endYear)
             );
@@ -939,14 +984,6 @@
             // 6. Render Data Bulanan
             let rowCounter = 3;
             monthlyData.forEach((month, index) => {
-                // Hitung total penerimaan non-koin + saldo bulan lalu
-                const monthKey = `${selectedYear}-${String(index + 1).padStart(2, '0')}`;
-                
-                // Cari Saldo Bulan Lalu untuk bulan ini di Jurnal Umum
-                const saldoRef = doc(db, collectionPath('jurnal_umum'), `saldo_awal_${monthKey}`);
-                let saldoAwalBulan = 0;
-                // Ini hanya untuk menghitung Saldo Bulan Lalu di Jurnal Umum, tidak perlu di sini
-
                 const totalPenerimaan = month.penerimaan.koin + month.penerimaan.non_koin;
                 const totalPengeluaran = month.pengeluaran.wajib.total + month.pengeluaran.lain_lain.total;
                 const saldoAkhirBulan = totalPenerimaan - totalPengeluaran;
@@ -1081,6 +1118,7 @@
 
         // Fungsi CRUD Koin
         window.editKoin = (id, tanggal, petugas, nohp, donatur, alamat, nominal) => {
+            if (!userId) { alert("Anda harus login untuk mengedit."); return; }
             document.getElementById('koin-doc-id').value = id;
             document.getElementById('koin-tanggal').value = tanggal;
             document.getElementById('koin-petugas').value = petugas;
@@ -1100,6 +1138,7 @@
         });
 
         window.deleteKoin = async (id, nominal) => {
+            if (!userId) { alert("Anda harus login untuk menghapus."); return; }
             if (!confirm(`Yakin ingin menghapus data koin nominal ${formatRupiah(nominal)}?`)) return;
             
             try {
@@ -1113,6 +1152,7 @@
 
         document.getElementById('form-laporan-koin').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!userId) { alert("Anda harus login untuk menyimpan."); return; }
             const id = document.getElementById('koin-doc-id').value;
             const tanggal = document.getElementById('koin-tanggal').value;
             const nama_petugas = document.getElementById('koin-petugas').value;
@@ -1149,6 +1189,7 @@
 
         // Fungsi CRUD Jurnal Umum
         window.editJurnal = (id, tanggal, keterangan, jenis, kategori, nominal, penerimaJsonString) => {
+            if (!userId) { alert("Anda harus login untuk mengedit."); return; }
             document.getElementById('jurnal-doc-id').value = id;
             document.getElementById('jurnal-tanggal').value = tanggal;
             document.getElementById('jurnal-keterangan').value = keterangan;
@@ -1176,6 +1217,7 @@
         });
         
         window.deleteJurnal = async (id) => {
+            if (!userId) { alert("Anda harus login untuk menghapus."); return; }
             if (!confirm(`Yakin ingin menghapus entri Jurnal Umum ini?`)) return;
             try {
                 await deleteDoc(doc(db, collectionPath('jurnal_umum'), id));
@@ -1188,6 +1230,7 @@
 
         document.getElementById('form-jurnal-umum').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!userId) { alert("Anda harus login untuk menyimpan."); return; }
             const id = document.getElementById('jurnal-doc-id').value;
             const tanggal = document.getElementById('jurnal-tanggal').value;
             const keterangan = document.getElementById('jurnal-keterangan').value;
@@ -1239,6 +1282,7 @@
         // --- CRUD Saldo Bulan Lalu (Baris Otomatis Jurnal Umum) ---
 
         window.editSaldoBulanLalu = async (monthKey, currentSaldo) => {
+            if (!userId) { alert("Anda harus login untuk mengedit."); return; }
             const newSaldo = prompt(`Masukkan Saldo Bulan Lalu untuk ${monthKey} (saat ini: ${formatRupiah(currentSaldo)}):`);
             if (newSaldo === null) return;
 
@@ -1250,7 +1294,7 @@
                 alert(`Saldo Awal Bulan ${monthKey} berhasil diperbarui. Halaman akan dimuat ulang.`);
                 
                 // Panggil ulang listener agar tabel jurnal diperbarui
-                setupDataListeners();
+                setupDataListeners(false);
             } catch (e) {
                 console.error("Error updating Saldo Bulan Lalu:", e);
                 alert('Gagal memperbarui saldo awal bulan. Cek konsol.');
@@ -1259,11 +1303,13 @@
 
         // --- FORM SALDO AWAL TAHUN (Laporan Tahunan) ---
         document.getElementById('edit-saldo-awal').addEventListener('click', () => {
+            if (!userId) { alert("Anda harus login untuk mengedit."); return; }
             document.getElementById('saldo-awal-input').classList.toggle('hidden');
         });
         
         document.getElementById('form-saldo-awal').addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!userId) { alert("Anda harus login untuk menyimpan."); return; }
             const bank = parseInt(document.getElementById('saldo-bank').value) || 0;
             const tunai = parseInt(document.getElementById('saldo-tunai').value) || 0;
             
@@ -1286,8 +1332,8 @@
         document.getElementById('filter-bulan-koin').value = today;
         document.getElementById('filter-bulan-jurnal').value = today;
 
-        document.getElementById('filter-bulan-koin').addEventListener('change', setupDataListeners);
-        document.getElementById('filter-bulan-jurnal').addEventListener('change', setupDataListeners);
+        document.getElementById('filter-bulan-koin').addEventListener('change', () => setupDataListeners(!userId));
+        document.getElementById('filter-bulan-jurnal').addEventListener('change', () => setupDataListeners(!userId));
         
         // Inisialisasi Filter Tahun pada Modul Laporan Tahunan
         const populateYearFilter = () => {
@@ -1314,6 +1360,7 @@
         
         // Reset Data (Placeholder - Modul Jurnal)
         document.getElementById('reset-data-jurnal').addEventListener('click', () => {
+            if (!userId) { alert("Anda harus login untuk mereset."); return; }
             alert('Fungsi "Reset Data" (Manual) harus dilakukan dengan sangat hati-hati dan memerlukan konfirmasi berlapis. Saat ini tidak diimplementasikan untuk mencegah kehilangan data yang tidak disengaja. Untuk mereset, hapus data secara manual per bulan.');
         });
 
