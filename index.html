@@ -436,11 +436,15 @@
                         populateYearFilter();
 
                     } else {
-                        // Coba sign in dengan custom token atau anonim
+                        // Coba sign in dengan custom token. Tidak mengizinkan anonim.
                         if (initialAuthToken) {
                             await signInWithCustomToken(auth, initialAuthToken);
                         } else {
-                            await signInAnonymously(auth);
+                            // PENGAMANAN: Jika tidak ada token khusus, tidak ada login.
+                            document.getElementById('user-id-display').textContent = 'TIDAK LOGIN';
+                            document.getElementById('user-info').textContent = 'Akses Ditolak. Anda harus login sebagai administrator.';
+                            alert('Akses Ditolak. Anda harus login sebagai administrator untuk menggunakan aplikasi ini.');
+                            console.error('Akses Ditolak: Gagal autentikasi. Token kustom tidak ditemukan.');
                         }
                     }
                 });
@@ -454,7 +458,7 @@
         const handleLogout = async () => {
             try {
                 await signOut(auth);
-                // Setelah logout, onAuthStateChanged akan dipanggil, dan user akan sign in anonim/custom token lagi
+                // Setelah logout, onAuthStateChanged akan dipanggil, dan user akan dialihkan ke pesan 'Akses Ditolak'.
             } catch (error) {
                 console.error("Error during logout:", error);
             }
