@@ -59,8 +59,12 @@
         <tbody>
             <tr><td>-</td><td>Saldo Bulan Lalu</td><td class="text-right">0</td><td class="text-right">0</td><td id="m2-saldo-awal" class="text-right">0</td></tr>
             <tr><td>1</td><td style="font-weight: bold;">Penerimaan Dana KOIN NU (100% Total)</td><td id="m2-dana-masuk-koin" class="text-right">0</td><td class="text-right">0</td><td id="m2-saldo-penerimaan" class="text-right">0</td></tr>
-            <tr><td>2</td><td>Pengeluaran Honor Wajib (40%)</td><td class="text-right">0</td><td id="m2-dana-keluar-honor" class="text-right">0</td><td id="m2-saldo-honor" class="text-right">0</td></tr>
-            <tr><td>3</td><td>Bantuan Sosial/Lain-lain</td><td class="text-right">0</td><td id="m2-dana-keluar-sosial" class="text-right">0</td><td id="m2-saldo-akhir" class="text-right">0</td></tr>
+            
+            <tr><td>2</td><td>Pengeluaran Honor Petugas (10%)</td><td class="text-right">0</td><td id="m2-dana-keluar-honor-petugas" class="text-right">0</td><td id="m2-saldo-honor-petugas" class="text-right">0</td></tr>
+            <tr><td>3</td><td>Pengeluaran Honor MWC (25%)</td><td class="text-right">0</td><td id="m2-dana-keluar-honor-mwc" class="text-right">0</td><td id="m2-saldo-honor-mwc" class="text-right">0</td></tr>
+            <tr><td>4</td><td>Pengeluaran Honor PC (5%)</td><td class="text-right">0</td><td id="m2-dana-keluar-honor-pc" class="text-right">0</td><td id="m2-saldo-honor-pc" class="text-right">0</td></tr>
+            
+            <tr><td>5</td><td>Bantuan Sosial/Lain-lain</td><td class="text-right">0</td><td id="m2-dana-keluar-sosial" class="text-right">0</td><td id="m2-saldo-akhir" class="text-right">0</td></tr>
         </tbody>
         <tfoot>
             <tr>
@@ -124,6 +128,13 @@
             { bulan: 'April', penerimaan: 3000000, donatur: 150, pendUang: 0, kesUang: 0, ekoUang: 0, sosialLain: 0, honorWajibPercent: 0.40 },
             { bulan: 'Mei', penerimaan: 7000000, donatur: 350, pendUang: 1000000, kesUang: 0, ekoUang: 0, sosialLain: 500000, honorWajibPercent: 0.40 },
         ];
+        
+        // Konstanta alokasi Honor (digunakan di Modul 2)
+        const HONOR_RATES = {
+            petugas: 0.10,
+            mwc: 0.25,
+            pc: 0.05
+        };
 
         // --- HELPER FUNCTION ---
         const formatNominal = (angka) => {
@@ -132,7 +143,6 @@
         };
         const parseInput = (id) => {
             const element = document.getElementById(id);
-            // Menambahkan pengecekan elemen ada atau tidak, untuk mencegah error
             if (element) {
                 return parseFloat(element.value) || 0;
             }
@@ -146,14 +156,12 @@
                 const prefix = `m1-${index}-`;
                 data.push({
                     bulan: monthData.bulan,
-                    // Diambil dari input
                     penerimaan: parseInput(prefix + 'penerimaan'),
                     donatur: parseInput(prefix + 'donatur'),
                     pendUang: parseInput(prefix + 'pendidikan'),
                     kesUang: parseInput(prefix + 'kesehatan'),
-                    ekoUang: parseInput(prefix + 'ekonomi'), // Pastikan ID 'ekonomi' digunakan di sini
+                    ekoUang: parseInput(prefix + 'ekonomi'),
                     sosialLain: parseInput(prefix + 'sosial'),
-                    // Honor wajib diambil dari konstanta 0.40
                     honorWajibPercent: monthData.honorWajibPercent 
                 });
             });
@@ -165,8 +173,13 @@
             if (data.length === 0) return;
             const dataJan = data[0];
             const totalPenerimaan = dataJan.penerimaan; 
-            const honorWajib = totalPenerimaan * dataJan.honorWajibPercent; 
-            const pengeluaranSosial = dataJan.sosialLain; // Diambil dari input Sosial/Lain
+            const pengeluaranSosial = dataJan.sosialLain;
+
+            // Perhitungan Honor Rinci
+            const honorPetugas = totalPenerimaan * HONOR_RATES.petugas;
+            const honorMWC = totalPenerimaan * HONOR_RATES.mwc;
+            const honorPC = totalPenerimaan * HONOR_RATES.pc;
+            const totalHonor = honorPetugas + honorMWC + honorPC; 
 
             let saldoJurnalUmum = 0;
             let totalMasuk = 0;
@@ -180,18 +193,28 @@
             document.getElementById('m2-dana-masuk-koin').textContent = formatNominal(totalPenerimaan);
             document.getElementById('m2-saldo-penerimaan').textContent = formatNominal(saldoJurnalUmum);
 
-            // 2. Pengeluaran Honor Wajib (40%)
-            saldoJurnalUmum -= honorWajib;
-            totalKeluar += honorWajib;
-            document.getElementById('m2-dana-keluar-honor').textContent = formatNominal(honorWajib);
-            document.getElementById('m2-saldo-honor').textContent = formatNominal(saldoJurnalUmum);
+            // 2. Pengeluaran Honor Petugas (10%)
+            saldoJurnalUmum -= honorPetugas;
+            document.getElementById('m2-dana-keluar-honor-petugas').textContent = formatNominal(honorPetugas);
+            document.getElementById('m2-saldo-honor-petugas').textContent = formatNominal(saldoJurnalUmum);
+
+            // 3. Pengeluaran Honor MWC (25%)
+            saldoJurnalUmum -= honorMWC;
+            document.getElementById('m2-dana-keluar-honor-mwc').textContent = formatNominal(honorMWC);
+            document.getElementById('m2-saldo-honor-mwc').textContent = formatNominal(saldoJurnalUmum);
+
+            // 4. Pengeluaran Honor PC (5%)
+            saldoJurnalUmum -= honorPC;
+            document.getElementById('m2-dana-keluar-honor-pc').textContent = formatNominal(honorPC);
+            document.getElementById('m2-saldo-honor-pc').textContent = formatNominal(saldoJurnalUmum);
             
-            // 3. Bantuan Sosial/Lain-lain
+            // 5. Bantuan Sosial/Lain-lain
             saldoJurnalUmum -= pengeluaranSosial;
-            totalKeluar += pengeluaranSosial;
             document.getElementById('m2-dana-keluar-sosial').textContent = formatNominal(pengeluaranSosial);
             document.getElementById('m2-saldo-akhir').textContent = formatNominal(saldoJurnalUmum);
 
+            // FOOTER MODUL 2
+            totalKeluar = totalHonor + pengeluaranSosial;
             document.getElementById('m2-total-masuk').textContent = formatNominal(totalMasuk);
             document.getElementById('m2-total-keluar').textContent = formatNominal(totalKeluar);
         }
@@ -211,11 +234,12 @@
             let totalEkoUangTahunan = 0;
 
             let saldoKasTahunBerjalan = 0; 
-            let saldoAkhirPeriode = 0; // Untuk menyimpan saldo kas akhir
+            let saldoAkhirPeriode = 0; 
 
             data.forEach((dataBulan, index) => {
                 const no = index + 1;
-                const honorWajib = dataBulan.penerimaan * dataBulan.honorWajibPercent;
+                // Honor Wajib (40% total)
+                const honorWajib = dataBulan.penerimaan * dataBulan.honorWajibPercent; 
                 
                 // Total Pengeluaran Kolom 7
                 const jmlPengeluaranBulanIni = honorWajib + dataBulan.pendUang + dataBulan.kesUang + dataBulan.ekoUang + dataBulan.sosialLain;
@@ -288,7 +312,6 @@
             INITIAL_DATA_SOURCE.forEach((data, index) => {
                 const prefix = `m1-${index}-`;
                 const row = inputBody.insertRow();
-                // Baris input harus sesuai dengan header: Penerimaan | Donatur | Pendidikan | Kesehatan | Ekonomi | Sosial
                 row.innerHTML = `
                     <td>${data.bulan.toUpperCase()}</td>
                     <td><input type="number" id="${prefix}penerimaan" value="${data.penerimaan}" min="0"></td>
@@ -301,10 +324,8 @@
             });
             
             // 2. Attach Event Listeners to ALL input fields
-            // Kita harus memilih semua input yang baru saja dibuat
             const inputs = document.querySelectorAll('#m1-input-body input[type="number"]');
             inputs.forEach(input => {
-                // Gunakan event 'input' agar perubahan langsung terlihat
                 input.addEventListener('input', recalculateAllReports);
             });
 
