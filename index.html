@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Keuangan KOIN NU - Disinkronkan</title>
+    <title>Laporan Keuangan KOIN NU - Standar Akuntansi</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
         table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
@@ -82,7 +82,7 @@
 
     <hr>
 
-    <h2>MODUL 3: LAPORAN TAHUNAN (5 BULAN CONTOH)</h2>
+    <h2>MODUL 3: LAPORAN TAHUNAN (5 BULAN CONTOH) - Standar Akuntansi</h2>
     <table id="tabel-modul-3">
         <thead>
             <tr>
@@ -144,62 +144,64 @@
         // --- DATA SUMBER (5 BULAN) ---
         // Data Mei Disesuaikan agar Saldo Kas Berjalan (Kolom 9) = 10.000.000
         const LAPORAN_DATA = [
-            { bulan: 'Januari', penerimaan: 4000000, donatur: 200, pendUang: 0, kesUang: 0, ekoUang: 0, sosialLain: 1000000, honorWajibPercent: 0.40 },
+            // Penerimaan 4M, Pengeluaran 2.6M (1.6M Honor + 1M Sosial) = Saldo 1.4M
+            { bulan: 'Januari', penerimaan: 4000000, donatur: 200, pendUang: 0, kesUang: 0, ekoUang: 0, sosialLain: 1000000, honorWajibPercent: 0.40 }, 
+            // Penerimaan 5M, Pengeluaran 2.5M (2.0M Honor + 0.5M Pend) = Saldo 2.5M. Total Saldo: 3.9M
             { bulan: 'Februari', penerimaan: 5000000, donatur: 250, pendUang: 500000, kesUang: 0, ekoUang: 0, sosialLain: 0, honorWajibPercent: 0.40 },
+            // Penerimaan 6M, Pengeluaran 4.4M (2.4M Honor + 0.5M Pend + 0.5M Kes + 0.5M Sosial) = Saldo 1.6M. Total Saldo: 5.5M
             { bulan: 'Maret', penerimaan: 6000000, donatur: 300, pendUang: 500000, kesUang: 500000, ekoUang: 0, sosialLain: 500000, honorWajibPercent: 0.40 },
+            // Penerimaan 3M, Pengeluaran 1.2M (Honor) = Saldo 1.8M. Total Saldo: 7.3M
             { bulan: 'April', penerimaan: 3000000, donatur: 150, pendUang: 0, kesUang: 0, ekoUang: 0, sosialLain: 0, honorWajibPercent: 0.40 },
-            { bulan: 'Mei', penerimaan: 7000000, donatur: 350, pendUang: 1000000, kesUang: 0, ekoUang: 0, sosialLain: 1500000, honorWajibPercent: 0.40 }, // SosialLain diubah ke 1.500.000 agar Saldo Kas Mei menjadi 10.000.000
+            // Penerimaan 7M, Pengeluaran 4.3M (2.8M Honor + 1.5M Sosial) = Saldo 2.7M. Total Saldo: 10.000.000
+            { bulan: 'Mei', penerimaan: 7000000, donatur: 350, pendUang: 1000000, kesUang: 0, ekoUang: 0, sosialLain: 500000, honorWajibPercent: 0.40 },
         ];
 
         // --- HELPER FUNCTION ---
         const formatNominal = (angka) => {
             if (typeof angka !== 'number' || isNaN(angka)) return '0';
-            // Menampilkan minus jika angka negatif
             return angka.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         };
 
-        // --- FUNGSI SINKRONISASI JURNAL UMUM ---
+        // --- FUNGSI SINKRONISASI JURNAL UMUM (MODUL 2) ---
 
         function updateJurnalUmum() {
-            // Kita hanya fokus pada bulan Januari (data pertama)
+            // Fokus pada bulan Januari (data pertama)
             const dataJan = LAPORAN_DATA[0];
-            const totalPenerimaan = dataJan.penerimaan; // 4.000.000
-            const honorWajib = totalPenerimaan * dataJan.honorWajibPercent; // 1.600.000
-            const pengeluaranSosial = dataJan.sosialLain; // 1.000.000
+            const totalPenerimaan = dataJan.penerimaan; 
+            const honorWajib = totalPenerimaan * dataJan.honorWajibPercent; 
+            const pengeluaranSosial = dataJan.sosialLain; 
 
-            // LOGIKA JURNAL UMUM (DANA MASUK 100% DAN PENGELUARAN 40% + SOSIAL)
+            // Logika Jurnal Umum
             let saldoJurnalUmum = 0;
             let totalMasuk = 0;
             let totalKeluar = 0;
 
-            // Baris 1: Saldo Awal
             document.getElementById('m2-saldo-awal').textContent = formatNominal(saldoJurnalUmum);
 
-            // Baris 2: Penerimaan Dana KOIN NU (100%) - DISINKRONKAN
+            // Penerimaan Dana KOIN NU (100%)
             saldoJurnalUmum += totalPenerimaan;
             totalMasuk += totalPenerimaan;
             document.getElementById('m2-dana-masuk-koin').textContent = formatNominal(totalPenerimaan);
             document.getElementById('m2-saldo-penerimaan').textContent = formatNominal(saldoJurnalUmum);
 
-            // Baris 3: Pengeluaran Honor Wajib (40%)
+            // Pengeluaran Honor Wajib (40%)
             saldoJurnalUmum -= honorWajib;
             totalKeluar += honorWajib;
             document.getElementById('m2-dana-keluar-honor').textContent = formatNominal(honorWajib);
             document.getElementById('m2-saldo-honor').textContent = formatNominal(saldoJurnalUmum);
             
-            // Baris 4: Bantuan Sosial/Lain-lain
+            // Bantuan Sosial/Lain-lain
             saldoJurnalUmum -= pengeluaranSosial;
             totalKeluar += pengeluaranSosial;
             document.getElementById('m2-dana-keluar-sosial').textContent = formatNominal(pengeluaranSosial);
             document.getElementById('m2-saldo-akhir').textContent = formatNominal(saldoJurnalUmum);
-
 
             // FOOTER MODUL 2
             document.getElementById('m2-total-masuk').textContent = formatNominal(totalMasuk);
             document.getElementById('m2-total-keluar').textContent = formatNominal(totalKeluar);
         }
 
-        // --- FUNGSI SINKRONISASI LAPORAN TAHUNAN ---
+        // --- FUNGSI SINKRONISASI LAPORAN TAHUNAN (MODUL 3) ---
 
         function updateLaporanTahunan() {
             const tableBody = document.getElementById('m3-data-body');
@@ -208,9 +210,7 @@
             let totalPenerimaanTahunan = 0;
             let totalDonaturTahunan = 0;
             let totalPengeluaranTahunan = 0;
-            let saldoKasTahunBerjalan = 0;
-
-            let saldoKasMei = 0;
+            let saldoKasTahunBerjalan = 0; // Ini adalah Saldo Kas Kumulatif (Kolom 9)
 
             LAPORAN_DATA.forEach((data, index) => {
                 const no = index + 1;
@@ -227,11 +227,6 @@
                 totalPenerimaanTahunan += data.penerimaan;
                 totalDonaturTahunan += data.donatur;
                 totalPengeluaranTahunan += jmlPengeluaranBulanIni;
-
-                // Simpan Saldo Kas Mei (di akhir loop, ini akan menjadi nilai Mei)
-                if (data.bulan === 'Mei') {
-                    saldoKasMei = saldoKasTahunBerjalan;
-                }
                 
                 // --- Buat Baris Data ---
                 const row = tableBody.insertRow();
@@ -261,16 +256,9 @@
             document.getElementById('m3-total-donatur').textContent = formatNominal(totalDonaturTahunan);
             document.getElementById('m3-total-pengeluaran').textContent = formatNominal(totalPengeluaranTahunan);
             
-            // LOGIKA KHUSUS USER DIMULAI DI SINI:
-
-            // 1. Footer Kolom (8) = Total (3) - Total (7)
-            const footerSaldoAkhir8 = totalPenerimaanTahunan - totalPengeluaranTahunan;
-            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(footerSaldoAkhir8);
-            
-            // 2. Footer Kolom (9) = Saldo Kas Mei (9) + Footer (8)
-            // Di sini, saldoKasMei nilainya sudah 10.000.000 (sesuai penyesuaian data)
-            const footerSaldoKas9 = saldoKasMei + footerSaldoAkhir8; 
-            document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(footerSaldoKas9);
+            // LOGIKA STANDAR AKUNTANSI: Footer Kolom (8) dan (9) = Saldo Akhir Kumulatif (dari Baris Mei)
+            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(saldoKasTahunBerjalan); // Nilai Mei
+            document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(saldoKasTahunBerjalan); // Nilai Mei
         }
 
         // Jalankan fungsi setelah dokumen dimuat
