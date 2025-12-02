@@ -1382,7 +1382,7 @@ function editAnnualData(id, key, currentValue, isText = false) {
             document.getElementById('tahunan-edit-input-area').style.display = 'none';
         }
         
-       async function saveAnnualReportData() {
+       window.saveAnnualReportData = async function() {
     if (!annualEditData) return;
 
     let newValue;
@@ -1399,7 +1399,7 @@ function editAnnualData(id, key, currentValue, isText = false) {
     const { id, key, isText } = annualEditData;
     const type = id.split(/_|_/)[0];
 
-    // 1. CARI TARGET DATA (MENGGUNAKAN LOGIKA PENCARIAN YANG SUDAH KITA PERBAIKI)
+    // 1. CARI TARGET DATA (LOGIKA PENCARIAN YANG DIPERBAIKI)
     let targetData = null;
     if (id.startsWith('monthly_')) {
         const parts = id.split('_');
@@ -1432,16 +1432,11 @@ function editAnnualData(id, key, currentValue, isText = false) {
         if (type.startsWith('saldo')) {
             updateObject = { nominal: newValue };
         } else {
-            // Ini adalah format update yang paling aman untuk nested data di Firestore
             updateObject[key] = newValue; 
         }
         
         // Lakukan pembaruan ke Firestore
         await updateDoc(docRef, updateObject); 
-        
-        // =================================================================
-        // 3. REFRESH DATA SETELAH UPDATE SUKSES
-        // =================================================================
         
         // Panggil ulang semua koleksi dari Firestore untuk memastikan data terbaru tampil
         await loadAllCollections(); 
@@ -1449,9 +1444,9 @@ function editAnnualData(id, key, currentValue, isText = false) {
         alert('Perubahan data tahunan berhasil disimpan ke Firestore!');
         
     } catch(e) { 
-        // Jika gagal, hampir pasti karena izin (permission denied)
-        console.error('Gagal update ke Firestore. Cek Security Rules Anda:', e); 
-        alert('Gagal menyimpan perubahan. Kemungkinan masalah izin (Admin). Cek Security Rules Firestore Anda.'); 
+        // Tangkap error jika izin ditolak oleh Firestore Rules
+        console.error('Gagal update ke Firestore (Error Izin):', e); 
+        alert('Gagal menyimpan perubahan. Kemungkinan masalah izin (Admin) atau sesi login tidak aktif. Detail error ada di Console Browser.'); 
         return; 
     }
     // =================================================================
@@ -1459,7 +1454,7 @@ function editAnnualData(id, key, currentValue, isText = false) {
     // Refresh tampilan
     cancelAnnualEdit();
     filterData('tahunan');
-}
+}; // Catatan: Ada titik koma di sini jika menggunakan window.func = async function()
 
         // --- LOGIC LAPORAN TAHUNAN ---
         
@@ -2257,6 +2252,7 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
 
 
