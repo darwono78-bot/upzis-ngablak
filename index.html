@@ -74,10 +74,10 @@
         <p id="login-message" style="color: red; margin-top: 10px;"></p>
     </div>
 
-    <div id="report-container" style="display: none;">
+    <div id="report-container">
         
         <div style="text-align: right; margin-bottom: 10px;">
-            <button id="logout-btn" onclick="handleLogout()" style="padding: 5px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer;">Logout</button>
+            <button id="logout-btn" class="admin-only" onclick="handleLogout()" style="padding: 5px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer;">Logout</button>
         </div>
 
         <h1>Sistem Input & Laporan KOIN NU Interaktif (Detail Penuh)</h1>
@@ -176,7 +176,8 @@
                     <th class="koin-nu-header" style="width: 7%;">MWC (25%)</th>
                     <th class="koin-nu-header" style="width: 6%;">PC (5%)</th>
                     <th class="koin-nu-header" style="width: 7%;">Ranting (60%)</th>
-                    <th id="th-m1a-aksi" style="width: 4%;">AKSI</th> </tr>
+                    <th id="th-m1a-aksi" style="width: 4%;">AKSI</th> 
+                </tr>
             </thead>
             <tbody id="m1a-transaction-body">
                 </tbody>
@@ -188,7 +189,8 @@
                     <td id="m1a-total-mwc" class="footer-total text-right">0</td>
                     <td id="m1a-total-pc" class="footer-total text-right">0</td>
                     <td id="m1a-total-ranting" class="footer-total text-right">0</td>
-                    <td id="tf-m1a-aksi" class="footer-total text-center">-</td> </tr>
+                    <td id="tf-m1a-aksi" class="footer-total text-center">-</td> 
+                </tr>
             </tfoot>
         </table>
 
@@ -254,7 +256,8 @@
                     <th style="width: 13%;">DANA MASUK (DEBIT)</th>
                     <th style="width: 13%;">DANA KELUAR (KREDIT)</th>
                     <th style="width: 17%;">SALDO</th>
-                    <th id="th-m2-aksi" style="width: 4%;">AKSI</th> </tr>
+                    <th id="th-m2-aksi" style="width: 4%;">AKSI</th> 
+                </tr>
             </thead>
             <tbody id="m2-transaction-body">
                 <tr>
@@ -265,7 +268,8 @@
                         </div>
                         <div id="m2-saldo-awal-static" class="saldo-awal-row text-right" style="padding: 2px 6px;"></div> </td>
                     <td id="m2-saldo-awal-display" class="saldo-awal-row text-right">0</td>
-                    <td id="td-m2-saldo-awal-aksi" class="saldo-awal-row text-center">-</td> </tr>
+                    <td id="td-m2-saldo-awal-aksi" class="saldo-awal-row text-center">-</td> 
+                </tr>
                 </tbody>
             <tfoot>
                 <tr>
@@ -273,7 +277,8 @@
                     <td id="m2-total-masuk" class="footer-total text-right">0</td>
                     <td id="m2-total-keluar" class="footer-total text-right">0</td>
                     <td id="m2-footer-saldo-total" class="footer-total text-right">0</td>
-                    <td id="tf-m2-aksi" class="footer-total text-center">-</td> </tr>
+                    <td id="tf-m2-aksi" class="footer-total text-center">-</td> 
+                </tr>
             </tfoot>
         </table>
 
@@ -452,10 +457,12 @@
             // 1. Toggle visibility of all admin-only elements
             const adminElements = document.querySelectorAll('.admin-only');
             adminElements.forEach(el => {
-                el.style.display = loggedIn ? '' : 'none';
+                // If logged in, show (''), otherwise hide ('none')
+                el.style.display = loggedIn ? '' : 'none'; 
             });
 
             // 2. Toggle visibility of the 'AKSI' column headers/footers
+            // (These elements are part of the public tables but should be hidden if not logged in)
             const aksiHeaders = document.querySelectorAll('#th-m1a-aksi, #th-m2-aksi');
             aksiHeaders.forEach(th => {
                 th.style.display = loggedIn ? 'table-cell' : 'none';
@@ -471,6 +478,7 @@
             if(saldoAwalInput && saldoAwalStatic) {
                 saldoAwalInput.style.display = loggedIn ? 'block' : 'none';
                 saldoAwalStatic.style.display = loggedIn ? 'none' : 'block';
+                // Update static display with the current input value
                 saldoAwalStatic.textContent = formatNominal(parseInput('m2-saldo-awal-input'));
             }
         }
@@ -479,17 +487,16 @@
             checkLoginStatus();
 
             const loginContainer = document.getElementById('login-container');
-            const reportContainer = document.getElementById('report-container');
 
             if (isLoggedIn) {
+                // Hide login form
                 loginContainer.style.display = 'none';
-                reportContainer.style.display = 'block';
             } else {
+                // Show login form
                 loginContainer.style.display = 'block';
-                reportContainer.style.display = 'none';
             }
             
-            // Re-render reports to apply the new visibility settings
+            // Recalculate and re-render reports to apply the new visibility settings and data (e.g. edit buttons)
             recalculateAllReports();
             updateAdminViewVisibility(isLoggedIn);
         }
@@ -746,6 +753,9 @@
 
             // Perbarui tampilan Saldo Awal (Baris 1)
             document.getElementById('m2-saldo-awal-display').textContent = formatNominal(runningSaldo);
+            // Perbarui tampilan Saldo Awal statis untuk publik
+            document.getElementById('m2-saldo-awal-static').textContent = formatNominal(saldoAwal);
+
 
             allTransactions.forEach((t, index) => {
                 const no = index + 2; // Dimulai dari baris ke-2 (setelah Saldo Awal)
@@ -869,7 +879,7 @@
             let rowBank = tableBody.insertRow();
             rowBank.classList.add('saldo-awal-row');
 
-            // Render input atau teks statis berdasarkan status login
+            // Konten input hanya ditampilkan jika logged in
             const bankSaldoContent = isLoggedIn ? 
                 `<input type="number" id="saldo-bank-awal-input" value="${saldoBankAwal}" min="0" style="width: 100%;">` : 
                 formatNominal(saldoBankAwal);
@@ -940,15 +950,18 @@
                 totalBankTahunan += dataBulan.biayaBank;
                 totalLainTahunan += dataBulan.lainLain;
 
-                // Teks atau input
+                // Teks atau input (Input hanya muncul jika logged in)
                 const tdContent = (value, isPenerima = false) => {
+                    const idUang = `m1-${index}-uang`; // ID uang tidak dipakai di sini
                     const id = `m1-${index}-${isPenerima ? 'penerima' : 'uang'}`;
                     const type = isPenerima ? 'text-center' : 'text-right';
                     
                     if (isLoggedIn) {
-                         // As the input is generated in initializeLaporan, we only update value here, but this table is complex.
-                         // For simplicity in this combined view, we ensure the input is placed if logged in.
-                         return `<td class="${type}"><input type="number" id="${id}" value="${value}" min="0"></td>`;
+                         // As the input is generated in initializeLaporan (Modul 1), here we just show the static value from dataBulan.
+                         // But for completeness in the Modul 3 table (which reflects Modul 1 data), we still need to decide what to show.
+                         // Since Modul 1 is hidden and Modul 3 is public, we use the calculated/default value.
+                         // The actual input is handled in Modul 1 table (which is admin-only).
+                         return `<td class="${type}">${formatNominal(value)}</td>`; // Menggunakan formatNominal untuk tampilan publik
                     } else {
                         return `<td class="${type}">${formatNominal(value)}</td>`;
                     }
@@ -1028,7 +1041,8 @@
             
             // Re-attach listeners for dynamically generated Modul 3 and Modul 2 inputs (Only needed when logged in)
             if (isLoggedIn) {
-                const dynamicInputs = document.querySelectorAll('#m3-data-body input[type="number"], #m2-saldo-awal-input');
+                // Ensure event listeners are attached only to the *admin-only* inputs (Modul 1 inputs and Modul 2 Saldo Awal)
+                const dynamicInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"], #m2-saldo-awal-input');
                 dynamicInputs.forEach(input => {
                     input.removeEventListener('input', recalculateAllReports);
                     input.addEventListener('input', recalculateAllReports);
@@ -1040,7 +1054,7 @@
         function initializeLaporan() {
             const inputBody = document.getElementById('m1-input-body');
             
-            // 1. Generate Input Fields (Modul 1) - Used for admin
+            // 1. Generate Input Fields (Modul 1) - Used for admin (Hidden by default)
             INITIAL_DATA_SOURCE.forEach((data, index) => {
                 const prefix = `m1-${index}-`;
                 const row = inputBody.insertRow();
@@ -1075,6 +1089,7 @@
             });
             
             // 2. Attach Event Listeners to Modul 1 & Modul 2 Saldo Awal input
+            // The event listeners must be attached even when not logged in, so they are ready when the user logs in
             const staticInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"], #m2-saldo-awal-input');
             staticInputs.forEach(input => {
                 input.addEventListener('input', recalculateAllReports);
