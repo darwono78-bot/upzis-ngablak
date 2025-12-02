@@ -27,13 +27,14 @@
         <thead>
             <tr>
                 <th rowspan="2">BULAN</th>
-                <th rowspan="2">TOTAL PENERIMAAN KOIN (100%)</th>
-                <th colspan="4">PENGELUARAN (Contoh Kolom Kunci)</th>
+                <th rowspan="2">TOTAL PENERIMAAN KOIN (3)</th>
+                <th rowspan="2">JML DONATUR (4)</th>
+                <th colspan="4">PENGELUARAN SOSIAL/LAIN-LAIN (6)</th>
             </tr>
             <tr>
-                <th>Honor Wajib (Persentase 40%)</th>
                 <th>Pendidikan</th>
                 <th>Kesehatan</th>
+                <th>Ekonomi</th>
                 <th>Sosial & Lain-lain</th>
             </tr>
         </thead>
@@ -129,7 +130,14 @@
             if (typeof angka !== 'number' || isNaN(angka)) return '0';
             return angka.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         };
-        const parseInput = (id) => parseFloat(document.getElementById(id).value) || 0;
+        const parseInput = (id) => {
+            const element = document.getElementById(id);
+            // Menambahkan pengecekan elemen ada atau tidak, untuk mencegah error
+            if (element) {
+                return parseFloat(element.value) || 0;
+            }
+            return 0;
+        };
 
         // --- CORE FUNCTION 1: GATHER DATA FROM INPUTS ---
         function gatherInputData() {
@@ -143,7 +151,7 @@
                     donatur: parseInput(prefix + 'donatur'),
                     pendUang: parseInput(prefix + 'pendidikan'),
                     kesUang: parseInput(prefix + 'kesehatan'),
-                    ekoUang: parseInput(prefix + 'ekonomi'),
+                    ekoUang: parseInput(prefix + 'ekonomi'), // Pastikan ID 'ekonomi' digunakan di sini
                     sosialLain: parseInput(prefix + 'sosial'),
                     // Honor wajib diambil dari konstanta 0.40
                     honorWajibPercent: monthData.honorWajibPercent 
@@ -154,40 +162,36 @@
 
         // --- CORE FUNCTION 2: UPDATE MODUL 2 (JURNAL UMUM) ---
         function updateJurnalUmum(data) {
-            // Hanya menggunakan data bulan Januari (index 0)
             if (data.length === 0) return;
             const dataJan = data[0];
             const totalPenerimaan = dataJan.penerimaan; 
             const honorWajib = totalPenerimaan * dataJan.honorWajibPercent; 
-            // Total Pengeluaran Sosial di Jurnal Umum diambil dari kolom 'Sosial & Lain-lain'
-            const pengeluaranSosial = dataJan.sosialLain; 
+            const pengeluaranSosial = dataJan.sosialLain; // Diambil dari input Sosial/Lain
 
-            // Logika Jurnal Umum
             let saldoJurnalUmum = 0;
             let totalMasuk = 0;
             let totalKeluar = 0;
 
             document.getElementById('m2-saldo-awal').textContent = formatNominal(saldoJurnalUmum);
 
-            // Penerimaan Dana KOIN NU (100%)
+            // 1. Penerimaan Dana KOIN NU (100%)
             saldoJurnalUmum += totalPenerimaan;
             totalMasuk += totalPenerimaan;
             document.getElementById('m2-dana-masuk-koin').textContent = formatNominal(totalPenerimaan);
             document.getElementById('m2-saldo-penerimaan').textContent = formatNominal(saldoJurnalUmum);
 
-            // Pengeluaran Honor Wajib (40%)
+            // 2. Pengeluaran Honor Wajib (40%)
             saldoJurnalUmum -= honorWajib;
             totalKeluar += honorWajib;
             document.getElementById('m2-dana-keluar-honor').textContent = formatNominal(honorWajib);
             document.getElementById('m2-saldo-honor').textContent = formatNominal(saldoJurnalUmum);
             
-            // Bantuan Sosial/Lain-lain
+            // 3. Bantuan Sosial/Lain-lain
             saldoJurnalUmum -= pengeluaranSosial;
             totalKeluar += pengeluaranSosial;
             document.getElementById('m2-dana-keluar-sosial').textContent = formatNominal(pengeluaranSosial);
             document.getElementById('m2-saldo-akhir').textContent = formatNominal(saldoJurnalUmum);
 
-            // FOOTER MODUL 2
             document.getElementById('m2-total-masuk').textContent = formatNominal(totalMasuk);
             document.getElementById('m2-total-keluar').textContent = formatNominal(totalKeluar);
         }
@@ -207,6 +211,7 @@
             let totalEkoUangTahunan = 0;
 
             let saldoKasTahunBerjalan = 0; 
+            let saldoAkhirPeriode = 0; // Untuk menyimpan saldo kas akhir
 
             data.forEach((dataBulan, index) => {
                 const no = index + 1;
@@ -229,6 +234,11 @@
                 totalPendUangTahunan += dataBulan.pendUang;
                 totalKesUangTahunan += dataBulan.kesUang;
                 totalEkoUangTahunan += dataBulan.ekoUang;
+
+                // Simpan saldo kas akhir tahun
+                if (index === data.length - 1) {
+                    saldoAkhirPeriode = saldoKasTahunBerjalan;
+                }
                 
                 // --- Buat Baris Data ---
                 const row = tableBody.insertRow();
@@ -258,10 +268,9 @@
             document.getElementById('m3-total-kes-uang').textContent = formatNominal(totalKesUangTahunan);
             document.getElementById('m3-total-eko-uang').textContent = formatNominal(totalEkoUangTahunan);
 
-            
             // LOGIKA STANDAR AKUNTANSI: Footer Kolom (8) dan (9) = Saldo Akhir Kumulatif (Baris Terakhir)
-            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(saldoKasTahunBerjalan); 
-            document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(saldoKasTahunBerjalan); 
+            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(saldoAkhirPeriode); 
+            document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(saldoAkhirPeriode); 
         }
 
         // --- MAIN CONTROL FUNCTION ---
@@ -279,19 +288,23 @@
             INITIAL_DATA_SOURCE.forEach((data, index) => {
                 const prefix = `m1-${index}-`;
                 const row = inputBody.insertRow();
+                // Baris input harus sesuai dengan header: Penerimaan | Donatur | Pendidikan | Kesehatan | Ekonomi | Sosial
                 row.innerHTML = `
                     <td>${data.bulan.toUpperCase()}</td>
                     <td><input type="number" id="${prefix}penerimaan" value="${data.penerimaan}" min="0"></td>
-                    <td><input type="number" id="${prefix}honor_percent" value="${data.honorWajibPercent * 100}" disabled style="background-color: #eee;"></td>
+                    <td><input type="number" id="${prefix}donatur" value="${data.donatur}" min="0"></td>
                     <td><input type="number" id="${prefix}pendidikan" value="${data.pendUang}" min="0"></td>
                     <td><input type="number" id="${prefix}kesehatan" value="${data.kesUang}" min="0"></td>
+                    <td><input type="number" id="${prefix}ekonomi" value="${data.ekoUang}" min="0"></td>
                     <td><input type="number" id="${prefix}sosial" value="${data.sosialLain}" min="0"></td>
                 `;
             });
             
             // 2. Attach Event Listeners to ALL input fields
+            // Kita harus memilih semua input yang baru saja dibuat
             const inputs = document.querySelectorAll('#m1-input-body input[type="number"]');
             inputs.forEach(input => {
+                // Gunakan event 'input' agar perubahan langsung terlihat
                 input.addEventListener('input', recalculateAllReports);
             });
 
