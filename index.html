@@ -18,6 +18,9 @@
         input[type="number"] { width: 90%; padding: 2px; border: 1px solid #ccc; text-align: right; box-sizing: border-box; font-size: 11px; }
         .input-table th { background-color: #007bff; }
         
+        /* Style khusus untuk baris Saldo Awal */
+        .saldo-awal-row td { background-color: #fffacd; font-weight: bold; } 
+        
     </style>
 </head>
 <body>
@@ -110,6 +113,15 @@
     <hr>
 
     <h2>MODUL 3: TAMPILAN LAPORAN TAHUNAN</h2>
+    
+    <div style="margin-bottom: 15px;">
+        <label for="saldo-bank-awal-input" style="display: block; font-weight: bold;">1. Input SALDO KAS BANK (Awal Tahun):</label>
+        <input type="number" id="saldo-bank-awal-input" value="10000000" min="0" style="width: 250px; padding: 5px;">
+        <br>
+        <label for="saldo-tunai-awal-input" style="display: block; font-weight: bold;">2. Input SALDO KAS TUNAI (Awal Tahun):</label>
+        <input type="number" id="saldo-tunai-awal-input" value="5000000" min="0" style="width: 250px; padding: 5px;">
+    </div>
+
     <table id="tabel-modul-3">
         <thead>
             <tr>
@@ -125,7 +137,7 @@
             </tr>
             <tr>
                 <th rowspan="2">Total Koin (3)</th>
-                <th rowspan="2">Jml Donatur (4)</th>
+                <th rowspan="2">JML Donatur (4)</th>
                 <th colspan="2">Pendidikan</th>
                 <th colspan="2">Kesehatan</th>
                 <th colspan="2">Ekonomi</th>
@@ -188,45 +200,31 @@
 
     <script>
         // --- DATA INITIATION (digunakan untuk mengisi input awal) ---
-        // Kini mencakup 12 Bulan Penuh!
         const INITIAL_DATA_SOURCE = [
-            // Contoh data Januari
             { 
                 bulan: 'Januari', penerimaan: 4000000, donatur: 200, 
-                pendUang: 500000, pendPenerima: 5, 
-                kesUang: 300000, kesPenerima: 3, 
-                ekoUang: 400000, ekoPenerima: 4, 
-                sosumUang: 300000, sosumPenerima: 10, 
-                banomUang: 300000, banomPenerima: 2, 
-                bencanaUang: 0, bencanaPenerima: 0,
+                pendUang: 500000, pendPenerima: 5, kesUang: 300000, kesPenerima: 3, 
+                ekoUang: 400000, ekoPenerima: 4, sosumUang: 300000, sosumPenerima: 10, 
+                banomUang: 300000, banomPenerima: 2, bencanaUang: 0, bencanaPenerima: 0,
                 rapat: 200000, perwtnMlu: 50000, biayaBank: 10000, lainLain: 140000,
                 honorWajibPercent: 0.40 
             },
-            // Contoh data Februari
             { 
                 bulan: 'Februari', penerimaan: 5000000, donatur: 250, 
-                pendUang: 600000, pendPenerima: 6, 
-                kesUang: 0, kesPenerima: 0, 
-                ekoUang: 500000, ekoPenerima: 5, 
-                sosumUang: 400000, sosumPenerima: 15, 
-                banomUang: 0, banomPenerima: 0, 
-                bencanaUang: 0, bencanaPenerima: 0,
+                pendUang: 600000, pendPenerima: 6, kesUang: 0, kesPenerima: 0, 
+                ekoUang: 500000, ekoPenerima: 5, sosumUang: 400000, sosumPenerima: 15, 
+                banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0,
                 rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0,
                 honorWajibPercent: 0.40 
             },
-            // Contoh data Maret
             { 
                 bulan: 'Maret', penerimaan: 6000000, donatur: 300, 
-                pendUang: 500000, pendPenerima: 5, 
-                kesUang: 500000, kesPenerima: 5, 
-                ekoUang: 0, ekoPenerima: 0, 
-                sosumUang: 0, sosumPenerima: 0, 
-                banomUang: 0, banomPenerima: 0, 
-                bencanaUang: 0, bencanaPenerima: 0,
+                pendUang: 500000, pendPenerima: 5, kesUang: 500000, kesPenerima: 5, 
+                ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, 
+                banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0,
                 rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0,
                 honorWajibPercent: 0.40 
             },
-            // Data Bulan April hingga Desember (Nilai Awal Nol)
             { bulan: 'April', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
             { bulan: 'Mei', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
             { bulan: 'Juni', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
@@ -258,7 +256,7 @@
             return 0;
         };
 
-        // --- CORE FUNCTION 1: GATHER DATA FROM INPUTS ---
+        // --- CORE FUNCTION 1: GATHER DATA FROM INPUTS (Modul 1) ---
         function gatherInputData() {
             const data = [];
             INITIAL_DATA_SOURCE.forEach((monthData, index) => {
@@ -291,7 +289,7 @@
             return data;
         }
         
-        // Fungsi untuk menjumlahkan semua pengeluaran Non-Honor Uang (untuk Jurnal Umum)
+        // Fungsi untuk menjumlahkan semua pengeluaran Non-Honor Uang
         function calculateTotalNonHonorExpense(dataBulan) {
             return dataBulan.pendUang + dataBulan.kesUang + dataBulan.ekoUang + dataBulan.sosumUang + dataBulan.banomUang + dataBulan.bencanaUang + dataBulan.rapat + dataBulan.perwtnMlu + dataBulan.biayaBank + dataBulan.lainLain;
         }
@@ -310,7 +308,7 @@
             const honorPC = totalPenerimaan * HONOR_RATES.pc;
             const totalHonor = honorPetugas + honorMWC + honorPC; 
 
-            // Ambil Saldo Awal
+            // Ambil Saldo Awal (Saldo Bulan Lalu)
             let saldoJurnalUmum = parseInput('m2-saldo-awal-input'); 
             let totalMasuk = 0;
             let totalKeluar = 0;
@@ -345,8 +343,6 @@
             totalKeluar = totalHonor + totalPengeluaranNonHonor;
             document.getElementById('m2-total-masuk').textContent = formatNominal(totalMasuk);
             document.getElementById('m2-total-keluar').textContent = formatNominal(totalKeluar);
-
-            // Menampilkan Saldo Akhir di Footer
             document.getElementById('m2-footer-saldo-total').textContent = formatNominal(saldoJurnalUmum);
         }
 
@@ -355,12 +351,19 @@
             const tableBody = document.getElementById('m3-data-body');
             tableBody.innerHTML = ''; 
 
-            let totalPenerimaanTahunan = 0;
+            // --- 1. AMBIL SALDO AWAL (BANK & TUNAI) ---
+            const saldoBankAwal = parseInput('saldo-bank-awal-input');
+            const saldoTunaiAwal = parseInput('saldo-tunai-awal-input');
+
+            // Saldo Kas Tahun Berjalan (Running Total untuk Kolom 9)
+            let runningSaldoKas = saldoBankAwal + saldoTunaiAwal; 
+            
+            // Inisialisasi Total Tahunan
+            let totalPenerimaanTahunan = saldoBankAwal + saldoTunaiAwal; // Mulai dengan Saldo Awal
             let totalDonaturTahunan = 0;
             let totalPengeluaranTahunan = 0;
             let totalHonorTahunan = 0;
-            
-            // Total Uang & Penerima untuk Dana Sosial
+            // ... (inisialisasi total dana sosial & operasional)
             let totalPendUangTahunan = 0;
             let totalPendPnmTahunan = 0;
             let totalKesUangTahunan = 0;
@@ -373,31 +376,48 @@
             let totalBanomPnmTahunan = 0;
             let totalBencanaUangTahunan = 0;
             let totalBencanaPnmTahunan = 0;
-
-            // Total Operasional
             let totalRapatTahunan = 0;
             let totalPerwtnTahunan = 0;
             let totalBankTahunan = 0;
             let totalLainTahunan = 0;
 
-            let saldoKasTahunBerjalan = 0; 
-            let saldoAkhirPeriode = 0; 
 
+            // --- 2. MASUKKAN BARIS SALDO AWAL ---
+
+            // Baris SALDO KAS BANK (Awal Tahun)
+            let rowBank = tableBody.insertRow();
+            rowBank.classList.add('saldo-awal-row');
+            rowBank.innerHTML = `
+                <td>-</td>
+                <td>SALDO KAS BANK (Awal Tahun)</td>
+                <td class="text-right">${formatNominal(saldoBankAwal)}</td> <td colspan="17">-</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right">-</td> <td class="text-right">${formatNominal(saldoBankAwal)}</td> `;
+            
+            // Baris SALDO KAS TUNAI (Awal Tahun)
+            let rowTunai = tableBody.insertRow();
+            rowTunai.classList.add('saldo-awal-row');
+            rowTunai.innerHTML = `
+                <td>-</td>
+                <td>SALDO KAS TUNAI (Awal Tahun)</td>
+                <td class="text-right">${formatNominal(saldoTunaiAwal)}</td> <td colspan="17">-</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right">${formatNominal(saldoTunaiAwal)}</td> <td class="text-right">${formatNominal(runningSaldoKas)}</td> `;
+
+            // --- 3. PROSES DATA BULANAN (Januari - Desember) ---
             data.forEach((dataBulan, index) => {
                 const no = index + 1;
-                // Honor Wajib (40% total)
+                
+                // Perhitungan
                 const honorWajib = dataBulan.penerimaan * dataBulan.honorWajibPercent; 
-                
-                // Total Pengeluaran Non-Honor
                 const totalPengeluaranNonHonor = calculateTotalNonHonorExpense(dataBulan);
-                
-                // Total Pengeluaran Kolom 7 = Honor + Non-Honor
                 const jmlPengeluaranBulanIni = honorWajib + totalPengeluaranNonHonor;
-                
-                // Perhitungan Saldo Akhir Bulan (8)
                 const saldoAkhirBulanIni = dataBulan.penerimaan - jmlPengeluaranBulanIni;
-                // Perhitungan Saldo Kas Tahun Berjalan (9)
-                saldoKasTahunBerjalan += saldoAkhirBulanIni; 
+                
+                // Update Running Total
+                runningSaldoKas += saldoAkhirBulanIni; 
 
                 // --- AKUMULASI TOTAL TAHUNAN ---
                 totalPenerimaanTahunan += dataBulan.penerimaan;
@@ -424,14 +444,8 @@
                 totalPerwtnTahunan += dataBulan.perwtnMlu;
                 totalBankTahunan += dataBulan.biayaBank;
                 totalLainTahunan += dataBulan.lainLain;
-
-
-                // Simpan saldo kas akhir tahun
-                if (index === data.length - 1) {
-                    saldoAkhirPeriode = saldoKasTahunBerjalan;
-                }
                 
-                // --- Buat Baris Data ---
+                // --- Buat Baris Data Bulanan ---
                 const row = tableBody.insertRow();
                 row.innerHTML = `
                     <td>${no}</td>
@@ -457,7 +471,7 @@
                     <td class="text-right">${formatNominal(honorWajib)}</td>
                     <td class="text-right">${formatNominal(jmlPengeluaranBulanIni)}</td>
                     <td class="text-right">${formatNominal(saldoAkhirBulanIni)}</td>
-                    <td class="text-right">${formatNominal(saldoKasTahunBerjalan)}</td>
+                    <td class="text-right">${formatNominal(runningSaldoKas)}</td>
                 `;
             });
 
@@ -467,7 +481,7 @@
             document.getElementById('m3-total-pengeluaran').textContent = formatNominal(totalPengeluaranTahunan);
             document.getElementById('m3-total-honor').textContent = formatNominal(totalHonorTahunan);
             
-            // Total Dana Sosial
+            // Total Dana Sosial & Operasional
             document.getElementById('m3-total-pend-uang').textContent = formatNominal(totalPendUangTahunan);
             document.getElementById('m3-total-pend-pnm').textContent = formatNominal(totalPendPnmTahunan);
             document.getElementById('m3-total-kes-uang').textContent = formatNominal(totalKesUangTahunan);
@@ -480,16 +494,14 @@
             document.getElementById('m3-total-banom-pnm').textContent = formatNominal(totalBanomPnmTahunan);
             document.getElementById('m3-total-bencana-uang').textContent = formatNominal(totalBencanaUangTahunan);
             document.getElementById('m3-total-bencana-pnm').textContent = formatNominal(totalBencanaPnmTahunan);
-
-            // Total Operasional
             document.getElementById('m3-total-rapat').textContent = formatNominal(totalRapatTahunan);
             document.getElementById('m3-total-perwtn').textContent = formatNominal(totalPerwtnTahunan);
             document.getElementById('m3-total-bank').textContent = formatNominal(totalBankTahunan);
             document.getElementById('m3-total-lain').textContent = formatNominal(totalLainTahunan);
 
-            // Footer Saldo
-            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(saldoAkhirPeriode); 
-            document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(saldoAkhirPeriode); 
+            // Footer Saldo (menampilkan Saldo Kas Akhir Tahun)
+            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(runningSaldoKas); 
+            document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(runningSaldoKas); 
         }
 
         // --- MAIN CONTROL FUNCTION ---
@@ -537,16 +549,11 @@
                 `;
             });
             
-            // 2. Attach Event Listeners to ALL input fields (Modul 1 dan Saldo Awal Modul 2)
-            const inputsModul1 = document.querySelectorAll('#m1-input-body input[type="number"]');
-            inputsModul1.forEach(input => {
+            // 2. Attach Event Listeners to ALL input fields (Modul 1 dan Saldo Awal Modul 2 & 3)
+            const inputs = document.querySelectorAll('input[type="number"]');
+            inputs.forEach(input => {
                 input.addEventListener('input', recalculateAllReports);
             });
-
-            const inputSaldoAwal = document.getElementById('m2-saldo-awal-input');
-            if (inputSaldoAwal) {
-                inputSaldoAwal.addEventListener('input', recalculateAllReports);
-            }
 
             // 3. Run initial calculation
             recalculateAllReports();
