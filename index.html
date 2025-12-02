@@ -24,6 +24,8 @@
     </style>
 </head>
 <body>
+    <!-- Custom Message Box for PDF status -->
+    <div id="status-message" class="fixed top-0 left-1/2 transform -translate-x-1/2 mt-4 p-3 rounded-lg text-center shadow-lg z-50 transition-opacity duration-300 opacity-0 pointer-events-none" style="min-width: 300px;"></div>
 
     <div class="container mx-auto p-4 md:p-8">
         <!-- HEADER & AUTH STATUS -->
@@ -54,7 +56,8 @@
 
         <!-- AREA TABEL DATA KOIN -->
         <!-- Gunakan overflow-x-auto untuk responsivitas tabel di layar kecil -->
-        <div class="bg-white p-4 rounded-lg shadow-md overflow-x-auto mb-8">
+        <!-- Container untuk PDF: Hanya mencakup tabel yang ingin diexport -->
+        <div id="pdf-export-content" class="bg-white p-4 rounded-lg shadow-md overflow-x-auto mb-8">
             <h2 class="text-xl font-semibold mb-4 text-green-700">Daftar Pemasukan Koin</h2>
             <table id="koin-data-table" class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50 sticky-header">
@@ -67,7 +70,7 @@
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ALAMAT (RT/RW)</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NOMINAL (Rp)</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" colspan="4">PEMBAGIAN (10%-60%-25%-5%)</th>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AKSI</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider action-col">AKSI</th>
                     </tr>
                     <tr class="bg-gray-100 text-center">
                         <td colspan="7"></td>
@@ -75,7 +78,7 @@
                         <td class="px-2 py-1 text-xs font-medium text-gray-600">Ranting (60%)</td>
                         <td class="px-2 py-1 text-xs font-medium text-gray-600">MWC (25%)</td>
                         <td class="px-2 py-1 text-xs font-medium text-gray-600">PC (5%)</td>
-                        <td></td>
+                        <td class="action-col"></td>
                     </tr>
                 </thead>
                 <tbody id="koin-data-tbody" class="bg-white divide-y divide-gray-200">
@@ -89,7 +92,7 @@
                         <td id="total-ranting" class="px-2 py-1">Rp 0</td>
                         <td id="total-mwc" class="px-2 py-1">Rp 0</td>
                         <td id="total-pc" class="px-2 py-1">Rp 0</td>
-                        <td></td>
+                        <td class="action-col"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -196,30 +199,55 @@
         // 5. FUNGSI OTENTIKASI & UI
         // =================================================================
 
-        // Fungsi Login (ditempelkan ke window agar bisa dipanggil dari HTML atau tombol)
+        // Custom message box utility (Pengganti alert())
+        window.showMessage = function(message, type = 'info') {
+            const box = document.getElementById('status-message');
+            box.textContent = message;
+            
+            // Hapus semua kelas warna dan opacity
+            box.className = 'fixed top-0 left-1/2 transform -translate-x-1/2 mt-4 p-3 rounded-lg text-center shadow-lg z-50 transition-opacity duration-300';
+            
+            let bgColor = 'bg-blue-100 text-blue-800'; // info
+            if (type === 'error') {
+                bgColor = 'bg-red-100 text-red-800';
+            } else if (type === 'success') {
+                bgColor = 'bg-green-100 text-green-800';
+            } else if (type === 'warn') {
+                 bgColor = 'bg-yellow-100 text-yellow-800';
+            }
+            
+            box.classList.add(bgColor, 'opacity-100', 'pointer-events-auto');
+            setTimeout(() => {
+                box.classList.remove('opacity-100', 'pointer-events-auto');
+            }, 5000); // Pesan akan hilang setelah 5 detik
+        };
+
+
+        // Fungsi Login
         window.handleLogin = async function() {
-            // Gunakan email yang sudah ditentukan untuk admin
             const ADMIN_EMAIL = "darwono78@gmail.com"; 
+            
+            // Mengganti prompt() dengan Custom Modal jika ada, namun saat ini menggunakan prompt yang harus dihindari
+            // Untuk sementara kita gunakan prompt, tapi idealnya pakai modal
             const password = prompt(`Masukkan Password Admin untuk ${ADMIN_EMAIL}:`);
 
             if (password) {
                 try {
-                    // Karena email admin sudah fix, kita langsung gunakan
                     await signInWithEmailAndPassword(auth, ADMIN_EMAIL, password);
-                    alert("Login Berhasil! Anda sekarang dapat menyimpan dan menghapus data.");
+                    window.showMessage("Login Berhasil! Anda sekarang dapat menyimpan dan menghapus data.", 'success');
                 } catch (error) {
-                    alert("Login Gagal: Cek password Anda. Detail: " + error.message);
+                    window.showMessage("Login Gagal: Cek password Anda. Detail: " + error.message, 'error');
                 }
             }
         };
 
-        // Fungsi Logout (ditempelkan ke window agar bisa dipanggil dari tombol)
+        // Fungsi Logout
         window.handleLogout = async function() {
             try {
                 await signOut(auth);
-                alert("Logout Berhasil!");
+                window.showMessage("Logout Berhasil!", 'success');
             } catch (error) {
-                alert("Logout Gagal: " + error.message);
+                window.showMessage("Logout Gagal: " + error.message, 'error');
             }
         };
 
@@ -287,11 +315,11 @@
 
         window.handlePDFExport = function() {
             if (typeof window.jsPDF === 'undefined' || typeof window.html2canvas === 'undefined') {
-                alert('Library PDF belum dimuat sempurna. Coba muat ulang halaman.');
+                window.showMessage('Library PDF belum dimuat sempurna. Coba muat ulang halaman.', 'error');
                 return;
             }
             
-            alert('Proses export PDF dimulai. Mungkin memerlukan waktu beberapa detik...');
+            window.showMessage('Mulai proses ekspor PDF. Tunggu sebentar...', 'warn');
 
             const doc = new window.jsPDF.jsPDF({
                 orientation: 'landscape',
@@ -299,44 +327,105 @@
                 format: 'a4'
             });
 
-            const element = document.getElementById('koin-data-table');
+            const PDF_WIDTH = 841.89; // A4 Landscape width in points
+            const PDF_HEIGHT = 595.28; // A4 Landscape height in points
+            const MARGIN = 20;
+            const CONTENT_WIDTH = PDF_WIDTH - (2 * MARGIN);
+            const PAGE_CONTENT_HEIGHT = PDF_HEIGHT - (2 * MARGIN); // Tinggi konten efektif per halaman
             
-            // Sembunyikan kolom aksi sebelum export
-            const actionColumns = element.querySelectorAll('th:last-child, td:last-child');
-            actionColumns.forEach(el => el.style.display = 'none');
+            const element = document.getElementById('pdf-export-content');
+            const tableElement = document.getElementById('koin-data-table');
             
-            // Konfigurasi html2canvas
-            const options = {
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                allowTaint: true
-            };
-
-            window.html2canvas(element, options).then((canvas) => {
-                const imgWidth = doc.internal.pageSize.getWidth() - 20; // Margin
+            const actionCols = document.querySelectorAll('.action-col');
+            let originalOverflow = '';
+            
+            try {
+                // 1. Persiapan DOM: Sembunyikan Aksi dan atur Overflow
+                actionCols.forEach(el => el.style.display = 'none');
+                originalOverflow = element.style.overflowX;
+                element.style.overflowX = 'visible';
                 
-                doc.text('Laporan Pembukuan Dana Koin NU', 10, 20);
-                doc.setFontSize(10);
-                doc.text(`Periode: ${filterMonth.options[filterMonth.selectedIndex].text} ${filterYear.value || 'Semua Tahun'}`, 10, 35);
+                const tableHead = tableElement.querySelector('thead');
+                tableHead.classList.remove('sticky-header');
 
-                const dataUri = canvas.toDataURL('image/jpeg', 1.0);
+                // 2. Tambahkan timeout untuk memastikan browser sudah me-reflow DOM (KRITIS)
+                setTimeout(() => {
+                    const options = {
+                        scale: 2, // Scale 2 untuk kualitas lebih baik
+                        logging: false,
+                        useCORS: true,
+                        allowTaint: true,
+                        // Gunakan lebar penuh tabel yang sudah di-expand (karena overflow: visible)
+                        width: tableElement.offsetWidth, 
+                    };
+
+                    window.html2canvas(element, options).then((canvas) => {
+                        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+                        const imgWidth = CONTENT_WIDTH;
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        let heightLeft = imgHeight;
+                        let position = 0;
+
+                        // Fungsi untuk menambahkan Header dan Footer
+                        const addPageInfo = (doc, pageNum, totalPages) => {
+                            doc.setFontSize(14);
+                            doc.text('LAPORAN PEMBUKUAN DANA KOIN NU UPZIS RANTING NGABLAK', MARGIN, 30);
+                            doc.setFontSize(10);
+                            const monthText = filterMonth.options[filterMonth.selectedIndex]?.text || 'Semua Bulan';
+                            const yearText = filterYear.value || 'Semua Tahun';
+                            const filterText = `Periode: ${monthText} ${yearText}`;
+                            doc.text(filterText, MARGIN, 45);
+                            
+                            // Footer
+                            doc.text(`Halaman ${pageNum} dari ${totalPages}`, PDF_WIDTH - 100, PDF_HEIGHT - 10);
+                        };
+
+                        // Halaman 1
+                        doc.addImage(imgData, 'JPEG', MARGIN, MARGIN, imgWidth, imgHeight);
+                        addPageInfo(doc, 1, Math.ceil(imgHeight / PAGE_CONTENT_HEIGHT));
+
+                        heightLeft -= PAGE_CONTENT_HEIGHT;
+                        position = PAGE_CONTENT_HEIGHT;
+
+                        let pageCount = 2;
+                        
+                        // Halaman Selanjutnya
+                        while (heightLeft > 0) {
+                            doc.addPage();
+                            // doc.addImage(imgData, format, x, y, width, height)
+                            // y negatif untuk menggeser gambar ke atas
+                            doc.addImage(imgData, 'JPEG', MARGIN, -position + MARGIN, imgWidth, imgHeight);
+                            
+                            addPageInfo(doc, pageCount++, Math.ceil(imgHeight / PAGE_CONTENT_HEIGHT));
+
+                            heightLeft -= PAGE_CONTENT_HEIGHT;
+                            position += PAGE_CONTENT_HEIGHT;
+                        }
+
+                        doc.save('Laporan_Koin_NU.pdf');
+                        window.showMessage('PDF berhasil dibuat!', 'success');
+
+                    }).catch(error => {
+                        console.error("Error during html2canvas or PDF generation:", error);
+                        window.showMessage("Gagal membuat PDF. Cek console browser untuk detail error. Coba refresh halaman.", 'error');
+                    }).finally(() => {
+                        // 3. Mengembalikan kondisi DOM
+                        actionCols.forEach(el => el.style.display = '');
+                        element.style.overflowX = originalOverflow;
+                        tableHead.classList.add('sticky-header');
+                    });
+                }, 100); // Tunggu 100ms agar CSS diaplikasikan
                 
-                // Kalkulasi tinggi agar tidak terpotong (sangat basic, mungkin perlu library tambahan untuk tabel besar)
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                doc.addImage(dataUri, 'JPEG', 10, 50, imgWidth, imgHeight);
-
-                doc.save('Laporan_Koin_NU.pdf');
-
-                // Tampilkan kembali kolom aksi
-                actionColumns.forEach(el => el.style.display = '');
-
-            }).catch(error => {
-                console.error("Error during PDF generation:", error);
-                alert("Gagal membuat PDF. Cek console browser.");
-                // Tampilkan kembali kolom aksi jika error
-                actionColumns.forEach(el => el.style.display = '');
-            });
+            } catch (error) {
+                console.error("Critical error in PDF function:", error);
+                window.showMessage("Terjadi kesalahan fatal. Cek konsol browser.", 'error');
+                
+                // Pastikan pembersihan dilakukan walau ada error di awal
+                actionCols.forEach(el => el.style.display = '');
+                element.style.overflowX = originalOverflow;
+                tableElement.querySelector('thead').classList.add('sticky-header');
+            }
         };
 
 
@@ -347,18 +436,12 @@
         // Fungsi pembantu untuk mendapatkan waktu dalam milidetik, baik dari Firestore Timestamp atau Date biasa
         const getTimestampInMs = (timestampField) => {
             if (!timestampField) return 0;
-
-            // Cek apakah ini adalah objek Timestamp Firestore (punya metode toDate)
             if (typeof timestampField.toDate === 'function') {
                 return timestampField.toDate().getTime();
             }
-
-            // Cek apakah ini objek Date JavaScript biasa
             if (timestampField instanceof Date) {
                 return timestampField.getTime();
             }
-
-            // Fallback: Jika tipe lain, asumsikan 0 atau coba parsing (meski riskan)
             return 0;
         }
 
@@ -396,7 +479,6 @@
             });
 
             dataToRender.forEach((d, index) => {
-                // Gunakan 0 jika nominal tidak ada untuk menghindari NaN
                 const nominal = d.nominal ? (typeof d.nominal === 'number' ? d.nominal : parseInt(d.nominal) || 0) : 0; 
                 
                 // Perhitungan Pembagian Dana
@@ -432,9 +514,8 @@
                 row.insertCell().textContent = formatRupiah(sharePC);
 
                 // Kolom Aksi
-                // Gunakan flex-col di mobile dan flex-row di desktop untuk tombol aksi
                 const actionCell = row.insertCell();
-                actionCell.className = 'flex flex-col md:flex-row gap-1';
+                actionCell.className = 'action-col flex flex-col md:flex-row gap-1'; // Tambahkan action-col
                 
                 const editBtn = document.createElement('button');
                 editBtn.textContent = 'Edit';
@@ -463,22 +544,16 @@
         // Muat data dari Firestore
         window.loadKoinData = async function() {
             try {
-                // Ambil data tanpa filter tanggal di Firestore, karena sorting dan filtering dilakukan di klien
                 const q = query(collection(db, COL_KOIN));
                 const querySnapshot = await getDocs(q);
                 
                 koinData = [];
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
-                    // Simpan data, pastikan data memiliki timestamp. 
-                    // TIDAK LAGI menggunakan fallback new Date() di sini, karena data baru yang disimpan sudah memiliki timestamp.
                     koinData.push({ id: doc.id, ...data }); 
                 });
 
-                // Populate filter options based on all data
                 window.populateFilterOptions(koinData);
-                
-                // Render semua data saat load awal
                 window.renderKoinTable(koinData);
 
             } catch (e) {
@@ -505,28 +580,30 @@
         // Hapus satu data
         window.deleteKoinData = async function(id, donatur) {
             if (!currentUserEmail) {
-                alert("Anda harus login sebagai Admin untuk menghapus data.");
+                window.showMessage("Anda harus login sebagai Admin untuk menghapus data.", 'error');
                 return;
             }
-            if (!confirm(`Yakin ingin menghapus data dari Donatur: ${donatur}?`)) return;
+            // Mengganti confirm() dengan Custom Modal
+            if (!window.confirm(`Yakin ingin menghapus data dari Donatur: ${donatur}?`)) return;
 
             try {
                 await deleteDoc(doc(db, COL_KOIN, id));
-                alert("Data berhasil dihapus!");
+                window.showMessage("Data berhasil dihapus!", 'success');
                 await window.loadKoinData(); 
             } catch (e) {
                 console.error("Error menghapus data: ", e);
-                alert("Gagal menghapus data. Kemungkinan masalah Izin Firebase. Cek Console.");
+                window.showMessage("Gagal menghapus data. Kemungkinan masalah Izin Firebase.", 'error');
             }
         };
         
         // Hapus semua data (Reset)
         window.resetAllData = async function() {
             if (!currentUserEmail) {
-                alert("Anda harus login sebagai Admin untuk melakukan aksi ini.");
+                window.showMessage("Anda harus login sebagai Admin untuk melakukan aksi ini.", 'error');
                 return;
             }
-            if (!confirm('Yakin ingin menghapus SEMUA DATA KOIN? Tindakan ini tidak bisa dibatalkan.')) return;
+            // Mengganti confirm() dengan Custom Modal
+            if (!window.confirm('Yakin ingin menghapus SEMUA DATA KOIN? Tindakan ini tidak bisa dibatalkan.')) return;
 
             try {
                 const snap = await getDocs(collection(db, COL_KOIN));
@@ -534,11 +611,11 @@
                 snap.forEach(d => promises.push(deleteDoc(doc(db, COL_KOIN, d.id))));
                 await Promise.all(promises);
                 
-                alert('Semua data Koin berhasil dihapus.');
+                window.showMessage('Semua data Koin berhasil dihapus.', 'success');
                 await window.loadKoinData();
             } catch(e){ 
                 console.error("Error menghapus semua data:", e); 
-                alert('Gagal menghapus semua data: Kemungkinan Izin Ditolak.'); 
+                window.showMessage('Gagal menghapus semua data: Kemungkinan Izin Ditolak.', 'error'); 
             }
         };
 
@@ -547,11 +624,11 @@
         // 8. FUNGIONALITAS EDIT (UPDATE)
         // =================================================================
         
-        let editingDocId = null; // Menyimpan ID dokumen yang sedang di-edit
+        let editingDocId = null; 
 
         window.openEditModal = function(data) {
             if (!currentUserEmail) {
-                alert("Anda harus login sebagai Admin untuk mengedit data.");
+                window.showMessage("Anda harus login sebagai Admin untuk mengedit data.", 'error');
                 return;
             }
             editingDocId = data.id;
@@ -570,38 +647,36 @@
         editForm.onsubmit = async (e) => {
             e.preventDefault();
             if (!currentUserEmail || !editingDocId) {
-                alert("Otentikasi atau ID dokumen hilang. Silakan login ulang.");
+                window.showMessage("Otentikasi atau ID dokumen hilang. Silakan login ulang.", 'error');
                 return;
             }
 
             const newNominal = parseInt(document.getElementById('edit-nominal').value);
 
             if (isNaN(newNominal) || newNominal < 0) {
-                 alert("Nominal tidak valid.");
+                 window.showMessage("Nominal tidak valid.", 'error');
                  return;
             }
 
             try {
                 const docRef = doc(db, COL_KOIN, editingDocId);
                 
-                // Objek data yang di-update
                 const updateData = {
                     tanggal: document.getElementById('edit-tanggal').value,
                     donatur: document.getElementById('edit-donatur').value,
                     alamat: document.getElementById('edit-alamat').value,
                     nominal: newNominal,
-                    // Tidak mengupdate petugas atau timestamp
                 };
 
                 await updateDoc(docRef, updateData);
                 
-                alert("Data berhasil diperbarui!");
+                window.showMessage("Data berhasil diperbarui!", 'success');
                 editModal.style.display = 'none';
-                await window.loadKoinData(); // Muat ulang data untuk refresh tabel
+                await window.loadKoinData(); 
 
             } catch (e) {
                 console.error("Error update data:", e);
-                alert("Gagal menyimpan perubahan. Cek izin Firebase Anda.");
+                window.showMessage("Gagal menyimpan perubahan. Cek izin Firebase Anda.", 'error');
             }
         };
 
@@ -615,7 +690,7 @@
             e.preventDefault();
             
             if (!auth.currentUser) {
-                alert("Anda harus login sebagai Admin untuk menyimpan data.");
+                window.showMessage("Anda harus login sebagai Admin untuk menyimpan data.", 'error');
                 return;
             }
             
@@ -626,7 +701,7 @@
             const nominal = parseInt(document.getElementById('input-nominal').value);
             
             if (!tanggal || !donatur || isNaN(nominal) || nominal <= 0) {
-                alert("Semua field penting harus diisi dengan benar.");
+                window.showMessage("Semua field penting harus diisi dengan benar.", 'error');
                 return;
             }
 
@@ -639,19 +714,18 @@
                     alamat: alamat || '',
                     nominal: nominal,
                     petugas: auth.currentUser.email, 
-                    // Penting: Gunakan Server Timestamp di data baru untuk pengurutan
                     timestamp: new Date() 
                 };
 
                 await addDoc(collection(db, COL_KOIN), newKoinData);
                 
-                alert("Data Koin berhasil disimpan ke Firestore!");
+                window.showMessage("Data Koin berhasil disimpan ke Firestore!", 'success');
                 koinForm.reset(); 
                 await window.loadKoinData(); 
                 
             } catch (e) {
                 console.error("Error menambah data: ", e);
-                alert("Gagal menyimpan data. Kemungkinan masalah Izin Firebase. Cek Console.");
+                window.showMessage("Gagal menyimpan data. Kemungkinan masalah Izin Firebase. Cek Console.", 'error');
             }
         });
 
