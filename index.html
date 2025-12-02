@@ -86,7 +86,7 @@
             <p id="login-message" style="color: red; margin-top: 5px; font-size: 12px;"></p>
         </div>
         
-        <div id="logout-form-content" class="admin-only" style="text-align: right;">
+        <div id="logout-form-content" style="text-align: right; display: none;"> 
             <p style="margin: 0 0 5px 0; font-weight: bold; color: #006400;">Mode Admin Aktif</p>
             <button onclick="handleLogout()" style="padding: 5px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer; font-size: 12px;">Logout</button>
         </div>
@@ -455,7 +455,8 @@
                 localStorage.setItem('isLoggedIn', 'true');
                 isLoggedIn = true;
                 message.textContent = 'Login Berhasil!';
-                renderAppView();
+                // Tambahkan delay sebentar agar user melihat pesan sukses sebelum halaman di-render ulang
+                setTimeout(renderAppView, 200); 
             } else {
                 message.textContent = 'Username atau Password salah! (Default: admin/admin123)';
             }
@@ -471,14 +472,14 @@
         }
 
         function updateAdminViewVisibility(loggedIn) {
-            // 1. Toggle visibility of all admin-only elements
+            // 1. Toggle visibility of all admin-only elements (Input forms, Modul 1, Aksi buttons)
             const adminElements = document.querySelectorAll('.admin-only');
             adminElements.forEach(el => {
                 // Jika logged in, tampilkan (''), jika tidak sembunyikan ('none')
                 el.style.display = loggedIn ? '' : 'none'; 
             });
 
-            // 2. Toggle visibility of login/logout forms
+            // 2. Toggle visibility of login/logout forms (Explicitly control these two)
             const loginForm = document.getElementById('login-form-content');
             const logoutForm = document.getElementById('logout-form-content');
             if(loginForm && logoutForm) {
@@ -905,7 +906,7 @@
                 <td>-</td>
                 <td>-</td>
                 <td class="text-right">-</td> 
-                <td class="text-right">${formatNominal(runningSaldoKas)}</td>
+                <td class="text-right">${formatNominal(saldoBankAwal)}</td>
             `;
             
             // Baris 2: SALDO KAS TUNAI (Awal Tahun)
@@ -1043,7 +1044,7 @@
             // Re-attach listeners for dynamically generated Modul 3 and Modul 2 inputs (Only needed when logged in)
             if (isLoggedIn) {
                 // Ensure event listeners are attached only to the *admin-only* inputs (Modul 1 inputs and Modul 2 Saldo Awal)
-                const dynamicInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"], #m2-saldo-awal-input');
+                const dynamicInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"], #m2-saldo-awal-input, #saldo-bank-awal-input, #saldo-tunai-awal-input');
                 dynamicInputs.forEach(input => {
                     input.removeEventListener('input', recalculateAllReports);
                     input.addEventListener('input', recalculateAllReports);
@@ -1090,7 +1091,7 @@
             });
             
             // 2. Attach Event Listeners to Modul 1 & Modul 2 Saldo Awal input
-            const staticInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"], #m2-saldo-awal-input');
+            const staticInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"], #m2-saldo-awal-input, #saldo-bank-awal-input, #saldo-tunai-awal-input');
             staticInputs.forEach(input => {
                 input.addEventListener('input', recalculateAllReports);
             });
