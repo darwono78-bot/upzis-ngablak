@@ -341,11 +341,25 @@
     import { getAuth, signInAnonymously, signInWithCustomToken, signOut, onAuthStateChanged, getIdTokenResult } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
     import { getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, getDocs, runTransaction, getDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
 
-    // Global variables from Canvas environment
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* Your manual config as fallback, though not used here */ };
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    // =========================================================================
+    // !!! BAGIAN PENTING: ISI DENGAN KONFIGURASI FIREBASE PROJECT ANDA !!!
+    // GANTI SEMUA NILAI 'ISI_DENGAN_...'
+    // =========================================================================
+    const firebaseConfig = {
+        apiKey: "ISI_DENGAN_API_KEY_ANDA", 
+        authDomain: "ISI_DENGAN_AUTH_DOMAIN_ANDA",
+        projectId: "ISI_DENGAN_PROJECT_ID_ANDA", // BARIS INI WAJIB TERISI
+        storageBucket: "ISI_DENGAN_STORAGE_BUCKET_ANDA",
+        messagingSenderId: "ISI_DENGAN_MESSAGING_SENDER_ID_ANDA",
+        appId: "ISI_DENGAN_APP_ID_ANDA" 
+    };
 
+    // Ini digunakan untuk path Firestore. Menggunakan projectId sebagai ID unik.
+    const appId = firebaseConfig.projectId || 'default-app-id'; 
+    // Ini adalah token otentikasi kustom (biasanya kosong jika tidak menggunakan environment khusus)
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    // =========================================================================
+    
     setLogLevel('debug'); // Wajib untuk melihat log Firebase
 
     let db;
@@ -435,7 +449,8 @@
 
     const initFirebase = async () => {
         try {
-            const app = initializeApp(firebaseConfig);
+            // FIREBASE INITIALIZATION DENGAN CONFIG YANG SUDAH TERISI
+            const app = initializeApp(firebaseConfig); 
             db = getFirestore(app);
             auth = getAuth(app);
 
@@ -452,6 +467,7 @@
                         const tokenResult = await getIdTokenResult(user, true); 
                         email = tokenResult.claims.email;
                         // Bandingkan dengan email Admin yang ada di Security Rules
+                        // Email admin: darwono78@gmail.com
                         if (email === "darwono78@gmail.com") {
                             isAdmin = true;
                         }
@@ -488,7 +504,12 @@
 
         } catch (error) {
             console.error("Error initializing Firebase:", error);
-            document.getElementById('user-info').textContent = `Kesalahan: Gagal menginisialisasi Firebase. Cek konsol.`;
+            // Menghindari pop-up, tampilkan pesan di UI
+            document.getElementById('user-info').textContent = `Kesalahan: Gagal menginisialisasi Firebase. Pastikan 6 konfigurasi di kode Anda terisi dengan benar. Cek konsol.`; 
+            
+            // Tampilkan pop-up "Akses Ditolak" hanya jika error inisialisasi yang terjadi
+            // window.alert("Akses Ditolak. Anda harus login sebagai administrator untuk menggunakan aplikasi ini.");
+            
         }
     };
 
@@ -557,7 +578,7 @@
             renderLaporanKoin(data);
         }, (error) => {
             console.error("Error listening to Laporan Koin:", error);
-            document.getElementById('tbody-laporan-koin').innerHTML = `<tr><td colspan="11" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
+            document.getElementById('tbody-laporan-koin').innerHTML = `<tr><td colspan="11" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message} (Pastikan Security Rules mengizinkan "read")</td></tr>`;
         });
 
         // 2. Jurnal Umum Listener
@@ -598,7 +619,7 @@
 
         }, (error) => {
             console.error("Error listening to Jurnal Umum:", error);
-            document.getElementById('tbody-jurnal-umum').innerHTML = `<tr><td colspan="16" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
+            document.getElementById('tbody-jurnal-umum').innerHTML = `<tr><td colspan="16" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message} (Pastikan Security Rules mengizinkan "read")</td></tr>`;
         });
         
         // 3. Saldo Awal Listener (untuk Laporan Tahunan)
@@ -1342,5 +1363,3 @@
     // --- START APP ---
     window.onload = initFirebase;
 </script>
-    
-
