@@ -7,6 +7,7 @@
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load JS for PDF Export -->
+    <!-- D pastikan ini dimuat di HEAD agar tersedia secepatnya -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
@@ -193,6 +194,7 @@
         const editForm = document.getElementById('edit-form');
         const filterMonth = document.getElementById('filter-month');
         const filterYear = document.getElementById('filter-year');
+        const btnExportPdf = document.getElementById('btn-export-pdf'); // Ambil elemen tombol
 
 
         // =================================================================
@@ -204,8 +206,8 @@
             const box = document.getElementById('status-message');
             box.textContent = message;
             
-            // Hapus semua kelas warna dan opacity
-            box.className = 'fixed top-0 left-1/2 transform -translate-x-1/2 mt-4 p-3 rounded-lg text-center shadow-lg z-50 transition-opacity duration-300';
+            // Kelas dasar yang selalu ada untuk posisi, bayangan, transisi
+            const baseClasses = 'fixed top-0 left-1/2 transform -translate-x-1/2 mt-4 p-3 rounded-lg text-center shadow-lg z-50 transition-opacity duration-300 pointer-events-none opacity-100';
             
             let bgColor = 'bg-blue-100 text-blue-800'; // info
             if (type === 'error') {
@@ -216,9 +218,14 @@
                  bgColor = 'bg-yellow-100 text-yellow-800';
             }
             
-            box.classList.add(bgColor, 'opacity-100', 'pointer-events-auto');
+            // !!! PERBAIKAN KRITIS !!!
+            // Gunakan penugasan className untuk mengatur semua kelas, bukan classList.add()
+            box.className = `${baseClasses} ${bgColor} pointer-events-auto`;
+            
             setTimeout(() => {
+                // Mengembalikan ke opacity-0 untuk menyembunyikan
                 box.classList.remove('opacity-100', 'pointer-events-auto');
+                box.classList.add('opacity-0');
             }, 5000); // Pesan akan hilang setelah 5 detik
         };
 
@@ -227,7 +234,6 @@
         window.handleLogin = async function() {
             const ADMIN_EMAIL = "darwono78@gmail.com"; 
             
-            // Mengganti prompt() dengan Custom Modal jika ada, namun saat ini menggunakan prompt yang harus dihindari
             // Untuk sementara kita gunakan prompt, tapi idealnya pakai modal
             const password = prompt(`Masukkan Password Admin untuk ${ADMIN_EMAIL}:`);
 
@@ -314,8 +320,9 @@
         };
 
         window.handlePDFExport = function() {
+            // Pengecekan Kritis: Pastikan library sudah terload
             if (typeof window.jsPDF === 'undefined' || typeof window.html2canvas === 'undefined') {
-                window.showMessage('Library PDF belum dimuat sempurna. Coba muat ulang halaman.', 'error');
+                window.showMessage('Gagal: Library PDF belum dimuat sempurna. Coba muat ulang halaman atau periksa koneksi internet Anda.', 'error');
                 return;
             }
             
@@ -729,20 +736,28 @@
             }
         });
 
-        // Hubungkan Tombol Logout, Login, Reset, Export
-        loginBtn.onclick = window.handleLogin;
-        logoutBtn.onclick = window.handleLogout;
-        resetDataBtn.onclick = window.resetAllData;
-        document.getElementById('btn-export-pdf').onclick = window.handlePDFExport;
-        document.getElementById('btn-reset-filter').onclick = () => {
-            filterMonth.value = '';
-            filterYear.value = '';
-            window.handleFilter();
-        };
-
         // Event listener untuk Filter
         filterMonth.onchange = window.handleFilter;
         filterYear.onchange = window.handleFilter;
+
+
+        // Memastikan DOMContentLoaded untuk event listener yang membutuhkan elemen DOM
+        window.addEventListener('DOMContentLoaded', () => {
+            // Hubungkan Tombol Logout, Login, Reset, Export
+            loginBtn.onclick = window.handleLogin;
+            logoutBtn.onclick = window.handleLogout;
+            resetDataBtn.onclick = window.resetAllData;
+            
+            // INI PENTING: Panggil fungsi ekspor saat tombol diklik
+            btnExportPdf.onclick = window.handlePDFExport;
+
+            document.getElementById('btn-reset-filter').onclick = () => {
+                filterMonth.value = '';
+                filterYear.value = '';
+                window.handleFilter();
+            };
+        });
+
     </script>
 </body>
 </html>
