@@ -1381,11 +1381,6 @@ function editAnnualData(id, key, currentValue, isText = false) {
             annualEditData = null;
             document.getElementById('tahunan-edit-input-area').style.display = 'none';
         }
-        
-       // =================================================================
-// PASTE KODE INI DI TEMPAT YG MUDAH DIAKSES (Cth: Dekat function filterData atau saveToStorage)
-// =================================================================
-
 window.saveAnnualReportData = async function() {
     if (!annualEditData) return;
 
@@ -1438,10 +1433,11 @@ window.saveAnnualReportData = async function() {
             updateObject[key] = newValue; 
         }
         
+        // Coba hilangkan await di sini untuk sementara jika masalahnya adalah network timeout
         await updateDoc(docRef, updateObject); 
         
-        // Panggil ulang semua koleksi dari Firestore untuk memastikan data terbaru tampil
-        await loadAllCollections(); 
+        // Perubahan di sini: Hanya panggil loadAllCollections jika berhasil update
+        await loadAllCollections(); // <--- Pastikan fungsi ini tersedia dan berfungsi
         
         alert('Perubahan data tahunan berhasil disimpan ke Firestore!');
         
@@ -1455,9 +1451,7 @@ window.saveAnnualReportData = async function() {
     // Refresh tampilan
     cancelAnnualEdit();
     filterData('tahunan');
-};
-
-// =================================================================
+};        
 
         // --- LOGIC LAPORAN TAHUNAN ---
         
@@ -2255,6 +2249,7 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
 
 
