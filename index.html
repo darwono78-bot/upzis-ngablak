@@ -570,80 +570,89 @@
             // 1. Ambil Data Agregat dari Modul 1A
             const koinNUData = getKoinNUAggregateData();
             const totalNominalKoin = koinNUData.totalNominal;
-            const transactionDate = new Date().toISOString().slice(0, 10); // Gunakan tanggal hari ini (atau bisa diset manual)
+            // Gunakan null untuk tanggal transaksi otomatis, karena nilainya adalah ringkasan/internal
+            const autoDate = null; 
             
-            // 2. Buat Transaksi Otomatis (Auto-Generated Transactions)
+            // 2. Buat Transaksi Otomatis (Auto-Generated Transactions) - Fixed Order (Baris 2-5)
             const autoTransactions = [];
             
             if (totalNominalKoin > 0) {
                 
-                // Baris 1: Penerimaan Koin NU (100% Masuk)
+                // Baris 2: Penerimaan Koin NU (100% Masuk)
                 autoTransactions.push({ 
-                    date: transactionDate, 
+                    date: autoDate, // Fixed order, no specific date shown
                     keterangan: 'Penerimaan Koin NU (100% dari Modul 1A)', 
-                    kategori: 'Koin NU', 
+                    kategori: 'Koin NU (Otomatis)', 
                     debit: totalNominalKoin, 
                     kredit: 0,
                     isAuto: true
                 });
                 
-                // Baris 2: Honor Petugas (10%)
+                // Baris 3: Honor Petugas (10%)
                 autoTransactions.push({ 
-                    date: transactionDate, 
+                    date: autoDate, // Fixed order, no specific date shown
                     keterangan: 'Pengeluaran Honor Petugas (10%)', 
-                    kategori: 'Honor Petugas 10%', 
+                    kategori: 'Honor Petugas (Otomatis)', 
                     debit: 0, 
                     kredit: koinNUData.totalHonorPetugas,
                     isAuto: true
                 });
 
-                // Baris 3: Honor MWC (25%)
+                // Baris 4: Honor MWC (25%)
                 autoTransactions.push({ 
-                    date: transactionDate, 
+                    date: autoDate, // Fixed order, no specific date shown
                     keterangan: 'Pengeluaran Honor MWC (25%)', 
-                    kategori: 'Honor MWC 25%', 
+                    kategori: 'Honor MWC (Otomatis)', 
                     debit: 0, 
                     kredit: koinNUData.totalHonorMWC,
                     isAuto: true
                 });
 
-                // Baris 4: Honor PC (5%)
+                // Baris 5: Honor PC (5%)
                 autoTransactions.push({ 
-                    date: transactionDate, 
+                    date: autoDate, // Fixed order, no specific date shown
                     keterangan: 'Pengeluaran Honor PC (5%)', 
-                    kategori: 'Honor PC 5%', 
+                    kategori: 'Honor PC (Otomatis)', 
                     debit: 0, 
                     kredit: koinNUData.totalHonorPC,
                     isAuto: true
                 });
             }
 
-            // 3. Gabungkan dan Urutkan Semua Transaksi
-            let allTransactions = autoTransactions.concat(m2ManualTransactions);
-            allTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+            // 3. Urutkan Manual Transactions (Baris 6+)
+            const sortedManualTransactions = m2ManualTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // 4. Gabungkan Auto dan Manual Transactions (Fixed Order)
+            let allTransactions = autoTransactions.concat(sortedManualTransactions);
 
-            // 4. Proses dan Render Transaksi
+            // 5. Proses dan Render Transaksi
             let runningSaldo = parseInput('m2-saldo-awal-input');
             let totalMasuk = 0;
             let totalKeluar = 0;
             let manualIndex = -1;
 
+            // Perbarui tampilan Saldo Awal (Baris 1)
             document.getElementById('m2-saldo-awal-display').textContent = formatNominal(runningSaldo);
 
             allTransactions.forEach((t, index) => {
-                const no = index + 1;
+                const no = index + 2; // Dimulai dari baris ke-2 (setelah Saldo Awal)
                 runningSaldo += t.debit - t.kredit;
                 totalMasuk += t.debit;
                 totalKeluar += t.kredit;
                 
                 let actionButtons = '-';
+                let dateDisplay = t.date;
 
                 if (!t.isAuto) {
                     manualIndex++;
+                    // Aktifkan tombol Edit/Hapus untuk transaksi manual (mulai Baris 6)
                     actionButtons = `
                         <button onclick="editManualTxn(${manualIndex})" class="action-btn edit-btn">Edit</button>
                         <button onclick="deleteManualTxn(${manualIndex})" class="action-btn delete-btn">Hapus</button>
                     `;
+                } else {
+                    // Jika otomatis (Baris 2-5), tampilkan '---' di kolom tanggal
+                    dateDisplay = '---'; 
                 }
 
                 const row = transactionBody.insertRow(-1); // Insert at the end
@@ -652,7 +661,7 @@
                 }
                 row.innerHTML = `
                     <td class="text-center">${no}</td>
-                    <td>${t.date}</td>
+                    <td>${dateDisplay}</td>
                     <td style="text-align: left;">${t.keterangan}</td>
                     <td style="text-align: left;">${t.kategori}</td>
                     <td class="text-right">${formatNominal(t.debit)}</td>
@@ -662,7 +671,7 @@
                 `;
             });
 
-            // 5. Update Footer
+            // 6. Update Footer
             document.getElementById('m2-total-masuk').textContent = formatNominal(totalMasuk);
             document.getElementById('m2-total-keluar').textContent = formatNominal(totalKeluar);
             document.getElementById('m2-footer-saldo-total').textContent = formatNominal(runningSaldo);
