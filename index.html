@@ -131,12 +131,16 @@
         }
         
         /* Total di Jurnal Umum */
-        #jurnal-umum-data tfoot td {
+        #jurnal-umum-table tfoot td {
             font-weight: bold;
             background-color: #e9ecef;
             text-align: right;
         }
-        #jurnal-umum-data tfoot td:nth-child(2) { text-align: center; }
+        #jurnal-umum-table tfoot td:nth-child(1), #jurnal-umum-table tfoot td:nth-child(3) { 
+            text-align: center; 
+            background-color: #006400; 
+            color: white; 
+        }
     </style>
 
 </head>
@@ -447,13 +451,21 @@
                     <tbody id="jurnal-umum-data"></tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="3" style="text-align: center;"></td>
-                            <td colspan="7" style="text-align: center; font-weight: bold;">TOTAL</td>
-                            <td></td>
+                            <td colspan="2" style="text-align: center; font-weight: bold; background-color: #006400; color: white;">TOTAL</td>
+                            <td style="text-align: center;"></td>
+                            <td id="total-donatur-jurnal" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">0</td>
+                            <td id="total-pendidikan-jurnal" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">0</td>
+                            <td id="total-kesehatan-jurnal" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">0</td>
+                            <td id="total-ekonomi-jurnal" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">0</td>
+                            <td id="total-sosial-jurnal" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">0</td>
+                            <td id="total-subsidi-jurnal" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">0</td>
+                            <td id="total-bencana-jurnal" style="text-align: center; font-weight: bold; background-color: #f2f2f2;">0</td>
+                            
+                            <td style="text-align: center;"></td>
                             <td id="total-masuk-jurnal" style="text-align: right; font-weight: bold;">0</td>
                             <td id="total-keluar-jurnal" style="text-align: right; font-weight: bold;">0</td>
-                            <td></td>
-                            <td></td>
+                            <td style="text-align: center;"></td>
+                            <td style="text-align: center;"></td>
                         </tr>
                     </tfoot>
                 </table>
@@ -507,6 +519,14 @@
             let currentSaldo = 0;
             let totalMasuk = 0;
             let totalKeluar = 0;
+            let totalDonatur = 0;
+            let totalPendidikan = 0;
+            let totalKesehatan = 0;
+            let totalEkonomi = 0;
+            let totalSosial = 0;
+            let totalSubsidi = 0;
+            let totalBencana = 0;
+            
             tableBody.innerHTML = '';
 
             // Render 5 Baris Otomatis (NO dan TANGGAL kosong)
@@ -544,6 +564,15 @@
                 // Data Jml Penerima (default 0 untuk demo)
                 const jmlPenerima = data.jml_penerima || {};
                 
+                // Akumulasi Penerima
+                totalDonatur += jmlPenerima.donatur || 0;
+                totalPendidikan += jmlPenerima.pendidikan || 0;
+                totalKesehatan += jmlPenerima.kesehatan || 0;
+                totalEkonomi += jmlPenerima.ekonomi || 0;
+                totalSosial += jmlPenerima.sosial || 0;
+                totalSubsidi += jmlPenerima.subsidi || 0;
+                totalBencana += jmlPenerima.bencana || 0;
+                
                 const row = tableBody.insertRow();
                 row.innerHTML = `
                     <td style="text-align: center;">${noManual++}</td><td>${formatTanggal(data.tanggal)}</td><td>${data.keterangan}</td>
@@ -565,6 +594,13 @@
             // Update Total di Footer Tabel
             document.getElementById('total-masuk-jurnal').textContent = formatNominal(totalMasuk);
             document.getElementById('total-keluar-jurnal').textContent = formatNominal(totalKeluar);
+            document.getElementById('total-donatur-jurnal').textContent = totalDonatur;
+            document.getElementById('total-pendidikan-jurnal').textContent = totalPendidikan;
+            document.getElementById('total-kesehatan-jurnal').textContent = totalKesehatan;
+            document.getElementById('total-ekonomi-jurnal').textContent = totalEkonomi;
+            document.getElementById('total-sosial-jurnal').textContent = totalSosial;
+            document.getElementById('total-subsidi-jurnal').textContent = totalSubsidi;
+            document.getElementById('total-bencana-jurnal').textContent = totalBencana;
 
             if (jurnalSnapshot.empty && automaticEntries.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="16" style="text-align: center;">Belum ada data Jurnal Umum.</td></tr>';
@@ -654,14 +690,42 @@
                         <tr><td style="text-align: center;">2</td><td>SALDO KAS TUNAI (Awal Tahun)</td><td colspan="2">0</td><td colspan="20"></td><td style="text-align: right;">0</td><td style="text-align: right;">0</td></tr>
                         </tbody>
                     <tfoot>
-                        </tfoot>
+                        <tr>
+                            <td colspan="2" style="text-align: center; font-weight: bold; background-color: #006400; color: white;">TOTAL TAHUNAN</td>
+                            <td id="total-tahunan-penerimaan-koin" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-donatur" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            
+                            <td id="total-tahunan-pend-uang" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-pend-penerima" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-kes-uang" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-kes-penerima" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-eko-uang" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-eko-penerima" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-sos-uang" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-sos-penerima" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-sub-uang" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-sub-penerima" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-ben-uang" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-ben-penerima" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-honor-petugas" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-honor-mwc" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-honor-pc" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-rapat" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-perwtn" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-biaya-bank" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="total-tahunan-lain-lain" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+
+                            <td id="total-tahunan-pengeluaran" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="saldo-akhir-tahunan" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                            <td id="saldo-kas-tahunan-final" style="text-align: right; font-weight: bold; background-color: #e9ecef;">0</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         `;
 
         const renderLaporanTahunanTable = async () => {
             const tableBody = document.getElementById('laporan-tahunan-data');
-            
             const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
             const existingRows = tableBody.querySelectorAll('tr');
@@ -672,42 +736,126 @@
             }
 
             let saldoKasTahunBerjalan = 0; 
+            
+            // Variabel Akumulasi Total Tahunan
+            let totalPenerimaanKoin = 0;
+            let totalDonatur = 0;
+            let totalPendUang = 0; let totalPendPenerima = 0;
+            let totalKesUang = 0; let totalKesPenerima = 0;
+            let totalEkoUang = 0; let totalEkoPenerima = 0;
+            let totalSosUang = 0; let totalSosPenerima = 0;
+            let totalSubUang = 0; let totalSubPenerima = 0;
+            let totalBenUang = 0; let totalBenPenerima = 0;
+            let totalHonorPetugas = 0; let totalHonorMWC = 0; let totalHonorPC = 0;
+            let totalRapat = 0; let totalPerwtn = 0; let totalBiayaBank = 0; let totalLainLain = 0;
+            let totalPengeluaran = 0;
+
 
             months.forEach((bulan, index) => {
                 const row = tableBody.insertRow();
-                // Data Fiktif untuk Demo Kolom
-                const totalPenerimaan = Math.floor(Math.random() * 5000000) + 1000000;
-                const totalPengeluaran = Math.floor(Math.random() * 4000000) + 500000;
-                const saldoAkhirBulan = totalPenerimaan - totalPengeluaran;
+                
+                // Data Fiktif Bulanan untuk Demo
+                const penerimaanKoin = Math.floor(Math.random() * 5000000) + 1000000;
+                const jmlDonatur = Math.floor(Math.random() * 50);
+                
+                const pengeluaranWajib = { pendUang: Math.round(penerimaanKoin * 0.05), pendPenerima: Math.floor(Math.random() * 5),
+                                         kesUang: Math.round(penerimaanKoin * 0.05), kesPenerima: Math.floor(Math.random() * 5),
+                                         ekoUang: Math.round(penerimaanKoin * 0.05), ekoPenerima: Math.floor(Math.random() * 5),
+                                         sosUang: Math.round(penerimaanKoin * 0.05), sosPenerima: Math.floor(Math.random() * 5),
+                                         subUang: Math.round(penerimaanKoin * 0.05), subPenerima: Math.floor(Math.random() * 5),
+                                         benUang: Math.round(penerimaanKoin * 0.05), benPenerima: Math.floor(Math.random() * 5),
+                                         honorPetugas: Math.round(penerimaanKoin * 0.1), honorMWC: Math.round(penerimaanKoin * 0.25), honorPC: Math.round(penerimaanKoin * 0.05) };
+                
+                const pengeluaranLain = { rapat: Math.floor(Math.random() * 500000), perwtn: Math.floor(Math.random() * 500000), 
+                                         biayaBank: Math.floor(Math.random() * 100000), lainLain: Math.floor(Math.random() * 200000) };
+
+                // Hitung Jumlah Pengeluaran per Bulan
+                let jumlahPengeluaranBulan = 0;
+                for (const key in pengeluaranWajib) {
+                    if (key.includes('Uang') || key.includes('honor')) {
+                        jumlahPengeluaranBulan += pengeluaranWajib[key];
+                    }
+                }
+                for (const key in pengeluaranLain) {
+                    jumlahPengeluaranBulan += pengeluaranLain[key];
+                }
+
+                const saldoAkhirBulan = penerimaanKoin - jumlahPengeluaranBulan;
                 saldoKasTahunBerjalan += saldoAkhirBulan;
                 
+                // Akumulasi Total Tahunan
+                totalPenerimaanKoin += penerimaanKoin;
+                totalDonatur += jmlDonatur;
+                totalPengeluaran += jumlahPengeluaranBulan;
+
+                totalPendUang += pengeluaranWajib.pendUang; totalPendPenerima += pengeluaranWajib.pendPenerima;
+                totalKesUang += pengeluaranWajib.kesUang; totalKesPenerima += pengeluaranWajib.kesPenerima;
+                totalEkoUang += pengeluaranWajib.ekoUang; totalEkoPenerima += pengeluaranWajib.ekoPenerima;
+                totalSosUang += pengeluaranWajib.sosUang; totalSosPenerima += pengeluaranWajib.sosPenerima;
+                totalSubUang += pengeluaranWajib.subUang; totalSubPenerima += pengeluaranWajib.subPenerima;
+                totalBenUang += pengeluaranWajib.benUang; totalBenPenerima += pengeluaranWajib.benPenerima;
+
+                totalHonorPetugas += pengeluaranWajib.honorPetugas;
+                totalHonorMWC += pengeluaranWajib.honorMWC;
+                totalHonorPC += pengeluaranWajib.honorPC;
+                
+                totalRapat += pengeluaranLain.rapat;
+                totalPerwtn += pengeluaranLain.perwtn;
+                totalBiayaBank += pengeluaranLain.biayaBank;
+                totalLainLain += pengeluaranLain.lainLain;
+
+
                 // Total kolom di baris data = 26 kolom
                 row.innerHTML = `
                     <td style="text-align: center;">${index + 3}</td>
                     <td>${bulan}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPenerimaan * 0.5))}</td>
-                    <td style="text-align: right;">${Math.floor(Math.random() * 50)}</td>
+                    <td style="text-align: right;">${formatNominal(penerimaanKoin)}</td>
+                    <td style="text-align: right;">${jmlDonatur}</td>
                     
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td><td style="text-align: right;">${Math.floor(Math.random() * 5)}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td><td style="text-align: right;">${Math.floor(Math.random() * 5)}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td><td style="text-align: right;">${Math.floor(Math.random() * 5)}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td><td style="text-align: right;">${Math.floor(Math.random() * 5)}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td><td style="text-align: right;">-</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td><td style="text-align: right;">${Math.floor(Math.random() * 5)}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.1))}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.1))}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td>
+                    <td style="text-align: right;">${formatNominal(pengeluaranWajib.pendUang)}</td><td style="text-align: right;">${pengeluaranWajib.pendPenerima}</td> <td style="text-align: right;">${formatNominal(pengeluaranWajib.kesUang)}</td><td style="text-align: right;">${pengeluaranWajib.kesPenerima}</td> <td style="text-align: right;">${formatNominal(pengeluaranWajib.ekoUang)}</td><td style="text-align: right;">${pengeluaranWajib.ekoPenerima}</td> <td style="text-align: right;">${formatNominal(pengeluaranWajib.sosUang)}</td><td style="text-align: right;">${pengeluaranWajib.sosPenerima}</td> <td style="text-align: right;">${formatNominal(pengeluaranWajib.subUang)}</td><td style="text-align: right;">${pengeluaranWajib.subPenerima}</td> <td style="text-align: right;">${formatNominal(pengeluaranWajib.benUang)}</td><td style="text-align: right;">${pengeluaranWajib.benPenerima}</td> <td style="text-align: right;">${formatNominal(pengeluaranWajib.honorPetugas)}</td>
+                    <td style="text-align: right;">${formatNominal(pengeluaranWajib.honorMWC)}</td>
+                    <td style="text-align: right;">${formatNominal(pengeluaranWajib.honorPC)}</td>
                     
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td>
-                    <td style="text-align: right;">${formatNominal(Math.round(totalPengeluaran * 0.05))}</td>
-                    <td style="text-align: right; font-weight: bold;">${formatNominal(totalPengeluaran)}</td>
+                    <td style="text-align: right;">${formatNominal(pengeluaranLain.rapat)}</td>
+                    <td style="text-align: right;">${formatNominal(pengeluaranLain.perwtn)}</td>
+                    <td style="text-align: right;">${formatNominal(pengeluaranLain.biayaBank)}</td>
+                    <td style="text-align: right;">${formatNominal(pengeluaranLain.lainLain)}</td>
+                    <td style="text-align: right; font-weight: bold;">${formatNominal(jumlahPengeluaranBulan)}</td>
 
                     <td style="text-align: right; font-weight: bold;">${formatNominal(saldoAkhirBulan)}</td>
                     <td style="text-align: right; font-weight: bold;">${formatNominal(saldoKasTahunBerjalan)}</td>
                 `;
             });
+            
+            // Update Footer Total Tahunan
+            document.getElementById('total-tahunan-penerimaan-koin').textContent = formatNominal(totalPenerimaanKoin);
+            document.getElementById('total-tahunan-donatur').textContent = totalDonatur;
+            document.getElementById('total-tahunan-pengeluaran').textContent = formatNominal(totalPengeluaran);
+            
+            document.getElementById('total-tahunan-pend-uang').textContent = formatNominal(totalPendUang);
+            document.getElementById('total-tahunan-pend-penerima').textContent = totalPendPenerima;
+            document.getElementById('total-tahunan-kes-uang').textContent = formatNominal(totalKesUang);
+            document.getElementById('total-tahunan-kes-penerima').textContent = totalKesPenerima;
+            document.getElementById('total-tahunan-eko-uang').textContent = formatNominal(totalEkoUang);
+            document.getElementById('total-tahunan-eko-penerima').textContent = totalEkoPenerima;
+            document.getElementById('total-tahunan-sos-uang').textContent = formatNominal(totalSosUang);
+            document.getElementById('total-tahunan-sos-penerima').textContent = totalSosPenerima;
+            document.getElementById('total-tahunan-sub-uang').textContent = formatNominal(totalSubUang);
+            document.getElementById('total-tahunan-sub-penerima').textContent = totalSubPenerima;
+            document.getElementById('total-tahunan-ben-uang').textContent = formatNominal(totalBenUang);
+            document.getElementById('total-tahunan-ben-penerima').textContent = totalBenPenerima;
+            
+            document.getElementById('total-tahunan-honor-petugas').textContent = formatNominal(totalHonorPetugas);
+            document.getElementById('total-tahunan-honor-mwc').textContent = formatNominal(totalHonorMWC);
+            document.getElementById('total-tahunan-honor-pc').textContent = formatNominal(totalHonorPC);
+            
+            document.getElementById('total-tahunan-rapat').textContent = formatNominal(totalRapat);
+            document.getElementById('total-tahunan-perwtn').textContent = formatNominal(totalPerwtn);
+            document.getElementById('total-tahunan-biaya-bank').textContent = formatNominal(totalBiayaBank);
+            document.getElementById('total-tahunan-lain-lain').textContent = formatNominal(totalLainLain);
+            
+            document.getElementById('saldo-akhir-tahunan').textContent = formatNominal(saldoAkhirBulan);
+            document.getElementById('saldo-kas-tahunan-final').textContent = formatNominal(saldoKasTahunBerjalan);
         };
     </script>
 </body>
