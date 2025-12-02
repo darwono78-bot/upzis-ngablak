@@ -26,7 +26,7 @@
 <body>
 
     <h1>Sistem Input & Laporan KOIN NU Interaktif (Detail Penuh)</h1>
-    <p style="color: red; font-weight: bold;">Catatan: Silakan ubah angka di Modul 1 dan Saldo Bulan Lalu (Modul 2), maka semua laporan akan otomatis berubah.</p>
+    <p style="color: red; font-weight: bold;">Catatan: Silakan ubah angka di Modul 1 dan Saldo Bulan Lalu (Modul 2), termasuk **Saldo Awal Bank dan Tunai (Modul 3)**, maka semua laporan akan otomatis berubah.</p>
 
     <h2>MODUL 1: INPUT DATA BULANAN (Sumber Utama)</h2>
     <table id="tabel-modul-1" class="input-table">
@@ -114,14 +114,6 @@
 
     <h2>MODUL 3: TAMPILAN LAPORAN TAHUNAN</h2>
     
-    <div style="margin-bottom: 15px;">
-        <label for="saldo-bank-awal-input" style="display: block; font-weight: bold;">1. Input SALDO KAS BANK (Awal Tahun):</label>
-        <input type="number" id="saldo-bank-awal-input" value="10000000" min="0" style="width: 250px; padding: 5px;">
-        <br>
-        <label for="saldo-tunai-awal-input" style="display: block; font-weight: bold;">2. Input SALDO KAS TUNAI (Awal Tahun):</label>
-        <input type="number" id="saldo-tunai-awal-input" value="5000000" min="0" style="width: 250px; padding: 5px;">
-    </div>
-
     <table id="tabel-modul-3">
         <thead>
             <tr>
@@ -243,16 +235,25 @@
             pc: 0.05
         };
 
+        // Saldo Awal Default (Digunakan saat pertama kali load)
+        let initialBankBalance = 10000000;
+        let initialCashBalance = 5000000;
+
         // --- HELPER FUNCTION ---
         const formatNominal = (angka) => {
             if (typeof angka !== 'number' || isNaN(angka)) return '0';
             return angka.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
         };
+        
+        // Fungsi parsing input yang kini harus mencari input di Modul 3 juga
         const parseInput = (id) => {
             const element = document.getElementById(id);
             if (element) {
                 return parseFloat(element.value) || 0;
             }
+            // Khusus untuk Saldo Awal Modul 3, jika elemen belum ada (pertama kali load), gunakan nilai default
+            if (id === 'saldo-bank-awal-input') return initialBankBalance;
+            if (id === 'saldo-tunai-awal-input') return initialCashBalance;
             return 0;
         };
 
@@ -352,18 +353,24 @@
             tableBody.innerHTML = ''; 
 
             // --- 1. AMBIL SALDO AWAL (BANK & TUNAI) ---
+            // Gunakan parseInput untuk mengambil nilai yang terakhir diinput/nilai default
             const saldoBankAwal = parseInput('saldo-bank-awal-input');
             const saldoTunaiAwal = parseInput('saldo-tunai-awal-input');
 
+            // Simpan nilai input yang baru untuk digunakan sebagai default di render berikutnya
+            initialBankBalance = saldoBankAwal;
+            initialCashBalance = saldoTunaiAwal;
+
             // Saldo Kas Tahun Berjalan (Running Total untuk Kolom 9)
-            let runningSaldoKas = saldoBankAwal + saldoTunaiAwal; 
+            let runningSaldoKas = 0; 
             
             // Inisialisasi Total Tahunan
-            let totalPenerimaanTahunan = saldoBankAwal + saldoTunaiAwal; // Mulai dengan Saldo Awal
+            let totalPenerimaanTahunan = 0; 
             let totalDonaturTahunan = 0;
             let totalPengeluaranTahunan = 0;
             let totalHonorTahunan = 0;
-            // ... (inisialisasi total dana sosial & operasional)
+            
+            // Total Uang & Penerima untuk Dana Sosial
             let totalPendUangTahunan = 0;
             let totalPendPnmTahunan = 0;
             let totalKesUangTahunan = 0;
@@ -376,32 +383,38 @@
             let totalBanomPnmTahunan = 0;
             let totalBencanaUangTahunan = 0;
             let totalBencanaPnmTahunan = 0;
+
+            // Total Operasional
             let totalRapatTahunan = 0;
             let totalPerwtnTahunan = 0;
             let totalBankTahunan = 0;
             let totalLainTahunan = 0;
-
+            
 
             // --- 2. MASUKKAN BARIS SALDO AWAL ---
-
-            // Baris SALDO KAS BANK (Awal Tahun)
+            
+            // Baris 1: SALDO KAS BANK (Awal Tahun)
+            runningSaldoKas += saldoBankAwal; // Saldo Bank masuk ke Kas Tahun Berjalan
             let rowBank = tableBody.insertRow();
             rowBank.classList.add('saldo-awal-row');
             rowBank.innerHTML = `
                 <td>-</td>
                 <td>SALDO KAS BANK (Awal Tahun)</td>
-                <td class="text-right">${formatNominal(saldoBankAwal)}</td> <td colspan="17">-</td>
+                <td class="text-right"><input type="number" id="saldo-bank-awal-input" value="${saldoBankAwal}" min="0" style="width: 100%;"></td>
+                <td class="text-right">-</td> <td colspan="16">-</td>
                 <td>-</td>
                 <td>-</td>
-                <td class="text-right">-</td> <td class="text-right">${formatNominal(saldoBankAwal)}</td> `;
+                <td class="text-right">-</td> <td class="text-right">${formatNominal(runningSaldoKas)}</td> `;
             
-            // Baris SALDO KAS TUNAI (Awal Tahun)
+            // Baris 2: SALDO KAS TUNAI (Awal Tahun)
+            runningSaldoKas += saldoTunaiAwal; // Saldo Tunai ikut menjumlahkan ke Kas Tahun Berjalan
             let rowTunai = tableBody.insertRow();
             rowTunai.classList.add('saldo-awal-row');
             rowTunai.innerHTML = `
                 <td>-</td>
                 <td>SALDO KAS TUNAI (Awal Tahun)</td>
-                <td class="text-right">${formatNominal(saldoTunaiAwal)}</td> <td colspan="17">-</td>
+                <td class="text-right"><input type="number" id="saldo-tunai-awal-input" value="${saldoTunaiAwal}" min="0" style="width: 100%;"></td>
+                <td class="text-right">-</td> <td colspan="16">-</td>
                 <td>-</td>
                 <td>-</td>
                 <td class="text-right">${formatNominal(saldoTunaiAwal)}</td> <td class="text-right">${formatNominal(runningSaldoKas)}</td> `;
@@ -419,7 +432,7 @@
                 // Update Running Total
                 runningSaldoKas += saldoAkhirBulanIni; 
 
-                // --- AKUMULASI TOTAL TAHUNAN ---
+                // --- AKUMULASI TOTAL TAHUNAN (Hanya data bulanan) ---
                 totalPenerimaanTahunan += dataBulan.penerimaan;
                 totalDonaturTahunan += dataBulan.donatur;
                 totalPengeluaranTahunan += jmlPengeluaranBulanIni;
@@ -509,6 +522,14 @@
             const currentData = gatherInputData();
             updateJurnalUmum(currentData);
             updateLaporanTahunan(currentData);
+            
+            // Re-attach listeners for dynamically generated Modul 3 inputs after redraw
+            const dynamicInputs = document.querySelectorAll('#m3-data-body input[type="number"]');
+            dynamicInputs.forEach(input => {
+                // Hapus listener lama jika ada, lalu tambahkan yang baru
+                input.removeEventListener('input', recalculateAllReports);
+                input.addEventListener('input', recalculateAllReports);
+            });
         }
 
         // --- INITIALIZATION ---
@@ -549,13 +570,13 @@
                 `;
             });
             
-            // 2. Attach Event Listeners to ALL input fields (Modul 1 dan Saldo Awal Modul 2 & 3)
-            const inputs = document.querySelectorAll('input[type="number"]');
-            inputs.forEach(input => {
+            // 2. Attach Event Listeners to static input fields (Modul 1 dan Saldo Awal Modul 2)
+            const staticInputs = document.querySelectorAll('#tabel-modul-1 input[type="number"], #m2-saldo-awal-input');
+            staticInputs.forEach(input => {
                 input.addEventListener('input', recalculateAllReports);
             });
 
-            // 3. Run initial calculation
+            // 3. Run initial calculation (This will generate the Modul 3 inputs for the first time)
             recalculateAllReports();
         }
 
