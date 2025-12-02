@@ -336,999 +336,1011 @@
 
         </div>
     </div>
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, signOut, onAuthStateChanged, getIdTokenResult } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
+    import { getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, getDocs, runTransaction, getDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
-        import { getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, getDocs, runTransaction, getDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
+    // Global variables from Canvas environment
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* Your manual config as fallback, though not used here */ };
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        // PENTING: Konfigurasi Firebase Anda dimasukkan langsung di sini. 
-        // Jaga kerahasiaan apiKey Anda.
-        const firebaseConfig = {
-            apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
-            authDomain: "upzis-ngablak.firebaseapp.com",
-            projectId: "upzis-ngablak",
-            storageBucket: "upzis-ngablak.firebasestorage.app",
-            messagingSenderId: "869549648344",
-            appId: "1:869549648344:web:a531a37cce3a87bb672aad"
-        };
-        
-        // Ambil appId dari konfigurasi (digunakan untuk path koleksi)
-        const appId = firebaseConfig.appId;
+    setLogLevel('debug'); // Wajib untuk melihat log Firebase
 
-        // Token otentikasi awal (jika ada dari environment lain)
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    let db;
+    let auth;
+    let userId = null;
+    let isAdmin = false; // Status Admin global baru
+    let isAuthReady = false;
+    let currentKoinUnsubscribe = () => {};
+    let currentJurnalUnsubscribe = () => {};
+    let currentSaldoUnsubscribe = () => {};
 
-        setLogLevel('debug'); // Wajib untuk melihat log Firebase
+    // --- UTILITY FUNCTIONS ---
 
-        let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false;
-        let currentKoinUnsubscribe = () => {};
-        let currentJurnalUnsubscribe = () => {};
-        let currentSaldoUnsubscribe = () => {};
+    // Fungsi untuk format angka (tanpa Rp)
+    const formatRupiah = (number) => {
+        return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(number);
+    };
 
-        // --- UTILITY FUNCTIONS ---
+    // Fungsi untuk format tanggal (Indonesia)
+    const formatTanggalIndonesia = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+    };
+    
+    // Fungsi untuk mendapatkan path koleksi
+    const collectionPath = (col) => {
+        if (!userId) {
+            console.error("User ID tidak tersedia. Gagal membuat path koleksi.");
+            return null;
+        }
+        // Menggunakan path private per user
+        return `/artifacts/${appId}/users/${userId}/${col}`;
+    };
 
-        // Fungsi untuk format angka (tanpa Rp)
-        const formatRupiah = (number) => {
-            return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(number);
-        };
+    // Fungsi Penundaan (Exponential Backoff)
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const MAX_RETRIES = 5;
 
-        // Fungsi untuk format tanggal (Indonesia)
-        const formatTanggalIndonesia = (dateString) => {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
-        };
-        
-        // Fungsi untuk mendapatkan path koleksi
-        const collectionPath = (col) => {
-            if (!userId) {
-                console.error("User ID tidak tersedia. Gagal membuat path koleksi.");
-                return null;
-            }
-            // Menggunakan path private per user
-            return `/artifacts/${appId}/users/${userId}/${col}`;
-        };
-
-        // Fungsi Penundaan (Exponential Backoff)
-        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-        const MAX_RETRIES = 5;
-
-        // Fungsi Wrapper Fetch (Contoh API call, tidak terpakai di sini tapi baik untuk praktik)
-        async function robustFetch(url, options) {
-            for (let i = 0; i < MAX_RETRIES; i++) {
-                try {
-                    const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return await response.json();
-                } catch (error) {
-                    if (i === MAX_RETRIES - 1) {
-                        console.error('Fetch failed after multiple retries:', error);
-                        throw error;
-                    }
-                    const waitTime = Math.pow(2, i) * 1000;
-                    console.warn(`Retry ${i + 1}/${MAX_RETRIES}. Waiting ${waitTime}ms...`, error.message);
-                    await delay(waitTime);
+    // Fungsi Wrapper Fetch (Contoh API call, tidak terpakai di sini tapi baik untuk praktik)
+    async function robustFetch(url, options) {
+        for (let i = 0; i < MAX_RETRIES; i++) {
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                if (i === MAX_RETRIES - 1) {
+                    console.error('Fetch failed after multiple retries:', error);
+                    throw error;
                 }
+                const waitTime = Math.pow(2, i) * 1000;
+                console.warn(`Retry ${i + 1}/${MAX_RETRIES}. Waiting ${waitTime}ms...`, error.message);
+                await delay(waitTime);
+            }
+        }
+    }
+
+    // --- FIREBASE INITIALIZATION & AUTH ---
+
+    // Fungsi untuk menyesuaikan UI berdasarkan status Admin
+    const toggleAdminUI = (isAdminStatus) => {
+        // Form Input
+        const koinCard = document.getElementById('koin-input-card');
+        const jurnalCard = document.getElementById('jurnal-input-card');
+        
+        // Tombol Admin
+        const resetJurnalBtn = document.getElementById('reset-data-jurnal');
+        const editSaldoAwalBtn = document.getElementById('edit-saldo-awal');
+        
+        // Tombol Aksi di Tabel (Edit/Delete) - Tidak bisa disembunyikan langsung di sini, perlu di dalam render.
+        
+        if (isAdminStatus) {
+            koinCard?.classList.remove('hidden');
+            jurnalCard?.classList.remove('hidden');
+            resetJurnalBtn?.classList.remove('hidden');
+            editSaldoAwalBtn?.classList.remove('hidden');
+        } else {
+            koinCard?.classList.add('hidden');
+            jurnalCard?.classList.add('hidden');
+            resetJurnalBtn?.classList.add('hidden');
+            editSaldoAwalBtn?.classList.add('hidden');
+        }
+        
+        // Peringatan: Akses edit/delete di dalam renderLaporanKoin dan renderJurnalUmum juga harus dicek.
+    }
+
+
+    const initFirebase = async () => {
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    userId = user.uid;
+                    document.getElementById('user-id-display').textContent = userId;
+
+                    // --- Cek Status Admin (Sesuai Firebase Rules) ---
+                    isAdmin = false;
+                    let email = null;
+                    try {
+                        // Force refresh token untuk mendapatkan klaim terbaru, termasuk email
+                        const tokenResult = await getIdTokenResult(user, true); 
+                        email = tokenResult.claims.email;
+                        // Bandingkan dengan email Admin yang ada di Security Rules
+                        if (email === "darwono78@gmail.com") {
+                            isAdmin = true;
+                        }
+                    } catch (e) {
+                        console.warn("Gagal mendapatkan token atau klaim (mungkin pengguna Anonim):", e.message);
+                    }
+                    // --- END Cek Status Admin ---
+
+
+                    if (isAdmin) {
+                        document.getElementById('user-info').textContent = `Selamat datang, Administrator (${email})! ID Anda: ${userId}`;
+                    } else {
+                        document.getElementById('user-info').textContent = `Selamat datang, Pengunjung! (ID: ${userId}). Anda hanya memiliki akses baca (Read-Only).`;
+                    }
+                    
+                    // Tampilkan/Sembunyikan UI Input/Edit
+                    toggleAdminUI(isAdmin);
+
+                    isAuthReady = true;
+                    
+                    // Setelah Auth siap, jalankan listener data
+                    setupDataListeners();
+                    populateYearFilter();
+
+                } else {
+                    // Coba sign in dengan custom token atau anonim
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error("Error initializing Firebase:", error);
+            document.getElementById('user-info').textContent = `Kesalahan: Gagal menginisialisasi Firebase. Cek konsol.`;
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            // Setelah logout, onAuthStateChanged akan dipanggil lagi
+        } catch (error) {
+            console.error("Error during logout:", error);
+        }
+    };
+
+    document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
+    // --- TAB/NAVIGASI LOGIC ---
+
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+    let currentModule = 'laporan-koin';
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const target = button.getAttribute('data-target');
+
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            tabContents.forEach(content => content.classList.add('hidden'));
+            document.getElementById(target).classList.remove('hidden');
+            
+            currentModule = target;
+            
+            // Panggil listener/render untuk modul yang baru dibuka jika perlu
+            if (isAuthReady) {
+                if (target === 'laporan-tahunan') {
+                    renderLaporanTahunan();
+                } else if (target === 'jurnal-umum') {
+                    // Jurnal umum akan di-render oleh listener otomatis
+                }
+            }
+        });
+    });
+
+    // --- FIREBASE DATA LISTENERS (onSnapshot) ---
+
+    const setupDataListeners = () => {
+        if (!isAuthReady) return;
+
+        // 1. Laporan Koin Listener
+        currentKoinUnsubscribe();
+        const dateFilterKoin = document.getElementById('filter-bulan-koin').value;
+        let qKoin = query(collection(db, collectionPath('laporan_koin_nu')), orderBy('tanggal', 'desc'));
+
+        if (dateFilterKoin) {
+            const start = new Date(dateFilterKoin + '-01');
+            const end = new Date(start);
+            end.setMonth(start.getMonth() + 1);
+            qKoin = query(collection(db, collectionPath('laporan_koin_nu')), 
+                          where('tanggal', '>=', start.toISOString().substring(0, 10)),
+                          where('tanggal', '<', end.toISOString().substring(0, 10)),
+                          orderBy('tanggal', 'desc'));
+        }
+
+        currentKoinUnsubscribe = onSnapshot(qKoin, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            renderLaporanKoin(data);
+        }, (error) => {
+            console.error("Error listening to Laporan Koin:", error);
+            document.getElementById('tbody-laporan-koin').innerHTML = `<tr><td colspan="11" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
+        });
+
+        // 2. Jurnal Umum Listener
+        currentJurnalUnsubscribe();
+        const dateFilterJurnal = document.getElementById('filter-bulan-jurnal').value;
+        let qJurnal = query(collection(db, collectionPath('jurnal_umum')), orderBy('tanggal', 'desc'));
+
+        if (dateFilterJurnal) {
+            const start = new Date(dateFilterJurnal + '-01');
+            const end = new Date(start);
+            end.setMonth(start.getMonth() + 1);
+            qJurnal = query(collection(db, collectionPath('jurnal_umum')), 
+                            where('tanggal', '>=', start.toISOString().substring(0, 10)),
+                            where('tanggal', '<', end.toISOString().substring(0, 10)),
+                            orderBy('tanggal', 'asc')); // ASC untuk jurnal agar saldo berjalan benar
+        } else {
+            qJurnal = query(collection(db, collectionPath('jurnal_umum')), orderBy('tanggal', 'asc'));
+        }
+
+
+        currentJurnalUnsubscribe = onSnapshot(qJurnal, async (snapshot) => {
+            let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            
+            // Ambil data Koin bulan ini untuk menghitung otomatis
+            const currentMonth = dateFilterJurnal || new Date().toISOString().substring(0, 7);
+            const start = new Date(currentMonth + '-01');
+            const end = new Date(start);
+            end.setMonth(start.getMonth() + 1);
+
+            const qKoinForJurnal = query(collection(db, collectionPath('laporan_koin_nu')), 
+                                        where('tanggal', '>=', start.toISOString().substring(0, 10)),
+                                        where('tanggal', '<', end.toISOString().substring(0, 10)));
+            
+            const koinSnapshot = await getDocs(qKoinForJurnal);
+            const koinData = koinSnapshot.docs.map(doc => doc.data());
+
+            renderJurnalUmum(data, koinData, currentMonth);
+
+        }, (error) => {
+            console.error("Error listening to Jurnal Umum:", error);
+            document.getElementById('tbody-jurnal-umum').innerHTML = `<tr><td colspan="16" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
+        });
+        
+        // 3. Saldo Awal Listener (untuk Laporan Tahunan)
+        currentSaldoUnsubscribe();
+        const saldoDocRef = doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun');
+        currentSaldoUnsubscribe = onSnapshot(saldoDocRef, (docSnap) => {
+            const data = docSnap.exists() ? docSnap.data() : { bank: 0, tunai: 0 };
+            document.getElementById('saldo-bank').value = data.bank || 0;
+            document.getElementById('saldo-tunai').value = data.tunai || 0;
+
+            // Jika modul laporan tahunan sedang aktif, render ulang
+            if (currentModule === 'laporan-tahunan') {
+                 renderLaporanTahunan();
+            }
+        }, (error) => {
+            console.error("Error listening to Saldo Awal:", error);
+        });
+    };
+
+    // --- RENDER FUNCTIONS ---
+
+    // Modul 1: Laporan Dana Koin
+    const renderLaporanKoin = (data) => {
+        const tbody = document.getElementById('tbody-laporan-koin');
+        tbody.innerHTML = '';
+        
+        if (data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-gray-500">Belum ada data Koin.</td></tr>`;
+            return;
+        }
+
+        data.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal)); // Data baru di atas data lama
+
+        data.forEach((item, index) => {
+            const total = item.nominal || 0;
+            const ranting = Math.round(total * 0.60);
+            const petugas = Math.round(total * 0.10);
+            const mwc = Math.round(total * 0.25);
+            const pc = Math.round(total * 0.05);
+
+            // Pastikan total sama (untuk pembulatan)
+            const diff = total - (ranting + petugas + mwc + pc);
+            // Tambahkan selisih ke komponen terbesar (Ranting)
+            const finalRanting = ranting + diff;
+            
+            // --- Cek Status Admin untuk Aksi ---
+            const actionButtons = isAdmin ? `
+                <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.editKoin('${item.id}', '${item.tanggal}', '${item.nama_petugas}', '${item.no_hp}', '${item.donatur_kelompok}', '${item.alamat_rtrw}', ${total})">
+                    <i data-lucide="edit" class="w-4 h-4 inline-block"></i>
+                </button>
+                <button class="text-red-500 hover:text-red-700" onclick="window.deleteKoin('${item.id}', ${total})">
+                    <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
+                </button>
+            ` : `<span class="text-gray-400">Read-Only</span>`;
+
+            const row = `
+                <tr class="hover:bg-gray-50">
+                    <td class="center-text">${data.length - index}</td>
+                    <td>${formatTanggalIndonesia(item.tanggal)}</td>
+                    <td>${item.nama_petugas}</td>
+                    <td>${item.no_hp || '-'}</td>
+                    <td>${item.donatur_kelompok}</td>
+                    <td>${item.alamat_rtrw || '-'}</td>
+                    <td class="text-right font-semibold">${formatRupiah(total)}</td>
+                    <td class="text-right">${formatRupiah(finalRanting)}</td>
+                    <td class="text-right">${formatRupiah(petugas)}</td>
+                    <td class="text-right">${formatRupiah(mwc)}</td>
+                    <td class="text-right">${formatRupiah(pc)}</td>
+                    <td class="center-text">${actionButtons}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+        // Re-render Lucide icons
+        lucide.createIcons();
+    };
+
+    // Modul 2: Jurnal Umum
+    const renderJurnalUmum = async (data, koinData, currentMonth) => {
+        const tbody = document.getElementById('tbody-jurnal-umum');
+        const tfootMasuk = document.getElementById('total-masuk');
+        const tfootKeluar = document.getElementById('total-keluar');
+        const tfootSaldo = document.getElementById('saldo-akhir');
+
+        tbody.innerHTML = '';
+        
+        // 1. Dapatkan Saldo Bulan Lalu (Manual Input)
+        let saldoBulanLaluValue = 0;
+        const saldoRef = doc(db, collectionPath('jurnal_umum'), currentMonth); // Saldo disimpan per bulan
+        
+        try {
+            const saldoSnap = await getDoc(saldoRef);
+            if (saldoSnap.exists()) {
+                saldoBulanLaluValue = saldoSnap.data().saldo_awal_bulan || 0;
+            }
+        } catch (e) {
+            console.error("Gagal mendapatkan Saldo Bulan Lalu:", e);
+        }
+
+        // 2. Hitung Total Koin Bulan Ini dan Distribusi Otomatis
+        const totalKoin = koinData.reduce((sum, k) => sum + (k.nominal || 0), 0);
+        const petugas = Math.round(totalKoin * 0.10);
+        const mwc = Math.round(totalKoin * 0.25);
+        const pc = Math.round(totalKoin * 0.05);
+        
+        // --- Aksi untuk Saldo Bulan Lalu ---
+        const saldoBulanLaluAksi = isAdmin ? `
+            <button class="text-yellow-500 hover:text-yellow-700" onclick="window.editSaldoBulanLalu('${currentMonth}', ${saldoBulanLaluValue})"><i data-lucide="edit" class="w-4 h-4 inline-block"></i></button>
+        ` : 'Otomatis/Manual';
+
+
+        // 3. Tambahkan 5 Baris Otomatis/Manual di Awal
+        let manualRows = [];
+        let rowNoCounter = 1;
+        let currentSaldo = 0;
+        let totalDanaMasuk = 0;
+        let totalDanaKeluar = 0;
+        
+        // Baris 1: Saldo Bulan Lalu (Manual Input, bisa di edit)
+        currentSaldo += saldoBulanLaluValue;
+        manualRows.push({
+            id: currentMonth,
+            keterangan: 'SALDO BULAN LALU (Input Manual)',
+            dana_masuk: saldoBulanLaluValue,
+            dana_keluar: 0,
+            kategori: 'SALDO',
+            aksi: saldoBulanLaluAksi,
+            saldo: currentSaldo,
+            isManual: true,
+            style: 'bg-yellow-100 font-bold'
+        });
+        totalDanaMasuk += saldoBulanLaluValue;
+
+        // Baris 2: Total Penerimaan Koin (Dana Masuk Otomatis)
+        currentSaldo += totalKoin;
+        manualRows.push({
+            keterangan: 'Total Penerimaan Koin',
+            dana_masuk: totalKoin,
+            dana_keluar: 0,
+            kategori: 'Koin NU',
+            aksi: 'Otomatis',
+            saldo: currentSaldo,
+            isManual: false,
+            style: 'bg-green-100 font-bold'
+        });
+        totalDanaMasuk += totalKoin;
+
+        // Baris 3-5: Dana Keluar Distribusi Koin (Otomatis)
+        // Petugas 10%
+        currentSaldo -= petugas;
+        manualRows.push({
+            keterangan: 'Petugas 10%',
+            dana_masuk: 0,
+            dana_keluar: petugas,
+            kategori: 'Petugas 10%',
+            aksi: 'Otomatis',
+            saldo: currentSaldo,
+            isManual: false,
+            style: 'bg-red-100'
+        });
+        totalDanaKeluar += petugas;
+
+        // MWC 25%
+        currentSaldo -= mwc;
+        manualRows.push({
+            keterangan: 'MWC 25%',
+            dana_masuk: 0,
+            dana_keluar: mwc,
+            kategori: 'MWC 25%',
+            aksi: 'Otomatis',
+            saldo: currentSaldo,
+            isManual: false,
+            style: 'bg-red-100'
+        });
+        totalDanaKeluar += mwc;
+
+        // PC 5%
+        currentSaldo -= pc;
+        manualRows.push({
+            keterangan: 'PC 5%',
+            dana_masuk: 0,
+            dana_keluar: pc,
+            kategori: 'PC 5%',
+            aksi: 'Otomatis',
+            saldo: currentSaldo,
+            isManual: false,
+            style: 'bg-red-100'
+        });
+        totalDanaKeluar += pc;
+        
+        // Tampilkan baris-baris manual
+        manualRows.forEach(row => {
+            const penerimaHtml = `
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+            `;
+            const rowHtml = `
+                <tr class="${row.style}">
+                    <td class="center-text">-</td>
+                    <td class="center-text">-</td>
+                    <td>${row.keterangan}</td>
+                    ${penerimaHtml}
+                    <td>${row.kategori}</td>
+                    <td class="text-right">${formatRupiah(row.dana_masuk)}</td>
+                    <td class="text-right">${formatRupiah(row.dana_keluar)}</td>
+                    <td class="text-right">${formatRupiah(row.saldo)}</td>
+                    <td class="center-text">${row.aksi}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', rowHtml);
+        });
+        
+        // 4. Tampilkan Baris Jurnal Manual (Mulai Penomoran dari Baris ke-6)
+        data.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal)); // Urutkan ASC untuk saldo berjalan
+
+        data.forEach((item) => {
+            const masuk = item.dana_masuk || 0;
+            const keluar = item.dana_keluar || 0;
+            
+            // Hitung saldo berjalan
+            currentSaldo += masuk - keluar;
+            totalDanaMasuk += masuk;
+            totalDanaKeluar += keluar;
+
+            const penerimaObj = item.jumlah_penerima || {};
+            const penerimaHtml = `
+                <td class="center-text">${penerimaObj.donatur || '-'}</td>
+                <td class="center-text">${penerimaObj.pendidikan || '-'}</td>
+                <td class="center-text">${penerimaObj.kesehatan || '-'}</td>
+                <td class="center-text">${penerimaObj.ekonomi || '-'}</td>
+                <td class="center-text">${penerimaObj.sosial || '-'}</td>
+                <td class="center-text">${penerimaObj.subsidi || '-'}</td>
+                <td class="center-text">${penerimaObj.bencana || '-'}</td>
+            `;
+            
+            // --- Cek Status Admin untuk Aksi ---
+            const actionButtons = isAdmin ? `
+                <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.editJurnal('${item.id}', '${item.tanggal}', '${item.keterangan}', '${item.jenis_transaksi}', '${item.kategori}', ${masuk > 0 ? masuk : keluar}, '${JSON.stringify(penerimaObj).replace(/"/g, '&quot;')}')">
+                    <i data-lucide="edit" class="w-4 h-4 inline-block"></i>
+                </button>
+                <button class="text-red-500 hover:text-red-700" onclick="window.deleteJurnal('${item.id}')">
+                    <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
+                </button>
+            ` : `<span class="text-gray-400">Read-Only</span>`;
+
+
+            const row = `
+                <tr class="hover:bg-gray-50">
+                    <td class="center-text">${rowNoCounter++}</td>
+                    <td>${formatTanggalIndonesia(item.tanggal)}</td>
+                    <td>${item.keterangan}</td>
+                    ${penerimaHtml}
+                    <td>${item.kategori}</td>
+                    <td class="text-right">${item.jenis_transaksi === 'MASUK' ? formatRupiah(masuk) : ''}</td>
+                    <td class="text-right">${item.jenis_transaksi === 'KELUAR' ? formatRupiah(keluar) : ''}</td>
+                    <td class="text-right font-semibold">${formatRupiah(currentSaldo)}</td>
+                    <td class="center-text">${actionButtons}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', row);
+        });
+        
+        // 5. Update Footer (Total dan Saldo Akhir)
+        tfootMasuk.textContent = formatRupiah(totalDanaMasuk);
+        tfootKeluar.textContent = formatRupiah(totalDanaKeluar);
+        tfootSaldo.textContent = formatRupiah(currentSaldo);
+
+        // Re-render Lucide icons
+        lucide.createIcons();
+    };
+
+    // Modul 3: Laporan Tahunan
+    const renderLaporanTahunan = async () => {
+        if (!isAuthReady) return;
+
+        const tbody = document.getElementById('tbody-laporan-tahunan');
+        tbody.innerHTML = '';
+        
+        const selectedYear = document.getElementById('filter-tahun').value;
+        if (!selectedYear) {
+            tbody.innerHTML = `<tr><td colspan="23" class="text-center py-4 text-gray-500">Pilih Tahun untuk memuat laporan.</td></tr>`;
+            return;
+        }
+
+        // 1. Dapatkan Saldo Awal Tahun
+        const saldoAwalDoc = await getDoc(doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun'));
+        const saldoAwal = saldoAwalDoc.exists() ? saldoAwalDoc.data() : { bank: 0, tunai: 0 };
+        const totalSaldoAwal = (saldoAwal.bank || 0) + (saldoAwal.tunai || 0);
+
+        // 2. Query data Jurnal Umum untuk tahun terpilih
+        const startYear = new Date(`${selectedYear}-01-01`);
+        const endYear = new Date(`${parseInt(selectedYear) + 1}-01-01`);
+
+        const qJurnalTahunan = query(
+            collection(db, collectionPath('jurnal_umum')),
+            where('tanggal', '>=', startYear.toISOString().substring(0, 10)),
+            where('tanggal', '<', endYear.toISOString().substring(0, 10)),
+            orderBy('tanggal', 'asc')
+        );
+        const jurnalSnapshot = await getDocs(qJurnalTahunan);
+        const jurnalData = jurnalSnapshot.docs.map(doc => doc.data());
+
+        // 3. Agregasi data per bulan
+        const monthlyData = aggregateMonthlyData(jurnalData, selectedYear);
+
+        // 4. Hitung Saldo Koin per bulan (Total Penerimaan Koin)
+        const qKoinTahunan = query(
+            collection(db, collectionPath('laporan_koin_nu')),
+            where('tanggal', '>=', startYear.toISOString().substring(0, 10)),
+            where('tanggal', '<', endYear.toISOString().substring(0, 10))
+        );
+        const koinSnapshot = await getDocs(qKoinTahunan);
+        koinSnapshot.docs.forEach(doc => {
+            const koin = doc.data();
+            const monthKey = new Date(koin.tanggal).toISOString().substring(0, 7);
+            const monthIndex = parseInt(monthKey.substring(5, 7)) - 1;
+            if (monthlyData[monthIndex]) {
+                monthlyData[monthIndex].penerimaan.koin += koin.nominal || 0;
+            }
+        });
+
+
+        // 5. Render Baris Saldo Awal
+        let runningSaldoTahunan = totalSaldoAwal;
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        
+        // Baris Saldo Kas Bank/Tunai (Manual Input)
+        tbody.insertAdjacentHTML('beforeend', `
+            <tr class="bg-yellow-100 font-bold">
+                <td class="center-text">1</td>
+                <td>SALDO KAS BANK</td>
+                <td class="text-right">${formatRupiah(saldoAwal.bank)}</td>
+                <td colspan="19"></td>
+                <td class="text-right">${formatRupiah(totalSaldoAwal)}</td>
+            </tr>
+            <tr class="bg-yellow-100 font-bold">
+                <td class="center-text">2</td>
+                <td>SALDO KAS TUNAI</td>
+                <td class="text-right">${formatRupiah(saldoAwal.tunai)}</td>
+                <td colspan="19"></td>
+                <td class="text-right">${formatRupiah(totalSaldoAwal)}</td>
+            </tr>
+        `);
+
+
+        // 6. Render Data Bulanan
+        let rowCounter = 3;
+        monthlyData.forEach((month, index) => {
+            const totalPenerimaan = month.penerimaan.koin + month.penerimaan.non_koin;
+            const totalPengeluaran = month.pengeluaran.wajib.total + month.pengeluaran.lain_lain.total;
+            const saldoAkhirBulan = totalPenerimaan - totalPengeluaran;
+            
+            runningSaldoTahunan += saldoAkhirBulan;
+
+            const dataHtml = `
+                <tr class="hover:bg-gray-50">
+                    <td class="center-text">${rowCounter++}</td>
+                    <td>${months[index]}</td>
+                    <td class="text-right font-semibold text-green-600">${formatRupiah(totalPenerimaan)}</td>
+
+                    ${renderWajibCell(month.pengeluaran.wajib.Pendidikan)}
+                    ${renderWajibCell(month.pengeluaran.wajib.Kesehatan)}
+                    ${renderWajibCell(month.pengeluaran.wajib.Ekonomi)}
+                    ${renderWajibCell(month.pengeluaran.wajib.Sosial)}
+                    ${renderWajibCell(month.pengeluaran.wajib.Bencana)}
+
+                    <td class="text-right">${formatRupiah(month.pengeluaran.wajib.Subsidi)}</td>
+                    <td class="text-right">${formatRupiah(month.pengeluaran.wajib.Petugas)}</td>
+                    <td class="text-right">${formatRupiah(month.pengeluaran.wajib.MWC)}</td>
+                    <td class="text-right">${formatRupiah(month.pengeluaran.wajib.PC)}</td>
+
+                    <td class="text-right">${formatRupiah(month.pengeluaran.lain_lain.Rapat)}</td>
+                    <td class="text-right">${formatRupiah(month.pengeluaran.lain_lain.PERWTN_MLU)}</td>
+                    <td class="text-right">${formatRupiah(month.pengeluaran.lain_lain.BIAYA_REK_BANK)}</td>
+                    <td class="text-right">${formatRupiah(month.pengeluaran.lain_lain.Lain_Lain)}</td>
+                    
+                    <td class="text-right font-bold text-red-600">${formatRupiah(totalPengeluaran)}</td>
+                    <td class="text-right font-bold">${formatRupiah(saldoAkhirBulan)}</td>
+                    <td class="text-right font-bold text-green-700">${formatRupiah(runningSaldoTahunan)}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('beforeend', dataHtml);
+        });
+    };
+
+    const renderWajibCell = (data) => {
+        return `
+            <td class="text-right">${formatRupiah(data.uang)}</td>
+            <td class="center-text">${data.penerima}</td>
+        `;
+    };
+
+    const aggregateMonthlyData = (jurnalData, year) => {
+        const months = Array(12).fill(0).map((_, i) => {
+            const monthObj = {
+                penerimaan: { koin: 0, non_koin: 0 },
+                pengeluaran: {
+                    wajib: {
+                        Pendidikan: { uang: 0, penerima: 0 },
+                        Kesehatan: { uang: 0, penerima: 0 },
+                        Ekonomi: { uang: 0, penerima: 0 },
+                        Sosial: { uang: 0, penerima: 0 },
+                        Bencana: { uang: 0, penerima: 0 },
+                        Subsidi: 0,
+                        Petugas: 0,
+                        MWC: 0,
+                        PC: 0,
+                        total: 0
+                    },
+                    lain_lain: {
+                        Rapat: 0, PERWTN_MLU: 0, BIAYA_REK_BANK: 0, Lain_Lain: 0, total: 0
+                    }
+                }
+            };
+            return monthObj;
+        });
+
+        jurnalData.forEach(item => {
+            const date = new Date(item.tanggal);
+            if (date.getFullYear().toString() === year) {
+                const monthIndex = date.getMonth();
+                const month = months[monthIndex];
+
+                const masuk = item.dana_masuk || 0;
+                const keluar = item.dana_keluar || 0;
+                const kategori = item.kategori;
+                const penerima = item.jumlah_penerima || {};
+
+                // DANA MASUK
+                if (item.jenis_transaksi === 'MASUK') {
+                    // Koin NU akan dihitung di luar agregasi ini (step 4 di renderLaporanTahunan)
+                    if (kategori !== 'Koin NU' && kategori !== 'SALDO') {
+                        month.penerimaan.non_koin += masuk;
+                    }
+                }
+
+                // DANA KELUAR
+                if (item.jenis_transaksi === 'KELUAR') {
+                    // Pengeluaran Wajib
+                    if (kategori.startsWith('Untuk ')) {
+                        const field = kategori.replace('Untuk ', '');
+                        month.pengeluaran.wajib[field].uang += keluar;
+                        month.pengeluaran.wajib[field].penerima += Object.values(penerima).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+                        month.pengeluaran.wajib.total += keluar;
+                    } else if (kategori === 'Subsidi Banom dan Lembaga NU') {
+                        month.pengeluaran.wajib.Subsidi += keluar;
+                        month.pengeluaran.wajib.total += keluar;
+                    } else if (kategori === 'Petugas 10%') {
+                        month.pengeluaran.wajib.Petugas += keluar;
+                        month.pengeluaran.wajib.total += keluar;
+                    } else if (kategori === 'MWC 25%') {
+                        month.pengeluaran.wajib.MWC += keluar;
+                        month.pengeluaran.wajib.total += keluar;
+                    } else if (kategori === 'PC 5%') {
+                        month.pengeluaran.wajib.PC += keluar;
+                        month.pengeluaran.wajib.total += keluar;
+                    }
+                    
+                    // Pengeluaran Lain-lain
+                    else if (kategori === 'Rapat') {
+                        month.pengeluaran.lain_lain.Rapat += keluar;
+                        month.pengeluaran.lain_lain.total += keluar;
+                    } else if (kategori === 'PERWTN MLU') {
+                        month.pengeluaran.lain_lain.PERWTN_MLU += keluar;
+                        month.pengeluaran.lain_lain.total += keluar;
+                    } else if (kategori === 'BIAYA REK BANK') {
+                        month.pengeluaran.lain_lain.BIAYA_REK_BANK += keluar;
+                        month.pengeluaran.lain_lain.total += keluar;
+                    } else if (kategori === 'Lain - Lain') {
+                        month.pengeluaran.lain_lain.Lain_Lain += keluar;
+                        month.pengeluaran.lain_lain.total += keluar;
+                    }
+                }
+            }
+        });
+
+        return months;
+    };
+
+    // --- CRUD Koin ---
+
+    window.editKoin = (id, tanggal, petugas, nohp, donatur, alamat, nominal) => {
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat mengedit data.');
+        document.getElementById('koin-doc-id').value = id;
+        document.getElementById('koin-tanggal').value = tanggal;
+        document.getElementById('koin-petugas').value = petugas;
+        document.getElementById('koin-nohp').value = nohp;
+        document.getElementById('koin-donatur').value = donatur;
+        document.getElementById('koin-alamat').value = alamat;
+        document.getElementById('koin-nominal').value = nominal;
+        document.getElementById('koin-submit-btn').textContent = 'Update Data Koin';
+        document.getElementById('koin-cancel-btn').classList.remove('hidden');
+    };
+
+    document.getElementById('koin-cancel-btn').addEventListener('click', () => {
+        document.getElementById('form-laporan-koin').reset();
+        document.getElementById('koin-doc-id').value = '';
+        document.getElementById('koin-submit-btn').textContent = 'Tambah Data Koin';
+        document.getElementById('koin-cancel-btn').classList.add('hidden');
+    });
+
+    window.deleteKoin = async (id, nominal) => {
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat menghapus data.');
+        if (!confirm(`Yakin ingin menghapus data koin nominal ${formatRupiah(nominal)}? Tindakan ini akan menghapus data di Jurnal Umum juga.`)) return;
+        
+        try {
+            // Hapus dokumen di laporan_koin_nu
+            await deleteDoc(doc(db, collectionPath('laporan_koin_nu'), id));
+            
+            // Cari dan hapus entri Jurnal Umum yang dibuat otomatis oleh entri koin ini (jika ada)
+            const q = query(collection(db, collectionPath('jurnal_umum')), 
+                            where('source_koin_id', '==', id));
+            
+            const docsToDelete = await getDocs(q);
+            docsToDelete.forEach(async (docSnapshot) => {
+                await deleteDoc(docSnapshot.ref);
+            });
+
+            alert('Data Koin berhasil dihapus.');
+        } catch (e) {
+            console.error("Error deleting Koin:", e);
+            alert('Gagal menghapus data koin. Cek konsol.');
+        }
+    };
+
+    document.getElementById('form-laporan-koin').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat menyimpan data.');
+        const id = document.getElementById('koin-doc-id').value;
+        const tanggal = document.getElementById('koin-tanggal').value;
+        const nama_petugas = document.getElementById('koin-petugas').value;
+        const no_hp = document.getElementById('koin-nohp').value;
+        const donatur_kelompok = document.getElementById('koin-donatur').value;
+        const alamat_rtrw = document.getElementById('koin-alamat').value;
+        const nominal = parseInt(document.getElementById('koin-nominal').value);
+
+        const docData = {
+            tanggal: tanggal,
+            nama_petugas: nama_petugas,
+            no_hp: no_hp,
+            donatur_kelompok: donatur_kelompok,
+            alamat_rtrw: alamat_rtrw,
+            nominal: nominal,
+            timestamp: serverTimestamp()
+        };
+
+        try {
+            if (id) {
+                await updateDoc(doc(db, collectionPath('laporan_koin_nu'), id), docData);
+                alert('Data Koin berhasil diperbarui.');
+            } else {
+                await addDoc(collection(db, collectionPath('laporan_koin_nu')), docData);
+                alert('Data Koin berhasil ditambahkan.');
+            }
+            
+            document.getElementById('koin-cancel-btn').click(); // Reset form
+        } catch (e) {
+            console.error("Error saving Koin:", e);
+            alert('Gagal menyimpan data koin. Cek konsol.');
+        }
+    });
+
+    // --- CRUD Jurnal Umum (Manual Entry) ---
+
+    window.editJurnal = (id, tanggal, keterangan, jenis, kategori, nominal, penerimaJsonString) => {
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat mengedit data.');
+        document.getElementById('jurnal-doc-id').value = id;
+        document.getElementById('jurnal-tanggal').value = tanggal;
+        document.getElementById('jurnal-keterangan').value = keterangan;
+        document.getElementById('jurnal-jenis').value = jenis;
+        document.getElementById('jurnal-kategori').value = kategori;
+        document.getElementById('jurnal-nominal').value = nominal;
+        
+        // Konversi JSON string kembali ke format textarea
+        try {
+            const penerimaObj = JSON.parse(penerimaJsonString.replace(/&quot;/g, '"'));
+            document.getElementById('jurnal-penerima').value = JSON.stringify(penerimaObj);
+        } catch (e) {
+            console.error("Error parsing JSON for edit:", e);
+            document.getElementById('jurnal-penerima').value = '';
+        }
+
+        document.getElementById('jurnal-submit-btn').textContent = 'Update Data Jurnal';
+        document.getElementById('jurnal-cancel-btn').classList.remove('hidden');
+    };
+
+    document.getElementById('jurnal-cancel-btn').addEventListener('click', () => {
+        document.getElementById('form-jurnal-umum').reset();
+        document.getElementById('jurnal-doc-id').value = '';
+        document.getElementById('jurnal-submit-btn').textContent = 'Tambah Data Jurnal';
+        document.getElementById('jurnal-cancel-btn').classList.add('hidden');
+    });
+    
+    window.deleteJurnal = async (id) => {
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat menghapus data.');
+        if (!confirm(`Yakin ingin menghapus entri Jurnal Umum ini?`)) return;
+        try {
+            await deleteDoc(doc(db, collectionPath('jurnal_umum'), id));
+            alert('Entri Jurnal Umum berhasil dihapus.');
+        } catch (e) {
+            console.error("Error deleting Jurnal:", e);
+            alert('Gagal menghapus entri jurnal. Cek konsol.');
+        }
+    };
+
+    document.getElementById('form-jurnal-umum').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat menyimpan data.');
+        const id = document.getElementById('jurnal-doc-id').value;
+        const tanggal = document.getElementById('jurnal-tanggal').value;
+        const keterangan = document.getElementById('jurnal-keterangan').value;
+        const jenis_transaksi = document.getElementById('jurnal-jenis').value;
+        const kategori = document.getElementById('jurnal-kategori').value;
+        const nominal = parseInt(document.getElementById('jurnal-nominal').value);
+        const penerimaText = document.getElementById('jurnal-penerima').value.trim();
+
+        let dana_masuk = jenis_transaksi === 'MASUK' ? nominal : 0;
+        let dana_keluar = jenis_transaksi === 'KELUAR' ? nominal : 0;
+        let jumlah_penerima = {};
+
+        if (penerimaText) {
+            try {
+                jumlah_penerima = JSON.parse(penerimaText);
+            } catch (err) {
+                alert('Format Jumlah Penerima (JSON) tidak valid.');
+                return;
             }
         }
 
-        // --- FIREBASE INITIALIZATION & AUTH ---
-
-        const initFirebase = async () => {
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        document.getElementById('user-id-display').textContent = userId;
-                        document.getElementById('user-info').textContent = `Selamat datang! ID Pengguna Anda: ${userId}`;
-                        isAuthReady = true;
-                        
-                        // Setelah Auth siap, jalankan listener data dan inisialisasi filter
-                        setupDataListeners();
-                        populateMonthFilter();
-                        populateYearFilter();
-
-                    } else {
-                        // Coba sign in dengan custom token. Tidak mengizinkan anonim.
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            // PENGAMANAN: Jika tidak ada token khusus, tidak ada login.
-                            document.getElementById('user-id-display').textContent = 'TIDAK LOGIN';
-                            document.getElementById('user-info').textContent = 'Akses Ditolak. Anda harus login sebagai administrator.';
-                            alert('Akses Ditolak. Anda harus login sebagai administrator untuk menggunakan aplikasi ini.');
-                            console.error('Akses Ditolak: Gagal autentikasi. Token kustom tidak ditemukan.');
-                        }
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error initializing Firebase:", error);
-                document.getElementById('user-info').textContent = `Kesalahan: Gagal menginisialisasi Firebase. Cek konsol.`;
-            }
+        const docData = {
+            tanggal: tanggal,
+            keterangan: keterangan,
+            jenis_transaksi: jenis_transaksi,
+            kategori: kategori,
+            dana_masuk: dana_masuk,
+            dana_keluar: dana_keluar,
+            jumlah_penerima: jumlah_penerima,
+            timestamp: serverTimestamp()
         };
 
-        const handleLogout = async () => {
-            try {
-                await signOut(auth);
-                // Setelah logout, onAuthStateChanged akan dipanggil, dan user akan dialihkan ke pesan 'Akses Ditolak'.
-            } catch (error) {
-                console.error("Error during logout:", error);
-            }
-        };
-
-        document.getElementById('logout-btn').addEventListener('click', handleLogout);
-
-        // --- TAB/NAVIGASI LOGIC ---
-
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabContents = document.querySelectorAll('.tab-content');
-        let currentModule = 'laporan-koin';
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const target = button.getAttribute('data-target');
-
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-
-                tabContents.forEach(content => content.classList.add('hidden'));
-                document.getElementById(target).classList.remove('hidden');
-                
-                currentModule = target;
-                
-                // Panggil listener/render untuk modul yang baru dibuka jika perlu
-                if (isAuthReady) {
-                    if (target === 'laporan-tahunan') {
-                        renderLaporanTahunan();
-                    } else if (target === 'jurnal-umum') {
-                        // Jurnal umum akan di-render oleh listener otomatis
-                    }
-                }
-            });
-        });
-
-        // --- FIREBASE DATA LISTENERS (onSnapshot) ---
-
-        // Helper untuk mendapatkan filter Bulan-Tahun
-        const getMonthYearFilter = (module) => {
-            const year = document.getElementById(`filter-tahun-${module}`).value;
-            const month = document.getElementById(`filter-bulan-${module}`).value;
-            return year && month ? `${year}-${month}` : null;
-        };
-        
-        const setupDataListeners = () => {
-            if (!isAuthReady) return;
-
-            // 1. Laporan Koin Listener
-            currentKoinUnsubscribe();
-            // Menggunakan filter baru
-            const dateFilterKoin = getMonthYearFilter('koin'); 
-            let qKoin = query(collection(db, collectionPath('laporan_koin_nu')), orderBy('tanggal', 'desc'));
-
-            if (dateFilterKoin) {
-                const start = new Date(dateFilterKoin + '-01');
-                const end = new Date(start);
-                end.setMonth(start.getMonth() + 1);
-                qKoin = query(collection(db, collectionPath('laporan_koin_nu')), 
-                              where('tanggal', '>=', start.toISOString().substring(0, 10)),
-                              where('tanggal', '<', end.toISOString().substring(0, 10)),
-                              orderBy('tanggal', 'desc'));
-            }
-
-            currentKoinUnsubscribe = onSnapshot(qKoin, (snapshot) => {
-                const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderLaporanKoin(data);
-            }, (error) => {
-                console.error("Error listening to Laporan Koin:", error);
-                document.getElementById('tbody-laporan-koin').innerHTML = `<tr><td colspan="11" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
-            });
-
-            // 2. Jurnal Umum Listener
-            currentJurnalUnsubscribe();
-            // Menggunakan filter baru
-            const dateFilterJurnal = getMonthYearFilter('jurnal');
-            let qJurnal = query(collection(db, collectionPath('jurnal_umum')), orderBy('tanggal', 'desc'));
-
-            if (dateFilterJurnal) {
-                const start = new Date(dateFilterJurnal + '-01');
-                const end = new Date(start);
-                end.setMonth(start.getMonth() + 1);
-                qJurnal = query(collection(db, collectionPath('jurnal_umum')), 
-                                where('tanggal', '>=', start.toISOString().substring(0, 10)),
-                                where('tanggal', '<', end.toISOString().substring(0, 10)),
-                                orderBy('tanggal', 'asc')); // ASC untuk jurnal agar saldo berjalan benar
+        try {
+            if (id) {
+                await updateDoc(doc(db, collectionPath('jurnal_umum'), id), docData);
+                alert('Data Jurnal berhasil diperbarui.');
             } else {
-                qJurnal = query(collection(db, collectionPath('jurnal_umum')), orderBy('tanggal', 'asc'));
+                await addDoc(collection(db, collectionPath('jurnal_umum')), docData);
+                alert('Data Jurnal berhasil ditambahkan.');
             }
-
-
-            currentJurnalUnsubscribe = onSnapshot(qJurnal, async (snapshot) => {
-                let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                // Ambil data Koin bulan ini untuk menghitung otomatis
-                // Menggunakan filter baru
-                const currentMonth = dateFilterJurnal || new Date().toISOString().substring(0, 7);
-                const start = new Date(currentMonth + '-01');
-                const end = new Date(start);
-                end.setMonth(start.getMonth() + 1);
-
-                const qKoinForJurnal = query(collection(db, collectionPath('laporan_koin_nu')), 
-                                            where('tanggal', '>=', start.toISOString().substring(0, 10)),
-                                            where('tanggal', '<', end.toISOString().substring(0, 10)));
-                
-                const koinSnapshot = await getDocs(qKoinForJurnal);
-                const koinData = koinSnapshot.docs.map(doc => doc.data());
-
-                renderJurnalUmum(data, koinData, currentMonth);
-
-            }, (error) => {
-                console.error("Error listening to Jurnal Umum:", error);
-                document.getElementById('tbody-jurnal-umum').innerHTML = `<tr><td colspan="16" class="text-center py-4 text-red-500">Gagal memuat data: ${error.message}</td></tr>`;
-            });
             
-            // 3. Saldo Awal Listener (untuk Laporan Tahunan)
-            currentSaldoUnsubscribe();
-            const saldoDocRef = doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun');
-            currentSaldoUnsubscribe = onSnapshot(saldoDocRef, (docSnap) => {
-                const data = docSnap.exists() ? docSnap.data() : { bank: 0, tunai: 0 };
-                document.getElementById('saldo-bank').value = data.bank || 0;
-                document.getElementById('saldo-tunai').value = data.tunai || 0;
+            document.getElementById('jurnal-cancel-btn').click(); // Reset form
+        } catch (e) {
+            console.error("Error saving Jurnal:", e);
+            alert('Gagal menyimpan data jurnal. Cek konsol.');
+        }
+    });
+    
+    // --- CRUD Saldo Bulan Lalu (Baris Otomatis Jurnal Umum) ---
 
-                // Jika modul laporan tahunan sedang aktif, render ulang
-                if (currentModule === 'laporan-tahunan') {
-                     renderLaporanTahunan();
-                }
-            }, (error) => {
-                console.error("Error listening to Saldo Awal:", error);
-            });
-        };
+    window.editSaldoBulanLalu = async (monthKey, currentSaldo) => {
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat mengedit data.');
+        const newSaldo = prompt(`Masukkan Saldo Bulan Lalu untuk ${monthKey} (saat ini: ${formatRupiah(currentSaldo)}):`);
+        if (newSaldo === null) return;
 
-        // --- RENDER FUNCTIONS ---
+        const numericSaldo = parseInt(newSaldo.replace(/\D/g, '')) || 0;
+        const saldoRef = doc(db, collectionPath('jurnal_umum'), monthKey);
+
+        try {
+            await setDoc(saldoRef, { saldo_awal_bulan: numericSaldo, keterangan: 'SALDO BULAN LALU (Manual Input)' }, { merge: true });
+            alert(`Saldo Awal Bulan ${monthKey} berhasil diperbarui.`);
+        } catch (e) {
+            console.error("Error updating Saldo Bulan Lalu:", e);
+            alert('Gagal memperbarui saldo awal bulan. Cek konsol.');
+        }
+    };
+
+    // --- FORM SALDO AWAL TAHUN (Laporan Tahunan) ---
+    document.getElementById('edit-saldo-awal').addEventListener('click', () => {
+        document.getElementById('saldo-awal-input').classList.toggle('hidden');
+    });
+    
+    document.getElementById('form-saldo-awal').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat menyimpan data.');
+        const bank = parseInt(document.getElementById('saldo-bank').value) || 0;
+        const tunai = parseInt(document.getElementById('saldo-tunai').value) || 0;
         
-        // Modul 1: Laporan Dana Koin
-        const renderLaporanKoin = (data) => {
-            const tbody = document.getElementById('tbody-laporan-koin');
-            tbody.innerHTML = '';
-            
-            if (data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-gray-500">Belum ada data Koin.</td></tr>`;
-                return;
-            }
+        const docRef = doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun');
+
+        try {
+            await setDoc(docRef, { bank, tunai, last_updated: serverTimestamp() });
+            alert('Saldo Awal Tahun berhasil disimpan.');
+            document.getElementById('saldo-awal-input').classList.add('hidden');
+        } catch (e) {
+            console.error("Error saving Saldo Awal Tahun:", e);
+            alert('Gagal menyimpan Saldo Awal Tahun. Cek konsol.');
+        }
+    });
+    
+    // --- FILTER & HELPER ---
+
+    // Inisialisasi Filter Bulan pada Modul Koin dan Jurnal
+    const today = new Date().toISOString().substring(0, 7);
+    document.getElementById('filter-bulan-koin').value = today;
+    document.getElementById('filter-bulan-jurnal').value = today;
+
+    document.getElementById('filter-bulan-koin').addEventListener('change', setupDataListeners);
+    document.getElementById('filter-bulan-jurnal').addEventListener('change', setupDataListeners);
+    
+    // Inisialisasi Filter Tahun pada Modul Laporan Tahunan
+    const populateYearFilter = () => {
+        const currentYear = new Date().getFullYear();
+        const select = document.getElementById('filter-tahun');
+        select.innerHTML = '';
+        for (let i = currentYear; i >= 2020; i--) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i;
+            select.appendChild(option);
+        }
+        select.value = currentYear;
+        select.addEventListener('change', renderLaporanTahunan);
+        renderLaporanTahunan(); // Initial render
+    };
+    
+    // PDF Download (Placeholder)
+    document.getElementById('download-koin-pdf').addEventListener('click', () => {
+        alert('Fungsi Unduh PDF belum diimplementasikan. Anda akan membutuhkan pustaka pihak ketiga (misalnya jsPDF atau html2canvas) untuk menghasilkan PDF dengan tanda tangan.');
+    });
+    
+    // Reset Data (Placeholder - Modul Jurnal)
+    document.getElementById('reset-data-jurnal').addEventListener('click', () => {
+        if (!isAdmin) return alert('Akses Ditolak: Hanya administrator yang dapat menggunakan fungsi ini.');
+        alert('Fungsi "Reset Data" (Manual) harus dilakukan dengan sangat hati-hati dan memerlukan konfirmasi berlapis. Saat ini tidak diimplementasikan untuk mencegah kehilangan data yang tidak disengaja. Untuk mereset, hapus data secara manual per bulan.');
+    });
+
+    // --- START APP ---
+    window.onload = initFirebase;
+</script>
+    
 
-            data.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal)); // Data baru di atas data lama
-
-            data.forEach((item, index) => {
-                const total = item.nominal || 0;
-                const ranting = Math.round(total * 0.60);
-                const petugas = Math.round(total * 0.10);
-                const mwc = Math.round(total * 0.25);
-                const pc = Math.round(total * 0.05);
-
-                // Pastikan total sama (untuk pembulatan)
-                const diff = total - (ranting + petugas + mwc + pc);
-                // Tambahkan selisih ke komponen terbesar (Ranting)
-                const finalRanting = ranting + diff;
-
-                const row = `
-                    <tr class="hover:bg-gray-50">
-                        <td class="center-text">${data.length - index}</td>
-                        <td>${formatTanggalIndonesia(item.tanggal)}</td>
-                        <td>${item.nama_petugas}</td>
-                        <td>${item.no_hp || '-'}</td>
-                        <td>${item.donatur_kelompok}</td>
-                        <td>${item.alamat_rtrw || '-'}</td>
-                        <td class="text-right font-semibold">${formatRupiah(total)}</td>
-                        <td class="text-right">${formatRupiah(finalRanting)}</td>
-                        <td class="text-right">${formatRupiah(petugas)}</td>
-                        <td class="text-right">${formatRupiah(mwc)}</td>
-                        <td class="text-right">${formatRupiah(pc)}</td>
-                        <td class="center-text">
-                            <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.editKoin('${item.id}', '${item.tanggal}', '${item.nama_petugas}', '${item.no_hp}', '${item.donatur_kelompok}', '${item.alamat_rtrw}', ${total})">
-                                <i data-lucide="edit" class="w-4 h-4 inline-block"></i>
-                            </button>
-                            <button class="text-red-500 hover:text-red-700" onclick="window.deleteKoin('${item.id}', ${total})">
-                                <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tbody.insertAdjacentHTML('beforeend', row);
-            });
-            // Re-render Lucide icons
-            lucide.createIcons();
-        };
-
-        // Modul 2: Jurnal Umum
-        const renderJurnalUmum = async (data, koinData, currentMonth) => {
-            const tbody = document.getElementById('tbody-jurnal-umum');
-            const tfootMasuk = document.getElementById('total-masuk');
-            const tfootKeluar = document.getElementById('total-keluar');
-            const tfootSaldo = document.getElementById('saldo-akhir');
-
-            tbody.innerHTML = '';
-            
-            // 1. Dapatkan Saldo Bulan Lalu (Manual Input)
-            let saldoBulanLaluValue = 0;
-            const saldoRef = doc(db, collectionPath('jurnal_umum'), currentMonth); // Saldo disimpan per bulan
-            
-            try {
-                const saldoSnap = await getDoc(saldoRef);
-                if (saldoSnap.exists()) {
-                    saldoBulanLaluValue = saldoSnap.data().saldo_awal_bulan || 0;
-                }
-            } catch (e) {
-                console.error("Gagal mendapatkan Saldo Bulan Lalu:", e);
-            }
-
-            // 2. Hitung Total Koin Bulan Ini dan Distribusi Otomatis
-            const totalKoin = koinData.reduce((sum, k) => sum + (k.nominal || 0), 0);
-            const petugas = Math.round(totalKoin * 0.10);
-            const mwc = Math.round(totalKoin * 0.25);
-            const pc = Math.round(totalKoin * 0.05);
-
-            // 3. Tambahkan 5 Baris Otomatis/Manual di Awal
-            let manualRows = [];
-            let rowNoCounter = 1;
-            let currentSaldo = 0;
-            let totalDanaMasuk = 0;
-            let totalDanaKeluar = 0;
-            
-            // Baris 1: Saldo Bulan Lalu (Manual Input, bisa di edit)
-            currentSaldo += saldoBulanLaluValue;
-            manualRows.push({
-                id: currentMonth,
-                keterangan: 'SALDO BULAN LALU (Input Manual)',
-                dana_masuk: saldoBulanLaluValue,
-                dana_keluar: 0,
-                kategori: 'SALDO',
-                aksi: `<button class="text-yellow-500 hover:text-yellow-700" onclick="window.editSaldoBulanLalu('${currentMonth}', ${saldoBulanLaluValue})"><i data-lucide="edit" class="w-4 h-4 inline-block"></i></button>`,
-                saldo: currentSaldo,
-                isManual: true,
-                style: 'bg-yellow-100 font-bold'
-            });
-            totalDanaMasuk += saldoBulanLaluValue;
-
-            // Baris 2: Total Penerimaan Koin (Dana Masuk Otomatis)
-            currentSaldo += totalKoin;
-            manualRows.push({
-                keterangan: 'Total Penerimaan Koin',
-                dana_masuk: totalKoin,
-                dana_keluar: 0,
-                kategori: 'Koin NU',
-                aksi: 'Otomatis',
-                saldo: currentSaldo,
-                isManual: false,
-                style: 'bg-green-100 font-bold'
-            });
-            totalDanaMasuk += totalKoin;
-
-            // Baris 3-5: Dana Keluar Distribusi Koin (Otomatis)
-            // Petugas 10%
-            currentSaldo -= petugas;
-            manualRows.push({
-                keterangan: 'Petugas 10%',
-                dana_masuk: 0,
-                dana_keluar: petugas,
-                kategori: 'Petugas 10%',
-                aksi: 'Otomatis',
-                saldo: currentSaldo,
-                isManual: false,
-                style: 'bg-red-100'
-            });
-            totalDanaKeluar += petugas;
-
-            // MWC 25%
-            currentSaldo -= mwc;
-            manualRows.push({
-                keterangan: 'MWC 25%',
-                dana_masuk: 0,
-                dana_keluar: mwc,
-                kategori: 'MWC 25%',
-                aksi: 'Otomatis',
-                saldo: currentSaldo,
-                isManual: false,
-                style: 'bg-red-100'
-            });
-            totalDanaKeluar += mwc;
-
-            // PC 5%
-            currentSaldo -= pc;
-            manualRows.push({
-                keterangan: 'PC 5%',
-                dana_masuk: 0,
-                dana_keluar: pc,
-                kategori: 'PC 5%',
-                aksi: 'Otomatis',
-                saldo: currentSaldo,
-                isManual: false,
-                style: 'bg-red-100'
-            });
-            totalDanaKeluar += pc;
-            
-            // Tampilkan baris-baris manual
-            manualRows.forEach(row => {
-                const penerimaHtml = `
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                `;
-                const rowHtml = `
-                    <tr class="${row.style}">
-                        <td class="center-text">-</td>
-                        <td class="center-text">-</td>
-                        <td>${row.keterangan}</td>
-                        ${penerimaHtml}
-                        <td>${row.kategori}</td>
-                        <td class="text-right">${formatRupiah(row.dana_masuk)}</td>
-                        <td class="text-right">${formatRupiah(row.dana_keluar)}</td>
-                        <td class="text-right">${formatRupiah(row.saldo)}</td>
-                        <td class="center-text">${row.aksi}</td>
-                    </tr>
-                `;
-                tbody.insertAdjacentHTML('beforeend', rowHtml);
-            });
-            
-            // 4. Tampilkan Baris Jurnal Manual (Mulai Penomoran dari Baris ke-6)
-            data.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal)); // Urutkan ASC untuk saldo berjalan
-
-            data.forEach((item) => {
-                const masuk = item.dana_masuk || 0;
-                const keluar = item.dana_keluar || 0;
-                
-                // Hitung saldo berjalan
-                currentSaldo += masuk - keluar;
-                totalDanaMasuk += masuk;
-                totalDanaKeluar += keluar;
-
-                const penerimaObj = item.jumlah_penerima || {};
-                const penerimaHtml = `
-                    <td class="center-text">${penerimaObj.donatur || '-'}</td>
-                    <td class="center-text">${penerimaObj.pendidikan || '-'}</td>
-                    <td class="center-text">${penerimaObj.kesehatan || '-'}</td>
-                    <td class="center-text">${penerimaObj.ekonomi || '-'}</td>
-                    <td class="center-text">${penerimaObj.sosial || '-'}</td>
-                    <td class="center-text">${penerimaObj.subsidi || '-'}</td>
-                    <td class="center-text">${penerimaObj.bencana || '-'}</td>
-                `;
-
-                const row = `
-                    <tr class="hover:bg-gray-50">
-                        <td class="center-text">${rowNoCounter++}</td>
-                        <td>${formatTanggalIndonesia(item.tanggal)}</td>
-                        <td>${item.keterangan}</td>
-                        ${penerimaHtml}
-                        <td>${item.kategori}</td>
-                        <td class="text-right">${item.jenis_transaksi === 'MASUK' ? formatRupiah(masuk) : ''}</td>
-                        <td class="text-right">${item.jenis_transaksi === 'KELUAR' ? formatRupiah(keluar) : ''}</td>
-                        <td class="text-right font-semibold">${formatRupiah(currentSaldo)}</td>
-                        <td class="center-text">
-                            <button class="text-blue-500 hover:text-blue-700 mr-2" onclick="window.editJurnal('${item.id}', '${item.tanggal}', '${item.keterangan}', '${item.jenis_transaksi}', '${item.kategori}', ${masuk > 0 ? masuk : keluar}, '${JSON.stringify(penerimaObj).replace(/"/g, '&quot;')}')">
-                                <i data-lucide="edit" class="w-4 h-4 inline-block"></i>
-                            </button>
-                            <button class="text-red-500 hover:text-red-700" onclick="window.deleteJurnal('${item.id}')">
-                                <i data-lucide="trash-2" class="w-4 h-4 inline-block"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                tbody.insertAdjacentHTML('beforeend', row);
-            });
-            
-            // 5. Update Footer (Total dan Saldo Akhir)
-            tfootMasuk.textContent = formatRupiah(totalDanaMasuk);
-            tfootKeluar.textContent = formatRupiah(totalDanaKeluar);
-            tfootSaldo.textContent = formatRupiah(currentSaldo);
-
-            // Re-render Lucide icons
-            lucide.createIcons();
-        };
-
-        // Modul 3: Laporan Tahunan
-        const renderLaporanTahunan = async () => {
-            if (!isAuthReady) return;
-
-            const tbody = document.getElementById('tbody-laporan-tahunan');
-            tbody.innerHTML = '';
-            
-            const selectedYear = document.getElementById('filter-tahun').value;
-            if (!selectedYear) {
-                tbody.innerHTML = `<tr><td colspan="23" class="text-center py-4 text-gray-500">Pilih Tahun untuk memuat laporan.</td></tr>`;
-                return;
-            }
-
-            // 1. Dapatkan Saldo Awal Tahun
-            const saldoAwalDoc = await getDoc(doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun'));
-            const saldoAwal = saldoAwalDoc.exists() ? saldoAwalDoc.data() : { bank: 0, tunai: 0 };
-            const totalSaldoAwal = (saldoAwal.bank || 0) + (saldoAwal.tunai || 0);
-
-            // 2. Query data Jurnal Umum untuk tahun terpilih
-            const startYear = new Date(`${selectedYear}-01-01`);
-            const endYear = new Date(`${parseInt(selectedYear) + 1}-01-01`);
-
-            const qJurnalTahunan = query(
-                collection(db, collectionPath('jurnal_umum')),
-                where('tanggal', '>=', startYear.toISOString().substring(0, 10)),
-                where('tanggal', '<', endYear.toISOString().substring(0, 10)),
-                orderBy('tanggal', 'asc')
-            );
-            const jurnalSnapshot = await getDocs(qJurnalTahunan);
-            const jurnalData = jurnalSnapshot.docs.map(doc => doc.data());
-
-            // 3. Agregasi data per bulan
-            const monthlyData = aggregateMonthlyData(jurnalData, selectedYear);
-
-            // 4. Hitung Saldo Koin per bulan (Total Penerimaan Koin)
-            const qKoinTahunan = query(
-                collection(db, collectionPath('laporan_koin_nu')),
-                where('tanggal', '>=', startYear.toISOString().substring(0, 10)),
-                where('tanggal', '<', endYear.toISOString().substring(0, 10))
-            );
-            const koinSnapshot = await getDocs(qKoinTahunan);
-            koinSnapshot.docs.forEach(doc => {
-                const koin = doc.data();
-                const monthKey = new Date(koin.tanggal).toISOString().substring(0, 7);
-                const monthIndex = parseInt(monthKey.substring(5, 7)) - 1;
-                if (monthlyData[monthIndex]) {
-                    monthlyData[monthIndex].penerimaan.koin += koin.nominal || 0;
-                }
-            });
-
-
-            // 5. Render Baris Saldo Awal
-            let runningSaldoTahunan = totalSaldoAwal;
-            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-            
-            // Baris Saldo Kas Bank/Tunai (Manual Input)
-            tbody.insertAdjacentHTML('beforeend', `
-                <tr class="bg-yellow-100 font-bold">
-                    <td class="center-text">1</td>
-                    <td>SALDO KAS BANK</td>
-                    <td class="text-right">${formatRupiah(saldoAwal.bank)}</td>
-                    <td colspan="19"></td>
-                    <td class="text-right">${formatRupiah(totalSaldoAwal)}</td>
-                </tr>
-                <tr class="bg-yellow-100 font-bold">
-                    <td class="center-text">2</td>
-                    <td>SALDO KAS TUNAI</td>
-                    <td class="text-right">${formatRupiah(saldoAwal.tunai)}</td>
-                    <td colspan="19"></td>
-                    <td class="text-right">${formatRupiah(totalSaldoAwal)}</td>
-                </tr>
-            `);
-
-
-            // 6. Render Data Bulanan
-            let rowCounter = 3;
-            monthlyData.forEach((month, index) => {
-                const totalPenerimaan = month.penerimaan.koin + month.penerimaan.non_koin;
-                const totalPengeluaran = month.pengeluaran.wajib.total + month.pengeluaran.lain_lain.total;
-                const saldoAkhirBulan = totalPenerimaan - totalPengeluaran;
-                
-                runningSaldoTahunan += saldoAkhirBulan;
-
-                const dataHtml = `
-                    <tr class="hover:bg-gray-50">
-                        <td class="center-text">${rowCounter++}</td>
-                        <td>${months[index]}</td>
-                        <td class="text-right font-semibold text-green-600">${formatRupiah(totalPenerimaan)}</td>
-
-                        ${renderWajibCell(month.pengeluaran.wajib.Pendidikan)}
-                        ${renderWajibCell(month.pengeluaran.wajib.Kesehatan)}
-                        ${renderWajibCell(month.pengeluaran.wajib.Ekonomi)}
-                        ${renderWajibCell(month.pengeluaran.wajib.Sosial)}
-                        ${renderWajibCell(month.pengeluaran.wajib.Bencana)}
-
-                        <td class="text-right">${formatRupiah(month.pengeluaran.wajib.Subsidi)}</td>
-                        <td class="text-right">${formatRupiah(month.pengeluaran.wajib.Petugas)}</td>
-                        <td class="text-right">${formatRupiah(month.pengeluaran.wajib.MWC)}</td>
-                        <td class="text-right">${formatRupiah(month.pengeluaran.wajib.PC)}</td>
-
-                        <td class="text-right">${formatRupiah(month.pengeluaran.lain_lain.Rapat)}</td>
-                        <td class="text-right">${formatRupiah(month.pengeluaran.lain_lain.PERWTN_MLU)}</td>
-                        <td class="text-right">${formatRupiah(month.pengeluaran.lain_lain.BIAYA_REK_BANK)}</td>
-                        <td class="text-right">${formatRupiah(month.pengeluaran.lain_lain.Lain_Lain)}</td>
-                        
-                        <td class="text-right font-bold text-red-600">${formatRupiah(totalPengeluaran)}</td>
-                        <td class="text-right font-bold">${formatRupiah(saldoAkhirBulan)}</td>
-                        <td class="text-right font-bold text-green-700">${formatRupiah(runningSaldoTahunan)}</td>
-                    </tr>
-                `;
-                tbody.insertAdjacentHTML('beforeend', dataHtml);
-            });
-        };
-
-        const renderWajibCell = (data) => {
-            return `
-                <td class="text-right">${formatRupiah(data.uang)}</td>
-                <td class="center-text">${data.penerima}</td>
-            `;
-        };
-
-        const aggregateMonthlyData = (jurnalData, year) => {
-            const months = Array(12).fill(0).map((_, i) => {
-                const monthObj = {
-                    penerimaan: { koin: 0, non_koin: 0 },
-                    pengeluaran: {
-                        wajib: {
-                            Pendidikan: { uang: 0, penerima: 0 },
-                            Kesehatan: { uang: 0, penerima: 0 },
-                            Ekonomi: { uang: 0, penerima: 0 },
-                            Sosial: { uang: 0, penerima: 0 },
-                            Bencana: { uang: 0, penerima: 0 },
-                            Subsidi: 0,
-                            Petugas: 0,
-                            MWC: 0,
-                            PC: 0,
-                            total: 0
-                        },
-                        lain_lain: {
-                            Rapat: 0, PERWTN_MLU: 0, BIAYA_REK_BANK: 0, Lain_Lain: 0, total: 0
-                        }
-                    }
-                };
-                return monthObj;
-            });
-
-            jurnalData.forEach(item => {
-                const date = new Date(item.tanggal);
-                if (date.getFullYear().toString() === year) {
-                    const monthIndex = date.getMonth();
-                    const month = months[monthIndex];
-
-                    const masuk = item.dana_masuk || 0;
-                    const keluar = item.dana_keluar || 0;
-                    const kategori = item.kategori;
-                    const penerima = item.jumlah_penerima || {};
-
-                    // DANA MASUK
-                    if (item.jenis_transaksi === 'MASUK') {
-                        // Koin NU akan dihitung di luar agregasi ini (step 4 di renderLaporanTahunan)
-                        if (kategori !== 'Koin NU' && kategori !== 'SALDO') {
-                            month.penerimaan.non_koin += masuk;
-                        }
-                    }
-
-                    // DANA KELUAR
-                    if (item.jenis_transaksi === 'KELUAR') {
-                        // Pengeluaran Wajib
-                        if (kategori.startsWith('Untuk ')) {
-                            const field = kategori.replace('Untuk ', '');
-                            month.pengeluaran.wajib[field].uang += keluar;
-                            month.pengeluaran.wajib[field].penerima += Object.values(penerima).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
-                            month.pengeluaran.wajib.total += keluar;
-                        } else if (kategori === 'Subsidi Banom dan Lembaga NU') {
-                            month.pengeluaran.wajib.Subsidi += keluar;
-                            month.pengeluaran.wajib.total += keluar;
-                        } else if (kategori === 'Petugas 10%') {
-                            month.pengeluaran.wajib.Petugas += keluar;
-                            month.pengeluaran.wajib.total += keluar;
-                        } else if (kategori === 'MWC 25%') {
-                            month.pengeluaran.wajib.MWC += keluar;
-                            month.pengeluaran.wajib.total += keluar;
-                        } else if (kategori === 'PC 5%') {
-                            month.pengeluaran.wajib.PC += keluar;
-                            month.pengeluaran.wajib.total += keluar;
-                        }
-                        
-                        // Pengeluaran Lain-lain
-                        else if (kategori === 'Rapat') {
-                            month.pengeluaran.lain_lain.Rapat += keluar;
-                            month.pengeluaran.lain_lain.total += keluar;
-                        } else if (kategori === 'PERWTN MLU') {
-                            month.pengeluaran.lain_lain.PERWTN_MLU += keluar;
-                            month.pengeluaran.lain_lain.total += keluar;
-                        } else if (kategori === 'BIAYA REK BANK') {
-                            month.pengeluaran.lain_lain.BIAYA_REK_BANK += keluar;
-                            month.pengeluaran.lain_lain.total += keluar;
-                        } else if (kategori === 'Lain - Lain') {
-                            month.pengeluaran.lain_lain.Lain_Lain += keluar;
-                            month.pengeluaran.lain_lain.total += keluar;
-                        }
-                    }
-                }
-            });
-
-            return months;
-        };
-        // --- END RENDER FUNCTIONS ---
-
-
-        // --- CRUD Koin ---
-        window.editKoin = (id, tanggal, petugas, nohp, donatur, alamat, nominal) => {
-            document.getElementById('koin-doc-id').value = id;
-            document.getElementById('koin-tanggal').value = tanggal;
-            document.getElementById('koin-petugas').value = petugas;
-            document.getElementById('koin-nohp').value = nohp;
-            document.getElementById('koin-donatur').value = donatur;
-            document.getElementById('koin-alamat').value = alamat;
-            document.getElementById('koin-nominal').value = nominal;
-            document.getElementById('koin-submit-btn').textContent = 'Update Data Koin';
-            document.getElementById('koin-cancel-btn').classList.remove('hidden');
-        };
-
-        document.getElementById('koin-cancel-btn').addEventListener('click', () => {
-            document.getElementById('form-laporan-koin').reset();
-            document.getElementById('koin-doc-id').value = '';
-            document.getElementById('koin-submit-btn').textContent = 'Tambah Data Koin';
-            document.getElementById('koin-cancel-btn').classList.add('hidden');
-        });
-
-        window.deleteKoin = async (id, nominal) => {
-            if (!confirm(`Yakin ingin menghapus data koin nominal ${formatRupiah(nominal)}? Tindakan ini akan menghapus data di Jurnal Umum juga.`)) return;
-            
-            try {
-                // Hapus dokumen di laporan_koin_nu
-                await deleteDoc(doc(db, collectionPath('laporan_koin_nu'), id));
-                
-                // Cari dan hapus entri Jurnal Umum yang dibuat otomatis oleh entri koin ini (jika ada)
-                const q = query(collection(db, collectionPath('jurnal_umum')), 
-                                where('source_koin_id', '==', id));
-                
-                const docsToDelete = await getDocs(q);
-                docsToDelete.forEach(async (docSnapshot) => {
-                    await deleteDoc(docSnapshot.ref);
-                });
-
-                alert('Data Koin berhasil dihapus.');
-            } catch (e) {
-                console.error("Error deleting Koin:", e);
-                alert('Gagal menghapus data koin. Cek konsol.');
-            }
-        };
-
-        document.getElementById('form-laporan-koin').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('koin-doc-id').value;
-            const tanggal = document.getElementById('koin-tanggal').value;
-            const nama_petugas = document.getElementById('koin-petugas').value;
-            const no_hp = document.getElementById('koin-nohp').value;
-            const donatur_kelompok = document.getElementById('koin-donatur').value;
-            const alamat_rtrw = document.getElementById('koin-alamat').value;
-            const nominal = parseInt(document.getElementById('koin-nominal').value);
-
-            const docData = {
-                tanggal: tanggal,
-                nama_petugas: nama_petugas,
-                no_hp: no_hp,
-                donatur_kelompok: donatur_kelompok,
-                alamat_rtrw: alamat_rtrw,
-                nominal: nominal,
-                timestamp: serverTimestamp()
-            };
-
-            try {
-                if (id) {
-                    await updateDoc(doc(db, collectionPath('laporan_koin_nu'), id), docData);
-                    alert('Data Koin berhasil diperbarui.');
-                } else {
-                    await addDoc(collection(db, collectionPath('laporan_koin_nu')), docData);
-                    alert('Data Koin berhasil ditambahkan.');
-                }
-                
-                document.getElementById('koin-cancel-btn').click(); // Reset form
-            } catch (e) {
-                console.error("Error saving Koin:", e);
-                alert('Gagal menyimpan data koin. Cek konsol.');
-            }
-        });
-
-
-        // --- CRUD Jurnal Umum (Manual Entry) ---
-
-        window.editJurnal = (id, tanggal, keterangan, jenis, kategori, nominal, penerimaJsonString) => {
-            document.getElementById('jurnal-doc-id').value = id;
-            document.getElementById('jurnal-tanggal').value = tanggal;
-            document.getElementById('jurnal-keterangan').value = keterangan;
-            document.getElementById('jurnal-jenis').value = jenis;
-            document.getElementById('jurnal-kategori').value = kategori;
-            document.getElementById('jurnal-nominal').value = nominal;
-            
-            // Konversi JSON string kembali ke format textarea
-            try {
-                const penerimaObj = JSON.parse(penerimaJsonString.replace(/&quot;/g, '"'));
-                document.getElementById('jurnal-penerima').value = JSON.stringify(penerimaObj);
-            } catch (e) {
-                console.error("Error parsing JSON for edit:", e);
-                document.getElementById('jurnal-penerima').value = '';
-            }
-
-            document.getElementById('jurnal-submit-btn').textContent = 'Update Data Jurnal';
-            document.getElementById('jurnal-cancel-btn').classList.remove('hidden');
-        };
-
-        document.getElementById('jurnal-cancel-btn').addEventListener('click', () => {
-            document.getElementById('form-jurnal-umum').reset();
-            document.getElementById('jurnal-doc-id').value = '';
-            document.getElementById('jurnal-submit-btn').textContent = 'Tambah Data Jurnal';
-            document.getElementById('jurnal-cancel-btn').classList.add('hidden');
-        });
-        
-        window.deleteJurnal = async (id) => {
-            if (!confirm(`Yakin ingin menghapus entri Jurnal Umum ini?`)) return;
-            try {
-                await deleteDoc(doc(db, collectionPath('jurnal_umum'), id));
-                alert('Entri Jurnal Umum berhasil dihapus.');
-            } catch (e) {
-                console.error("Error deleting Jurnal:", e);
-                alert('Gagal menghapus entri jurnal. Cek konsol.');
-            }
-        };
-
-        document.getElementById('form-jurnal-umum').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('jurnal-doc-id').value;
-            const tanggal = document.getElementById('jurnal-tanggal').value;
-            const keterangan = document.getElementById('jurnal-keterangan').value;
-            const jenis_transaksi = document.getElementById('jurnal-jenis').value;
-            const kategori = document.getElementById('jurnal-kategori').value;
-            const nominal = parseInt(document.getElementById('jurnal-nominal').value);
-            const penerimaText = document.getElementById('jurnal-penerima').value.trim();
-
-            let dana_masuk = jenis_transaksi === 'MASUK' ? nominal : 0;
-            let dana_keluar = jenis_transaksi === 'KELUAR' ? nominal : 0;
-            let jumlah_penerima = {};
-
-            if (penerimaText) {
-                try {
-                    jumlah_penerima = JSON.parse(penerimaText);
-                } catch (err) {
-                    alert('Format Jumlah Penerima (JSON) tidak valid.');
-                    return;
-                }
-            }
-
-            const docData = {
-                tanggal: tanggal,
-                keterangan: keterangan,
-                jenis_transaksi: jenis_transaksi,
-                kategori: kategori,
-                dana_masuk: dana_masuk,
-                dana_keluar: dana_keluar,
-                jumlah_penerima: jumlah_penerima,
-                timestamp: serverTimestamp()
-            };
-
-            try {
-                if (id) {
-                    await updateDoc(doc(db, collectionPath('jurnal_umum'), id), docData);
-                    alert('Data Jurnal berhasil diperbarui.');
-                } else {
-                    await addDoc(collection(db, collectionPath('jurnal_umum')), docData);
-                    alert('Data Jurnal berhasil ditambahkan.');
-                }
-                
-                document.getElementById('jurnal-cancel-btn').click(); // Reset form
-            } catch (e) {
-                console.error("Error saving Jurnal:", e);
-                alert('Gagal menyimpan data jurnal. Cek konsol.');
-            }
-        });
-        
-        // --- CRUD Saldo Bulan Lalu (Baris Otomatis Jurnal Umum) ---
-
-        window.editSaldoBulanLalu = async (monthKey, currentSaldo) => {
-            const newSaldo = prompt(`Masukkan Saldo Bulan Lalu untuk ${monthKey} (saat ini: ${formatRupiah(currentSaldo)}):`);
-            if (newSaldo === null) return;
-
-            const numericSaldo = parseInt(newSaldo.replace(/\D/g, '')) || 0;
-            const saldoRef = doc(db, collectionPath('jurnal_umum'), monthKey);
-
-            try {
-                await setDoc(saldoRef, { saldo_awal_bulan: numericSaldo, keterangan: 'SALDO BULAN LALU (Manual Input)' }, { merge: true });
-                alert(`Saldo Awal Bulan ${monthKey} berhasil diperbarui.`);
-            } catch (e) {
-                console.error("Error updating Saldo Bulan Lalu:", e);
-                alert('Gagal memperbarui saldo awal bulan. Cek konsol.');
-            }
-        };
-
-
-        // --- FORM SALDO AWAL TAHUN (Laporan Tahunan) ---
-        document.getElementById('edit-saldo-awal').addEventListener('click', () => {
-            document.getElementById('saldo-awal-input').classList.toggle('hidden');
-        });
-        
-        document.getElementById('form-saldo-awal').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const bank = parseInt(document.getElementById('saldo-bank').value) || 0;
-            const tunai = parseInt(document.getElementById('saldo-tunai').value) || 0;
-            
-            const docRef = doc(db, collectionPath('laporan_tahunan'), 'saldo_awal_tahun');
-
-            try {
-                await setDoc(docRef, { bank, tunai, last_updated: serverTimestamp() });
-                alert('Saldo Awal Tahun berhasil disimpan.');
-                document.getElementById('saldo-awal-input').classList.add('hidden');
-            } catch (e) {
-                console.error("Error saving Saldo Awal Tahun:", e);
-                alert('Gagal menyimpan Saldo Awal Tahun. Cek konsol.');
-            }
-        });
-        
-        // --- FILTER & HELPER ---
-
-        // Fungsi baru untuk mengisi dropdown Bulan
-        const populateMonthFilter = () => {
-            const months = [
-                { value: '01', text: 'Januari' }, { value: '02', text: 'Februari' }, { value: '03', text: 'Maret' },
-                { value: '04', text: 'April' }, { value: '05', text: 'Mei' }, { value: '06', text: 'Juni' },
-                { value: '07', text: 'Juli' }, { value: '08', text: 'Agustus' }, { value: '09', text: 'September' },
-                { value: '10', text: 'Oktober' }, { value: '11', text: 'November' }, { value: '12', text: 'Desember' }
-            ];
-            const currentMonth = new Date().toISOString().substring(5, 7); // MM
-
-            const koinSelect = document.getElementById('filter-bulan-koin');
-            const jurnalSelect = document.getElementById('filter-bulan-jurnal');
-            
-            [koinSelect, jurnalSelect].forEach(select => {
-                select.innerHTML = '';
-                months.forEach(month => {
-                    const option = document.createElement('option');
-                    option.value = month.value;
-                    option.textContent = month.text;
-                    select.appendChild(option);
-                });
-                select.value = currentMonth;
-            });
-            
-            // Tambahkan listener untuk filter bulan yang baru
-            koinSelect.addEventListener('change', setupDataListeners);
-            jurnalSelect.addEventListener('change', setupDataListeners);
-        };
-        
-        // Fungsi yang dimodifikasi untuk mengisi dropdown Tahun
-        const populateYearFilter = () => {
-            const currentYear = new Date().getFullYear();
-            const yearSelects = [
-                document.getElementById('filter-tahun'),
-                document.getElementById('filter-tahun-koin'), // Tambahan untuk Koin
-                document.getElementById('filter-tahun-jurnal') // Tambahan untuk Jurnal Umum
-            ];
-
-            yearSelects.forEach(select => {
-                if (!select) return;
-                select.innerHTML = '';
-                for (let i = currentYear; i >= 2020; i--) {
-                    const option = document.createElement('option');
-                    option.value = i;
-                    option.textContent = i;
-                    select.appendChild(option);
-                }
-                select.value = currentYear;
-            });
-
-            // Tambahkan listener untuk filter tahun yang baru
-            document.getElementById('filter-tahun').addEventListener('change', renderLaporanTahunan);
-            document.getElementById('filter-tahun-koin').addEventListener('change', setupDataListeners);
-            document.getElementById('filter-tahun-jurnal').addEventListener('change', setupDataListeners);
-
-            renderLaporanTahunan(); // Initial render for annual report
-        };
-        
-        // PDF Download (Placeholder)
-        document.getElementById('download-koin-pdf').addEventListener('click', () => {
-            alert('Fungsi Unduh PDF belum diimplementasikan. Anda akan membutuhkan pustaka pihak ketiga (misalnya jsPDF atau html2canvas) untuk menghasilkan PDF dengan tanda tangan.');
-        });
-        
-        // Reset Data (Placeholder - Modul Jurnal)
-        document.getElementById('reset-data-jurnal').addEventListener('click', () => {
-            alert('Fungsi "Reset Data" (Manual) harus dilakukan dengan sangat hati-hati dan memerlukan konfirmasi berlapis. Saat ini tidak diimplementasikan untuk mencegah kehilangan data yang tidak disengaja. Untuk mereset, hapus data secara manual per bulan.');
-        });
-
-        // --- START APP ---
-        window.onload = initFirebase;
-    </script>
-</body>
-</html>
