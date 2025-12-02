@@ -25,7 +25,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { background-color: #f3f4f6; }
-        .tab-button.active { background-color: var(--tw-colors-nu-green); color: white; }
+        /* Perubahan: Tombol Aktif menggunakan teks Hitam untuk kontras maksimal */
+        .tab-button.active { background-color: var(--tw-colors-nu-green); color: black; } 
         .tab-button:not(.active) { background-color: #e5e7eb; color: #4b5563; }
         .shadow-custom { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
         /* Style untuk Tabel Responsif */
@@ -93,7 +94,7 @@
                                 <th rowspan="2" class="center-text">Donatur/Kelompok</th>
                                 <th rowspan="2" class="center-text">Alamat (RT/RW)</th>
                                 <th rowspan="2" class="center-text">Nominal</th>
-                                <th colspan="4" class="center-text bg-nu-green text-white">Pembagian Dana Koin</th>
+                                <th colspan="4" class="center-text bg-nu-green text-black">Pembagian Dana Koin</th>
                                 <th rowspan="2" class="center-text">Aksi</th>
                             </tr>
                             <tr>
@@ -164,7 +165,7 @@
                                 <th rowspan="3" class="center-text">No</th>
                                 <th rowspan="3" class="center-text">Tanggal</th>
                                 <th rowspan="3" class="center-text">Keterangan</th>
-                                <th colspan="7" class="center-text bg-nu-green text-white">Jml Penerima</th>
+                                <th colspan="7" class="center-text bg-nu-green text-black">Jml Penerima</th>
                                 <th rowspan="3" class="center-text">Kategori</th>
                                 <th rowspan="3" class="center-text">Dana Masuk</th>
                                 <th rowspan="3" class="center-text">Dana Keluar</th>
@@ -297,7 +298,7 @@
                                 <th rowspan="4" class="center-text">No (1)</th>
                                 <th rowspan="4" class="center-text">Bulan (2)</th>
                                 <th rowspan="4" class="center-text">Total Penerimaan (3)</th>
-                                <th colspan="12" class="center-text bg-nu-green text-white">Pengeluaran Wajib (5)</th>
+                                <th colspan="12" class="center-text bg-nu-green text-black">Pengeluaran Wajib (5)</th>
                                 <th colspan="4" class="center-text bg-blue-500 text-white">Pengeluaran Lain-lain (6)</th>
                                 <th rowspan="4" class="center-text">Jumlah Pengeluaran (7)</th>
                                 <th rowspan="4" class="center-text">Saldo Akhir Bulan Ini (8)</th>
@@ -873,6 +874,14 @@
             // 6. Render Data Bulanan
             let rowCounter = 3;
             monthlyData.forEach((month, index) => {
+                // Hitung total penerimaan non-koin + saldo bulan lalu
+                const monthKey = `${selectedYear}-${String(index + 1).padStart(2, '0')}`;
+                
+                // Cari Saldo Bulan Lalu untuk bulan ini di Jurnal Umum
+                const saldoRef = doc(db, collectionPath('jurnal_umum'), `saldo_awal_${monthKey}`);
+                let saldoAwalBulan = 0;
+                // Ini hanya untuk menghitung Saldo Bulan Lalu di Jurnal Umum, tidak perlu di sini
+
                 const totalPenerimaan = month.penerimaan.koin + month.penerimaan.non_koin;
                 const totalPengeluaran = month.pengeluaran.wajib.total + month.pengeluaran.lain_lain.total;
                 const saldoAkhirBulan = totalPenerimaan - totalPengeluaran;
@@ -980,13 +989,15 @@
                         // Pengeluaran Wajib (Bidang)
                         if (wajibMap[kategori]) {
                             const field = wajibMap[kategori];
-                            month.pengeluaran.wajib[field].uang += keluar;
-                            month.pengeluaran.wajib[field].penerima += Object.values(penerima).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+                            if (field === 'Subsidi') {
+                                month.pengeluaran.wajib.Subsidi += keluar;
+                            } else {
+                                month.pengeluaran.wajib[field].uang += keluar;
+                                month.pengeluaran.wajib[field].penerima += Object.values(penerima).reduce((sum, val) => sum + (parseInt(val) || 0), 0);
+                            }
+                            
                             month.pengeluaran.wajib.total += keluar;
                         }
-                        // Pengeluaran Wajib (Honor Koin) - TIDAK DARI JURNAL MANUAL, HANYA DARI KOIN
-                        // Honor koin dihitung di Step 4 dari data laporan_koin_nu
-                        
                         // Pengeluaran Lain-lain
                         else if (lainLainMap[kategori]) {
                             const field = lainLainMap[kategori];
@@ -1236,7 +1247,7 @@
         
         // Reset Data (Placeholder - Modul Jurnal)
         document.getElementById('reset-data-jurnal').addEventListener('click', () => {
-            alert('Fungsi "Reset Data" (Manual) memerlukan konfirmasi berlapis dan belum diimplementasikan. Harap hapus data satu per satu jika diperlukan.');
+            alert('Fungsi "Reset Data" (Manual) harus dilakukan dengan sangat hati-hati dan memerlukan konfirmasi berlapis. Saat ini tidak diimplementasikan untuk mencegah kehilangan data yang tidak disengaja. Untuk mereset, hapus data secara manual per bulan.');
         });
 
         // --- START APP ---
