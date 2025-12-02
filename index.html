@@ -333,7 +333,8 @@
                     </div>
                 </div>
             </div>
-            </div>
+
+        </div>
     </div>
 
     <script type="module">
@@ -341,9 +342,21 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-auth.js";
         import { getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, getDocs, runTransaction, getDoc, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/10.6.0/firebase-firestore.js";
 
-        // Global variables from Canvas environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* Your manual config as fallback, though not used here */ };
+        // PENTING: Konfigurasi Firebase Anda dimasukkan langsung di sini. 
+        // Jaga kerahasiaan apiKey Anda.
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
+            authDomain: "upzis-ngablak.firebaseapp.com",
+            projectId: "upzis-ngablak",
+            storageBucket: "upzis-ngablak.firebasestorage.app",
+            messagingSenderId: "869549648344",
+            appId: "1:869549648344:web:a531a37cce3a87bb672aad"
+        };
+        
+        // Ambil appId dari konfigurasi (digunakan untuk path koleksi)
+        const appId = firebaseConfig.appId;
+
+        // Token otentikasi awal (jika ada dari environment lain)
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         setLogLevel('debug'); // Wajib untuk melihat log Firebase
@@ -419,8 +432,8 @@
                         
                         // Setelah Auth siap, jalankan listener data dan inisialisasi filter
                         setupDataListeners();
-                        populateMonthFilter(); // MODIFIKASI: Panggil fungsi baru untuk bulan
-                        populateYearFilter(); // MODIFIKASI: Panggil fungsi yang sudah dimodifikasi untuk tahun
+                        populateMonthFilter();
+                        populateYearFilter();
 
                     } else {
                         // Coba sign in dengan custom token atau anonim
@@ -480,7 +493,7 @@
 
         // --- FIREBASE DATA LISTENERS (onSnapshot) ---
 
-        // MODIFIKASI: Helper untuk mendapatkan filter Bulan-Tahun
+        // Helper untuk mendapatkan filter Bulan-Tahun
         const getMonthYearFilter = (module) => {
             const year = document.getElementById(`filter-tahun-${module}`).value;
             const month = document.getElementById(`filter-bulan-${module}`).value;
@@ -492,7 +505,7 @@
 
             // 1. Laporan Koin Listener
             currentKoinUnsubscribe();
-            // MODIFIKASI: Menggunakan filter baru
+            // Menggunakan filter baru
             const dateFilterKoin = getMonthYearFilter('koin'); 
             let qKoin = query(collection(db, collectionPath('laporan_koin_nu')), orderBy('tanggal', 'desc'));
 
@@ -516,7 +529,7 @@
 
             // 2. Jurnal Umum Listener
             currentJurnalUnsubscribe();
-            // MODIFIKASI: Menggunakan filter baru
+            // Menggunakan filter baru
             const dateFilterJurnal = getMonthYearFilter('jurnal');
             let qJurnal = query(collection(db, collectionPath('jurnal_umum')), orderBy('tanggal', 'desc'));
 
@@ -537,7 +550,7 @@
                 let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 
                 // Ambil data Koin bulan ini untuk menghitung otomatis
-                // MODIFIKASI: Menggunakan filter baru
+                // Menggunakan filter baru
                 const currentMonth = dateFilterJurnal || new Date().toISOString().substring(0, 7);
                 const start = new Date(currentMonth + '-01');
                 const end = new Date(start);
@@ -574,8 +587,7 @@
             });
         };
 
-        // --- RENDER FUNCTIONS (omitted for brevity, assume unchanged except for filter handling) ---
-        // ... (renderLaporanKoin, renderJurnalUmum, renderLaporanTahunan, renderWajibCell, aggregateMonthlyData remain the same) ...
+        // --- RENDER FUNCTIONS ---
         
         // Modul 1: Laporan Dana Koin
         const renderLaporanKoin = (data) => {
@@ -1029,9 +1041,7 @@
         // --- END RENDER FUNCTIONS ---
 
 
-        // --- CRUD Koin (omitted for brevity, assume unchanged) ---
-        // ... (editKoin, koin-cancel-btn listener, deleteKoin, form-laporan-koin listener remain the same) ...
-
+        // --- CRUD Koin ---
         window.editKoin = (id, tanggal, petugas, nohp, donatur, alamat, nominal) => {
             document.getElementById('koin-doc-id').value = id;
             document.getElementById('koin-tanggal').value = tanggal;
@@ -1111,8 +1121,7 @@
         });
 
 
-        // --- CRUD Jurnal Umum (Manual Entry) (omitted for brevity, assume unchanged) ---
-        // ... (editJurnal, jurnal-cancel-btn listener, deleteJurnal, form-jurnal-umum listener remain the same) ...
+        // --- CRUD Jurnal Umum (Manual Entry) ---
 
         window.editJurnal = (id, tanggal, keterangan, jenis, kategori, nominal, penerimaJsonString) => {
             document.getElementById('jurnal-doc-id').value = id;
@@ -1203,8 +1212,7 @@
             }
         });
         
-        // --- CRUD Saldo Bulan Lalu (Baris Otomatis Jurnal Umum) (omitted for brevity, assume unchanged) ---
-        // ... (editSaldoBulanLalu remains the same) ...
+        // --- CRUD Saldo Bulan Lalu (Baris Otomatis Jurnal Umum) ---
 
         window.editSaldoBulanLalu = async (monthKey, currentSaldo) => {
             const newSaldo = prompt(`Masukkan Saldo Bulan Lalu untuk ${monthKey} (saat ini: ${formatRupiah(currentSaldo)}):`);
@@ -1223,8 +1231,7 @@
         };
 
 
-        // --- FORM SALDO AWAL TAHUN (Laporan Tahunan) (omitted for brevity, assume unchanged) ---
-        // ... (edit-saldo-awal listener, form-saldo-awal listener remain the same) ...
+        // --- FORM SALDO AWAL TAHUN (Laporan Tahunan) ---
         document.getElementById('edit-saldo-awal').addEventListener('click', () => {
             document.getElementById('saldo-awal-input').classList.toggle('hidden');
         });
@@ -1248,7 +1255,7 @@
         
         // --- FILTER & HELPER ---
 
-        // MODIFIKASI: Fungsi baru untuk mengisi dropdown Bulan
+        // Fungsi baru untuk mengisi dropdown Bulan
         const populateMonthFilter = () => {
             const months = [
                 { value: '01', text: 'Januari' }, { value: '02', text: 'Februari' }, { value: '03', text: 'Maret' },
@@ -1277,7 +1284,7 @@
             jurnalSelect.addEventListener('change', setupDataListeners);
         };
         
-        // MODIFIKASI: Fungsi yang dimodifikasi untuk mengisi dropdown Tahun
+        // Fungsi yang dimodifikasi untuk mengisi dropdown Tahun
         const populateYearFilter = () => {
             const currentYear = new Date().getFullYear();
             const yearSelects = [
