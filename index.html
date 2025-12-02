@@ -1399,11 +1399,31 @@ function editAnnualData(id, key, currentValue, isText = false) {
     const { id, key, isText } = annualEditData;
     const type = id.split(/_|_/)[0];
 
-    // 1. Cari target data di array lokal (untuk mendapatkan targetData.id Firestore)
-    const targetData = annualData.find(d => d.id == id || (d.type === 'monthly' && d.year.toString() === id.split('_')[1] && d.month.toString() === id.split('_')[2]) );
-    
+    // =================================================================
+    // 1. PERBAIKAN PENCARIAN TARGET DATA BERDASARKAN ID SEMENTARA ATAU ID ASLI
+    // =================================================================
+    let targetData = null;
+
+    if (id.startsWith('monthly_')) {
+        // Jika ID adalah ID bulanan sementara (misalnya: monthly_2025_1)
+        const parts = id.split('_');
+        const targetYear = parts[1];
+        const targetMonth = parts[2];
+
+        // Cari data di annualData yang merupakan tipe 'monthly' dan cocok tahun/bulannya
+        targetData = annualData.find(d => 
+            d.type === 'monthly' && 
+            d.year.toString() === targetYear && 
+            d.month.toString() === targetMonth
+        );
+    } else {
+        // Jika ID adalah ID Firestore asli (misalnya: saldo_bank_2025 atau ID dokumen unik)
+        targetData = annualData.find(d => d.id === id);
+    }
+    // =================================================================
+
     if (!targetData) {
-        alert('Data tidak ditemukan!');
+        alert('Data tahunan tidak ditemukan untuk diupdate!');
         return;
     }
     
@@ -1426,9 +1446,9 @@ function editAnnualData(id, key, currentValue, isText = false) {
         }
         
         // Lakukan pembaruan ke Firestore
-        await updateDoc(docRef, updateObject); // <--- Sekarang bisa menggunakan await
+        await updateDoc(docRef, updateObject); 
         
-        // --- Perbarui array lokal setelah Firestore sukses ---
+        // --- Perbarui array lokal setelah Firestore sukses (Agar tampilan langsung update) ---
         let keys = key.split('.');
         let obj = targetData;
 
@@ -2253,5 +2273,6 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
 
