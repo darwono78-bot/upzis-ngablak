@@ -13,14 +13,15 @@
         .text-right { text-align: right; }
         .footer-total { background-color: #e6ffe6; font-weight: bold; }
         .header-group { background-color: #006400; color: white; }
-        input[type="number"] { width: 90%; padding: 4px; border: 1px solid #ccc; text-align: right; }
+        /* Style untuk kolom input agar terlihat seperti bagian dari tabel */
+        input[type="number"] { width: 90%; padding: 4px; border: 1px solid #ccc; text-align: right; box-sizing: border-box; }
         .input-table th { background-color: #007bff; }
     </style>
 </head>
 <body>
 
     <h1>Sistem Input & Laporan KOIN NU Interaktif</h1>
-    <p style="color: red; font-weight: bold;">Catatan: Silakan ubah angka di Modul 1, maka Modul 2 dan 3 akan otomatis berubah.</p>
+    <p style="color: red; font-weight: bold;">Catatan: Silakan ubah angka di Modul 1 dan Saldo Bulan Lalu (Modul 2), maka semua laporan akan otomatis berubah.</p>
 
     <h2>MODUL 1: INPUT DATA BULANAN (Sumber Utama)</h2>
     <table id="tabel-modul-1" class="input-table">
@@ -57,7 +58,13 @@
             </tr>
         </thead>
         <tbody>
-            <tr><td>-</td><td>Saldo Bulan Lalu</td><td class="text-right">0</td><td class="text-right">0</td><td id="m2-saldo-awal" class="text-right">0</td></tr>
+            <tr>
+                <td>-</td>
+                <td>Saldo Bulan Lalu</td>
+                <td class="text-right">0</td>
+                <td class="text-right">0</td>
+                <td><input type="number" id="m2-saldo-awal-input" value="0" min="0" style="width: 100%;"></td>
+            </tr>
             <tr><td>1</td><td style="font-weight: bold;">Penerimaan Dana KOIN NU (100% Total)</td><td id="m2-dana-masuk-koin" class="text-right">0</td><td class="text-right">0</td><td id="m2-saldo-penerimaan" class="text-right">0</td></tr>
             
             <tr><td>2</td><td>Pengeluaran Honor Petugas (10%)</td><td class="text-right">0</td><td id="m2-dana-keluar-honor-petugas" class="text-right">0</td><td id="m2-saldo-honor-petugas" class="text-right">0</td></tr>
@@ -71,7 +78,8 @@
                 <td colspan="2" class="footer-total text-right">TOTAL</td>
                 <td id="m2-total-masuk" class="footer-total text-right">0</td>
                 <td id="m2-total-keluar" class="footer-total text-right">0</td>
-                <td id="m2-footer-saldo-total" class="footer-total text-right">0</td> </tr>
+                <td id="m2-footer-saldo-total" class="footer-total text-right">0</td>
+            </tr>
         </tfoot>
     </table>
 
@@ -174,17 +182,19 @@
             const totalPenerimaan = dataJan.penerimaan; 
             const pengeluaranSosial = dataJan.sosialLain;
 
+            // NEW: Ambil nilai Saldo Awal dari input field
+            const saldoAwal = parseInput('m2-saldo-awal-input'); 
+
             // Perhitungan Honor Rinci
             const honorPetugas = totalPenerimaan * HONOR_RATES.petugas;
             const honorMWC = totalPenerimaan * HONOR_RATES.mwc;
             const honorPC = totalPenerimaan * HONOR_RATES.pc;
             const totalHonor = honorPetugas + honorMWC + honorPC; 
 
-            let saldoJurnalUmum = 0;
+            // Inisialisasi Saldo dengan Saldo Awal
+            let saldoJurnalUmum = saldoAwal; 
             let totalMasuk = 0;
             let totalKeluar = 0;
-
-            document.getElementById('m2-saldo-awal').textContent = formatNominal(saldoJurnalUmum);
 
             // 1. Penerimaan Dana KOIN NU (100%)
             saldoJurnalUmum += totalPenerimaan;
@@ -325,11 +335,16 @@
                 `;
             });
             
-            // 2. Attach Event Listeners to ALL input fields
-            const inputs = document.querySelectorAll('#m1-input-body input[type="number"]');
-            inputs.forEach(input => {
+            // 2. Attach Event Listeners to ALL input fields (Modul 1 dan Saldo Awal Modul 2)
+            const inputsModul1 = document.querySelectorAll('#m1-input-body input[type="number"]');
+            inputsModul1.forEach(input => {
                 input.addEventListener('input', recalculateAllReports);
             });
+
+            const inputSaldoAwal = document.getElementById('m2-saldo-awal-input');
+            if (inputSaldoAwal) {
+                inputSaldoAwal.addEventListener('input', recalculateAllReports);
+            }
 
             // 3. Run initial calculation
             recalculateAllReports();
