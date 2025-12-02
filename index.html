@@ -1382,7 +1382,7 @@ function editAnnualData(id, key, currentValue, isText = false) {
             document.getElementById('tahunan-edit-input-area').style.display = 'none';
         }
         
-       function saveAnnualReportData() {
+       async function saveAnnualReportData() {
     if (!annualEditData) return;
 
     let newValue;
@@ -1422,15 +1422,13 @@ function editAnnualData(id, key, currentValue, isText = false) {
             updateObject = { nominal: newValue };
         } else {
             // Jika data bulanan (monthly), gunakan key untuk update nested data
-            // Contoh: Jika key='pendidikan.penerima', maka updateObject={'pendidikan.penerima': newValue}
             updateObject[key] = newValue; 
         }
         
         // Lakukan pembaruan ke Firestore
-        updateDoc(docRef, updateObject); 
+        await updateDoc(docRef, updateObject); // <--- Sekarang bisa menggunakan await
         
-        // Catatan: Update array lokal (annualData) perlu dilakukan agar tampilan langsung berubah.
-        // Update data di array lokal berdasarkan key, seperti sebelumnya
+        // --- Perbarui array lokal setelah Firestore sukses ---
         let keys = key.split('.');
         let obj = targetData;
 
@@ -1440,21 +1438,19 @@ function editAnnualData(id, key, currentValue, isText = false) {
         }
         obj[keys[keys.length - 1]] = newValue;
 
-        // Khusus untuk Saldo Awal, update properti 'nominal' di objek utama
         if (type.startsWith('saldo')) {
             targetData.nominal = newValue;
         }
+        // --- Akhir Perubahan Lokal ---
         
         alert('Perubahan data tahunan berhasil disimpan ke Firestore!');
         
     } catch(e) { 
         console.error('Gagal update ke Firestore:', e); 
         alert('Gagal menyimpan perubahan ke Firestore: ' + e.message); 
-        return; // Jangan lanjutkan jika gagal simpan ke Firestore
+        return; 
     }
     // =================================================================
-    
-    // Bagian Local Storage dihapus
     
     // Refresh tampilan
     cancelAnnualEdit();
@@ -2257,4 +2253,5 @@ window.addEventListener('beforeunload', async () => {
 
 </body>
 </html>
+
 
