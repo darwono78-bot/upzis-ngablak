@@ -1185,6 +1185,9 @@
             let runningSaldoKas = 0;
             const saldoBankAwal = parseInput('saldo-bank-awal-input');
             const saldoTunaiAwal = parseInput('saldo-tunai-awal-input');
+            
+            // NEW: Variable to calculate the sum of Column 8 (Monthly Net Cash Flow)
+            let totalSaldoAkhirBulanan = 0; 
 
             let totalPenerimaanTahunan = 0;
             let totalDonaturTahunan = 0;
@@ -1237,7 +1240,7 @@
                 <td colspan="16">-</td>
                 <td>-</td>
                 <td>-</td>
-                <td class="text-right">${formatNominal(saldoTunaiAwal)}</td>
+                <td class="text-right">-</td>
                 <td class="text-right">${formatNominal(runningSaldoKas)}</td>
             `;
 
@@ -1249,6 +1252,9 @@
                 const jmlPengeluaranBulanIni = honorWajib + totalPengeluaranNonHonor;
                 const saldoAkhirBulanIni = dataBulan.penerimaan - jmlPengeluaranBulanIni;
                 runningSaldoKas += saldoAkhirBulanIni;
+                
+                // NEW: Accumulate the monthly saldo (Column 8)
+                totalSaldoAkhirBulanan += saldoAkhirBulanIni;
 
                 // Akumulasi Total Tahunan
                 totalPenerimaanTahunan += dataBulan.penerimaan;
@@ -1325,7 +1331,11 @@
             document.getElementById('m3-total-lain').textContent = formatNominal(totalLainTahunan);
             document.getElementById('m3-total-honor').textContent = formatNominal(totalHonorTahunan);
             document.getElementById('m3-total-pengeluaran').textContent = formatNominal(totalPengeluaranTahunan);
-            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(data[data.length - 1].penerimaan - (data[data.length - 1].penerimaan * data[data.length - 1].honorWajibPercent) - calculateTotalNonHonorExpense(data[data.length - 1])); // Saldo Akhir bulan terakhir
+            
+            // MODIFIED: Use the sum of monthly saldos for the Column 8 total (Total Surplus/Defisit Tahunan)
+            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(totalSaldoAkhirBulanan);
+            
+            // This is the correct total running balance (Saldo Awal + Total Surplus/Defisit)
             document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(runningSaldoKas);
             
             // Apply filtering for Modul 3 if required (based on currentFilterMonth/Year, though typically M3 is always annual)
