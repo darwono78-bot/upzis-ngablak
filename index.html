@@ -139,7 +139,7 @@
         }
 
         /* Admin only view */
-        .admin-only {
+        .admin-only-hidden {
             display: none;
         }
     </style>
@@ -187,7 +187,7 @@
                     </div>
                     <div>
                         <label for="m1a-nominal-input" class="block text-sm font-medium text-gray-700">Nominal Koin NU</label>
-                        <input type="number" id="m1a-nominal-input" placeholder="Nominal Uang" min="1000" required>
+                        <input type="number" id="m1a-nominal-input" placeholder="Nominal Uang" min="1000" required data-edit-id="">
                     </div>
                     <div>
                         <label for="m1a-no-hp-input" class="block text-sm font-medium text-gray-700">No. HP Donatur</label>
@@ -302,14 +302,14 @@
                         </thead>
                         <tbody id="m2-transaction-body">
                             <tr> 
-                                <td colspan="4" class="saldo-awal-row text-right">Saldo Bulan Lalu:</td> 
+                                <td colspan="4" class="saldo-awal-row text-right font-bold">Saldo Bulan Lalu:</td> 
                                 <td colspan="2"> 
-                                    <div id="m2-saldo-awal-display-container" class="admin-only" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 0; box-sizing: border-box; display: none;">
-                                        <input type="number" id="m2-saldo-awal-input" value="0" min="0" oninput="recalculateAllReports()" style="width: 100%; text-align: right; padding: 5px; font-size: 11px;">
+                                    <div id="m2-saldo-awal-display-container" class="admin-only-hidden" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 0; box-sizing: border-box;">
+                                        <input type="number" id="m2-saldo-awal-input" value="0" min="0" oninput="m2SaldoAwal = parseInt(this.value)||0; recalculateAllReports(); renderAllTables();" style="width: 100%; text-align: right; padding: 5px; font-size: 11px;">
                                     </div>
                                     <span id="m2-saldo-awal-static" style="display: block; width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 5px;">0</span>
                                 </td>
-                                <td id="m2-saldo-awal-display" class="saldo-awal-row text-right">0</td>
+                                <td id="m2-saldo-awal-display" class="saldo-awal-row text-right font-bold">0</td>
                             </tr>
                             </tbody>
                     </table>
@@ -487,18 +487,23 @@
             isLoggedIn = !!user;
             const userDisplay = document.getElementById('user-email-display');
             const authButton = document.getElementById('auth-button');
+            const saldoInputContainer = document.getElementById('m2-saldo-awal-display-container');
+            const saldoStatic = document.getElementById('m2-saldo-awal-static');
+
 
             if (user) {
                 userDisplay.innerText = `Admin: ${user.email}`;
                 authButton.innerText = 'Logout';
-                // Tampilkan elemen yang hanya untuk admin
-                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+                // Tampilkan input saldo dan sembunyikan static display
+                saldoInputContainer.style.display = 'block';
+                saldoStatic.style.display = 'none';
                 
             } else {
                 userDisplay.innerText = 'Belum Login';
                 authButton.innerText = 'Login';
-                // Sembunyikan elemen yang hanya untuk admin
-                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
+                // Sembunyikan input saldo dan tampilkan static display
+                saldoInputContainer.style.display = 'none';
+                saldoStatic.style.display = 'block';
             }
         }
 
@@ -526,6 +531,7 @@
                 
                 await loadTransactions(); 
                 renderAllTables(); 
+                recalculateAllReports();
                 
             } catch (error) {
                 console.error("Error menghapus transaksi: ", error);
@@ -639,6 +645,9 @@
             
             if (savedId) {
                 clearKoinNUInputs();
+                await loadTransactions(); 
+                renderAllTables();
+                recalculateAllReports();
             }
         }
 
@@ -713,6 +722,9 @@
             
             if (savedId) {
                 clearManualTransactionInputs();
+                await loadTransactions(); 
+                renderAllTables();
+                recalculateAllReports();
             }
         }
 
@@ -764,7 +776,7 @@
                         <td class="py-2 px-6 text-right">${formatNominal(transaction.nominal)}</td>
                         <td class="py-2 px-6">
                             <button class="text-blue-500 hover:text-blue-700 font-bold mr-2" onclick="editKoinNUTxn('${transaction.id}')">Edit</button>
-                            <button class="text-red-500 hover:text-red-700 font-bold" onclick="deleteKoinNUTxn('${transaction.id}')">Hapus</button>
+                            <button class="text-red-500 hover:text-red-700 font-bold" onclick="deleteTransactionFromFirebase('${transaction.id}')">Hapus</button>
                         </td>
                     </tr>
                 `;
@@ -774,6 +786,7 @@
             pageInfo.innerText = `Halaman ${currentPage} dari ${totalPages || 1} (Total: ${totalItems} Donatur)`;
             
             // Tambahkan baris total
+            const totalDonasiKeseluruhan = transactions.reduce((acc, t) => acc + t.nominal, 0);
             const totalRow = `
                 <tr class="bg-gray-100 font-bold border-t-2 border-gray-900">
                     <td colspan="6" class="py-2 px-6 text-right">TOTAL DONASI HALAMAN INI:</td>
@@ -782,13 +795,13 @@
                 </tr>
                 <tr class="bg-gray-200 font-bold border-t-2 border-gray-900">
                     <td colspan="6" class="py-2 px-6 text-right">TOTAL DONASI KESELURUHAN:</td>
-                    <td class="py-2 px-6 text-right">${formatNominal(transactions.reduce((acc, t) => acc + t.nominal, 0))}</td>
+                    <td class="py-2 px-6 text-right">${formatNominal(totalDonasiKeseluruhan)}</td>
                     <td class="py-2 px-6"></td>
                 </tr>
             `;
             tbody.innerHTML += totalRow;
 
-            return transactions.reduce((acc, t) => acc + t.nominal, 0); // Return total nominal keseluruhan
+            return totalDonasiKeseluruhan; 
         }
 
         function prevDonaturPage() {
@@ -810,7 +823,6 @@
         function renderJurnalTable(totalDonasi, page) {
             const tbody = document.getElementById('m2-transaction-body');
             const pageInfo = document.getElementById('jurnal-page-info');
-            tbody.innerHTML = '';
             
             // Gabungkan semua transaksi (Donasi Otomatis + Manual)
             const autoTransactions = allTransactions.map(t => {
@@ -864,18 +876,12 @@
             let html = '';
 
             // Render Saldo Awal (Baris Terkunci Saldo Awal)
-            html += `
-                <tr> 
-                    <td colspan="4" class="saldo-awal-row text-right font-bold">Saldo Bulan Lalu:</td> 
-                    <td colspan="2"> 
-                        <div id="m2-saldo-awal-display-container" class="admin-only" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 0; box-sizing: border-box; display: ${isLoggedIn ? 'none' : 'none'};">
-                            <input type="number" id="m2-saldo-awal-input" value="${m2SaldoAwal}" min="0" oninput="m2SaldoAwal = parseInt(this.value)||0; recalculateAllReports(); renderAllTables();" style="width: 100%; text-align: right; padding: 5px; font-size: 11px;">
-                        </div>
-                        <span id="m2-saldo-awal-static" style="display: block; width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 5px;">${formatNominal(m2SaldoAwal)}</span>
-                    </td>
-                    <td id="m2-saldo-awal-display" class="saldo-awal-row text-right font-bold">${formatNominal(currentSaldo)}</td>
-                </tr>
-            `;
+            // Ambil dan update elemen Saldo Awal di DOM
+            document.getElementById('m2-saldo-awal-input').value = m2SaldoAwal;
+            document.getElementById('m2-saldo-awal-static').innerText = formatNominal(m2SaldoAwal);
+            
+            // Perbarui saldo yang tampil di baris Saldo Bulan Lalu
+            document.getElementById('m2-saldo-awal-display').innerText = formatNominal(currentSaldo);
 
             let totalDebitOnPage = 0;
             let totalKreditOnPage = 0;
@@ -899,12 +905,10 @@
                         <button class="text-red-500 hover:text-red-700 font-bold" onclick="deleteTransactionFromFirebase('${t.id}')">Hapus</button>
                     `;
                 } else {
-                    // Transaksi otomatis (Donasi Koin NU) hanya bisa diedit/dihapus di Modul 1A
+                    // Transaksi otomatis (Donasi Koin NU)
                     aksiHtml = `
                         <button class="text-gray-500 hover:text-gray-700 font-bold" onclick="showTab('donatur')">Lihat M1A</button>
                     `;
-                    // Jika ingin bisa edit/hapus di M1A, kita harus pastikan `id` sudah di-pass
-                    // Untuk saat ini, kita biarkan link ke M1A.
                 }
 
                 html += `
@@ -931,22 +935,10 @@
             `;
             html += totalRow;
 
-
-            // Gabungkan semua HTML (Header Saldo Awal + Transaksi + Total Halaman)
-            // Karena kita merender ulang seluruh tbody, kita perlu menyisipkan baris Saldo Awal di awal
-            
-            // Ganti innerHTML dari tbody setelah mengosongkannya
-            // NOTE: Karena Saldo Awal adalah bagian dari HTML statis di file, saya hanya akan merender transaksinya
-            // dan akan mencari elemen statis Saldo Awal di DOM dan mengupdate saldonya.
-
-            // Ambil konten Saldo Awal (baris pertama)
+            // Masukkan data transaksi dan total ke tbody, setelah baris Saldo Awal (yang statis)
+            // Kita harus mengambil baris pertama (Saldo Awal) dan mengganti sisanya.
             const saldoAwalRow = document.querySelector('#tabel-modul-2 tbody tr:first-child').outerHTML;
-            
-            // Ganti seluruh isi tbody, termasuk baris Saldo Awal
             tbody.innerHTML = saldoAwalRow + html;
-            
-            // Update Saldo di baris Saldo Awal yang statis
-            document.getElementById('m2-saldo-awal-display').innerText = formatNominal(currentSaldo - totalDebitOnPage + totalKreditOnPage);
 
             pageInfo.innerText = `Halaman ${currentPage} dari ${totalPages || 1} (Total: ${totalItems} Transaksi)`;
         }
@@ -989,7 +981,6 @@
                     // Penerimaan (masuk)
                     if (t.kategori === 'Infaq dan Shodaqoh') m3Data.infaqUang += debit;
                     else if (t.kategori === 'Penerimaan Lain') m3Data.lainLain += debit;
-                    // Kategori penerimaan lain bisa ditambahkan di sini
                 } else if (kredit > 0) {
                     // Pengeluaran (keluar)
                     if (t.kategori === 'Bantuan Sosial (Sosum)') {
@@ -1024,14 +1015,16 @@
             const m3 = m3Data;
             
             // Hitung Total Pemasukan dan Pengeluaran
-            const totalPemasukan = m3.donaturUang + m3.infaqUang + m3.donaturUang; // Donatur sudah termasuk di totalPemasukan
+            // Total Pemasukan adalah jumlah dari Donatur (M1A) dan Infaq/Penerimaan Lain (M2)
+            const totalPemasukan = m3.donaturUang + m3.infaqUang + m3.lainLain; 
             const totalPengeluaran = m3.sosumUang + m3.banomUang + m3.bencanaUang + m3.rapat + m3.perwtnMlu + m3.biayaBank + m3.lainLain;
             const saldoAkhir = m2SaldoAwal + totalPemasukan - totalPengeluaran;
-            const totalPenerima = m3.donaturPenerima + m3.infaqPenerima + m3.sosumPenerima + m3.banomPenerima + m3.bencanaPenerima;
+            const totalPenerima = m3.donaturPenerima + m3.sosumPenerima + m3.banomPenerima + m3.bencanaPenerima; // Hanya penerima yang dihitung
 
             // Render Ringkasan
             summaryDiv.innerHTML = `
-                <p class="text-sm"><strong>Total Dana Masuk (Awal + Pemasukan):</strong> ${formatNominal(m2SaldoAwal + totalPemasukan)}</p>
+                <p class="text-sm"><strong>Saldo Awal Periode:</strong> ${formatNominal(m2SaldoAwal)}</p>
+                <p class="text-sm"><strong>Total Pemasukan (Baru):</strong> ${formatNominal(totalPemasukan)}</p>
                 <p class="text-sm"><strong>Total Pengeluaran:</strong> ${formatNominal(totalPengeluaran)}</p>
                 <p class="text-lg text-bold text-green-700"><strong>SALDO AKHIR PERIODE:</strong> ${formatNominal(saldoAkhir)}</p>
                 <hr class="my-3">
@@ -1043,19 +1036,25 @@
                     <td colspan="18" class="py-2 px-3 border text-left">A. PEMASUKAN</td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Donatur (Koin NU)</td>
+                    <td class="py-2 px-3 border">1. Donatur (Koin NU)</td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.donaturUang)}</td>
                     <td class="py-2 px-3 border text-center">${formatNominal(m3.donaturPenerima)}</td>
                     <td colspan="15" class="py-2 px-3 border"></td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Infaq dan Shodaqoh (Manual)</td>
+                    <td class="py-2 px-3 border">2. Infaq dan Shodaqoh (Manual)</td>
                     <td colspan="2" class="py-2 px-3 border"></td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.infaqUang)}</td>
-                    <td class="py-2 px-3 border text-center">${formatNominal(m3.infaqPenerima)}</td>
+                    <td class="py-2 px-3 border text-center"></td>
                     <td colspan="13" class="py-2 px-3 border"></td>
                 </tr>
                 <tr>
+                    <td class="py-2 px-3 border">3. Penerimaan Lain (Manual)</td>
+                    <td colspan="13" class="py-2 px-3 border"></td>
+                    <td class="py-2 px-3 border text-right">${formatNominal(m3.lainLain)}</td>
+                    <td colspan="2" class="py-2 px-3 border"></td>
+                </tr>
+                <tr class="bg-green-200 font-bold">
                     <td class="py-2 px-3 border text-bold">TOTAL PEMASUKAN</td>
                     <td colspan="17" class="py-2 px-3 border text-right text-bold">${formatNominal(totalPemasukan)}</td>
                 </tr>
@@ -1067,46 +1066,46 @@
                     <td colspan="18" class="py-2 px-3 border text-left">B. PENGELUARAN</td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Bantuan Sosial (Sosum)</td>
+                    <td class="py-2 px-3 border">1. Bantuan Sosial (Sosum)</td>
                     <td colspan="4" class="py-2 px-3 border"></td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.sosumUang)}</td>
                     <td class="py-2 px-3 border text-center">${formatNominal(m3.sosumPenerima)}</td>
                     <td colspan="11" class="py-2 px-3 border"></td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Banom</td>
+                    <td class="py-2 px-3 border">2. Banom</td>
                     <td colspan="6" class="py-2 px-3 border"></td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.banomUang)}</td>
                     <td class="py-2 px-3 border text-center">${formatNominal(m3.banomPenerima)}</td>
                     <td colspan="9" class="py-2 px-3 border"></td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Bencana</td>
+                    <td class="py-2 px-3 border">3. Bencana</td>
                     <td colspan="8" class="py-2 px-3 border"></td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.bencanaUang)}</td>
                     <td class="py-2 px-3 border text-center">${formatNominal(m3.bencanaPenerima)}</td>
                     <td colspan="7" class="py-2 px-3 border"></td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Rapat & Koordinasi</td>
+                    <td class="py-2 px-3 border">4. Rapat & Koordinasi</td>
                     <td colspan="10" class="py-2 px-3 border"></td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.rapat)}</td>
                     <td colspan="5" class="py-2 px-3 border"></td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Perawatan MLU</td>
+                    <td class="py-2 px-3 border">5. Perawatan MLU</td>
                     <td colspan="11" class="py-2 px-3 border"></td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.perwtnMlu)}</td>
                     <td colspan="4" class="py-2 px-3 border"></td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Biaya Bank</td>
+                    <td class="py-2 px-3 border">6. Biaya Bank</td>
                     <td colspan="12" class="py-2 px-3 border"></td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.biayaBank)}</td>
                     <td colspan="3" class="py-2 px-3 border"></td>
                 </tr>
                 <tr>
-                    <td class="py-2 px-3 border">Lain-lain</td>
+                    <td class="py-2 px-3 border">7. Pengeluaran Lain-lain</td>
                     <td colspan="13" class="py-2 px-3 border"></td>
                     <td class="py-2 px-3 border text-right">${formatNominal(m3.lainLain)}</td>
                     <td colspan="2" class="py-2 px-3 border"></td>
@@ -1168,8 +1167,9 @@
                         if (data.column.index === 0) {
                             doc.text(data.cell.text, data.cell.x + data.cell.padding('left'), data.cell.y + data.cell.height / 2, { valign: 'middle', align: 'left' });
                         }
-                        // Align tengah untuk kolom Penerima
-                        if (data.column.index === 2 || data.column.index === 4 || data.column.index === 6 || data.column.index === 8 || data.column.index === 10) {
+                        // Align tengah untuk kolom Penerima (index 2, 4, 6, 8, 10, 16)
+                        const centerIndices = [2, 4, 6, 8, 10, 16];
+                        if (centerIndices.includes(data.column.index)) {
                              doc.text(data.cell.text, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { valign: 'middle', align: 'center' });
                         }
                     }
@@ -1208,19 +1208,14 @@
             
             // Listener status autentikasi: fungsi handleAuthStateChange akan dipanggil
             auth.onAuthStateChanged(async (user) => {
+                
+                // Ambil data sebelum update status login untuk memastikan tampilan saldo yang benar
+                await loadTransactions(); 
                 handleAuthStateChange(user); 
                 
-                // Hanya muat data jika sudah login
-                if (user) {
-                    await loadTransactions(); 
-                } else {
-                    // Pastikan data bersih jika logout
-                    allTransactions = [];
-                    m2ManualTransactions = [];
-                }
-                
+                // Panggil render setelah semua data siap
                 renderAllTables(); 
-                recalculateAllReports(); // Hitung ulang laporan setelah data dimuat
+                recalculateAllReports(); 
             });
 
             // *PENTING: Panggil ini untuk menampilkan Donatur sebagai tab default*
@@ -1271,7 +1266,7 @@
 
             } catch (error) {
                 console.error("Error memuat data dari Firestore: ", error);
-                alert("Gagal memuat data dari Firebase. Cek konsol.");
+                // Biarkan data kosong, jangan alert agar aplikasi tidak crash
                 allTransactions = []; 
                 m2ManualTransactions = [];
             }
