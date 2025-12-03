@@ -89,16 +89,6 @@
             width: 40px; /* Tetapkan lebar tetap untuk kolom aksi */
         }
         
-        /* === FIX BARU: Lebar Kolom Operasional Modul 1 & Modul 3 disamakan dengan Jml Uang (70px) === */
-        /* Kolom Jml Uang di Modul 1 & 3 memiliki min-width: 70px */
-        /* Modul 1 (Kolom 16, 17, 18, 19): Rapat, PERWTN MLU, BIAYA REK BANK, Lain - Lain */
-        #tabel-modul-1 th:nth-child(16), #tabel-modul-1 td:nth-child(16),
-        #tabel-modul-1 th:nth-child(17), #tabel-modul-1 td:nth-child(17),
-        #tabel-modul-1 th:nth-child(18), #tabel-modul-1 td:nth-child(18),
-        #tabel-modul-1 th:nth-child(19), #tabel-modul-1 td:nth-child(19),
-        /* Modul 3: Kolom Sosial (Jml Uang) */
-        /* RULE INI DIHAPUS/DIGANTI DENGAN RULE BARU DI BAWAH */
-        
         /* Override untuk Operasional M1 (tetap 70px agar seragam dengan Jml Uang sosial M1) */
         #tabel-modul-1 th:nth-child(16), #tabel-modul-1 td:nth-child(16),
         #tabel-modul-1 th:nth-child(17), #tabel-modul-1 td:nth-child(17),
@@ -957,14 +947,14 @@
                     <td class="text-right">${formatNominal(honorMWC)}</td>
                     <td class="text-right">${formatNominal(honorPC)}</td>
                     <td class="text-right">${formatNominal(danaRanting)}</td>
-                    <td class="text-center" style="${aksiVisibilityStyle}">${actionButtons}</td>
+                    <td class="text-center" style="display: ${aksiVisibilityStyle}">${actionButtons}</td>
                 `;
             });
 
             // 2. Calculate Aggregates (based on FILTERED data)
             const koinNUData = getKoinNUAggregateData();
             
-            // 3. Update Modul 1A Footer
+            // 3. Update Modul 1A Footer & Header visibility
             document.getElementById('m1a-total-nominal').textContent = formatNominal(koinNUData.totalNominal);
             document.getElementById('m1a-total-petugas').textContent = formatNominal(koinNUData.totalHonorPetugas);
             document.getElementById('m1a-total-mwc').textContent = formatNominal(koinNUData.totalHonorMWC);
@@ -972,8 +962,8 @@
             document.getElementById('m1a-total-ranting').textContent = formatNominal(koinNUData.totalDanaRanting);
 
             // Update footer AKSI column visibility
-            document.getElementById('th-m1a-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
-            document.getElementById('tf-m1a-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
+            document.getElementById('th-m1a-aksi').style.display = aksiVisibilityStyle;
+            document.getElementById('tf-m1a-aksi').style.display = aksiVisibilityStyle;
         }
 
         // ===================================
@@ -1058,12 +1048,20 @@
                 transactionBody.deleteRow(1);
             }
 
-            // 1. Ambil Saldo Awal
+            const aksiVisibilityStyle = isLoggedIn ? 'table-cell' : 'none';
+
+            // 1. Ambil Saldo Awal & Update Aksi Visibility pada baris Saldo Awal
             const saldoAwalInput = document.getElementById('m2-saldo-awal-input');
             let saldoAwal = parseInput('m2-saldo-awal-input'); 
             let runningSaldo = saldoAwal;
             document.getElementById('m2-saldo-awal-display').textContent = formatNominal(saldoAwal);
             document.getElementById('m2-saldo-awal-static').textContent = formatNominal(saldoAwal);
+            
+            // FIX BARU: Sembunyikan sel aksi pada baris Saldo Awal saat log out
+            const saldoAwalAksiTd = document.getElementById('td-m2-saldo-awal-aksi');
+            if (saldoAwalAksiTd) {
+                saldoAwalAksiTd.style.display = aksiVisibilityStyle;
+            }
 
             // 2. Buat Transaksi Otomatis (Auto-Generated Transactions) - Fixed Order (Baris 2-5)
             const koinNUData = getKoinNUAggregateData();
@@ -1086,7 +1084,7 @@
             
             let totalMasuk = 0;
             let totalKeluar = 0;
-            const aksiVisibilityStyle = isLoggedIn ? 'table-cell' : 'none';
+            
 
             // 5. Render All Transactions
             allTransactions.forEach((t, index) => {
@@ -1112,18 +1110,18 @@
                     <td class="text-right">${formatNominal(t.debit)}</td>
                     <td class="text-right">${formatNominal(t.kredit)}</td>
                     <td class="text-right">${formatNominal(runningSaldo)}</td>
-                    <td class="text-center" style="${aksiVisibilityStyle}">${actionButtons}</td>
+                    <td class="text-center" style="display: ${aksiVisibilityStyle}">${actionButtons}</td>
                 `;
             });
 
-            // 6. Update Footer
+            // 6. Update Footer & Header visibility
             document.getElementById('m2-total-masuk').textContent = formatNominal(totalMasuk);
             document.getElementById('m2-total-keluar').textContent = formatNominal(totalKeluar);
             document.getElementById('m2-footer-saldo-total').textContent = formatNominal(runningSaldo);
             
             // Update header/footer AKSI column visibility
-            document.getElementById('th-m2-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
-            document.getElementById('tf-m2-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
+            document.getElementById('th-m2-aksi').style.display = aksiVisibilityStyle;
+            document.getElementById('tf-m2-aksi').style.display = aksiVisibilityStyle;
         }
 
         // --- MODUL 1 & 3 LOGIC (Data Statis/Admin Input) ---
@@ -1408,15 +1406,10 @@
                 // Set inline style based on login status: 'block' or 'none'
                 el.style.display = loggedIn ? (el.tagName === 'DIV' || el.tagName === 'P' ? 'block' : 'table') : 'none';
                 if (el.tagName === 'TD' || el.tagName === 'TH') {
+                    // Hanya elemen input/header di tabel M1 yang disembunyikan
                     el.style.display = loggedIn ? 'table-cell' : 'none';
                 }
             });
-
-            // Handle visibility for TH/TD Aksi columns explicitly
-            const aksiHeaders = document.querySelectorAll('#th-m1a-aksi, #th-m2-aksi');
-            const aksiFooters = document.querySelectorAll('#tf-m1a-aksi, #tf-m2-aksi');
-            aksiHeaders.forEach(th => th.style.display = loggedIn ? 'table-cell' : 'none');
-            aksiFooters.forEach(td => td.style.display = loggedIn ? 'table-cell' : 'none');
 
             // 2. Toggle visibility of login/logout bar content
             const loginBar = document.getElementById('login-form-content-bar');
