@@ -152,7 +152,7 @@
             <button type="submit" class="btn-primary" style="margin-top: 15px;">Simpan Data Koin</button>
         </form>
         
-        </section>
+    </section>
 
     <section id="modul-2-section" class="module-section" style="display:none;">
         <h2>Modul 2: Jurnal Umum (Dana Masuk & Keluar)</h2>
@@ -330,20 +330,23 @@
     // --- FIREBASE CONFIGURATION & INITIALIZATION ---
     // ===========================================
     
-    // GANTI DENGAN KONFIGURASI PROYEK FIREBASE ANDA
-     const firebaseConfig = {
-            apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
-            authDomain: "upzis-ngablak.firebaseapp.com",
-            databaseURL: "https://catatan-keuangan-haul-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "upzis-ngablak",
-            storageBucket: "upzis-ngablak.firebasestorage.app",
-            messagingSenderId: "869549648344",
-            appId: "1:869549648344:web:a531a37cce3a87bb672aad"
-          };
-
+    // 🔥🔥🔥🔥 LANGKAH 1: GANTI PLACEHOLDER INI DENGAN KONFIGURASI ASLI ANDA 🔥🔥🔥🔥
+    const firebaseConfig = {
+    apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
+    authDomain: "upzis-ngablak.firebaseapp.com",
+    databaseURL: "https://catatan-keuangan-haul-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "upzis-ngablak",
+    storageBucket: "upzis-ngablak.firebasestorage.app",
+    messagingSenderId: "869549648344",
+    appId: "1:869549648344:web:a531a37cce3a87bb672aad"
+  };
 
     if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
+        try {
+            firebase.initializeApp(firebaseConfig);
+        } catch (e) {
+            console.error("Gagal inisialisasi Firebase. Pastikan firebaseConfig sudah benar!", e);
+        }
     }
     const database = firebase.database();
     const auth = firebase.auth();
@@ -383,6 +386,32 @@
     // ===========================================
     // --- FIREBASE DATA LOADING & TIMING FIX ---
     // ===========================================
+    // ... (Fungsi loadSettings, loadM1aTransactions, loadM2ManualTransactions, dan loadAllDataAndRecalculate TIDAK BERUBAH)
+    // ... (Logika ini sudah benar untuk mengatasi masalah timing)
+
+
+    // --- FUNGSI UTAMA UNTUK MEMUAT SEMUA DATA (MEMPERBAIKI TIMING ISSUE) ---
+    function loadAllDataAndRecalculate() {
+        Promise.all([
+            loadSettings(),
+            loadM1aTransactions(),
+            loadM2ManualTransactions()
+        ])
+        .then(() => {
+            console.log("Semua data Firebase dimuat. Saldo Awal Bank:", saldoBankAwal);
+            recalculateAllReports(); 
+            renderAppView();
+            populateFilters();
+        })
+        .catch((error) => {
+            console.error("Gagal memuat data utama:", error);
+            // Sering terjadi karena aturan keamanan. Beri tahu pengguna.
+            alert("PERINGATAN! Gagal memuat data dari Firebase. Pastikan Aturan Keamanan Database sudah diatur ke 'read': true.");
+            recalculateAllReports(); 
+            renderAppView();
+            populateFilters();
+        });
+    }
 
     // --- Load Settings (Saldo Awal Tahunan) ---
     function loadSettings() {
@@ -393,7 +422,6 @@
                 saldoTunaiAwal = parseFloat(settings.kasTunaiSaldo) || 0;
                 currentFilterYear = settings.annualReportYear || new Date().getFullYear();
                 
-                // Isi input form di Modul 3
                 if (document.getElementById('m3_saldo_bank')) document.getElementById('m3_saldo_bank').value = saldoBankAwal;
                 if (document.getElementById('m3_saldo_tunai')) document.getElementById('m3_saldo_tunai').value = saldoTunaiAwal;
                 if (document.getElementById('m3_tahun_laporan')) document.getElementById('m3_tahun_laporan').value = currentFilterYear;
@@ -429,27 +457,6 @@
                 });
             }
             m2ManualTransactions.sort((a, b) => new Date(a.tanggal) - new Date(b.tanggal));
-        });
-    }
-
-    // --- FUNGSI UTAMA UNTUK MEMUAT SEMUA DATA (MEMPERBAIKI TIMING ISSUE) ---
-    function loadAllDataAndRecalculate() {
-        Promise.all([
-            loadSettings(),
-            loadM1aTransactions(),
-            loadM2ManualTransactions()
-        ])
-        .then(() => {
-            console.log("Semua data Firebase dimuat. Saldo Awal Bank:", saldoBankAwal);
-            recalculateAllReports(); 
-            renderAppView();
-            populateFilters();
-        })
-        .catch((error) => {
-            console.error("Gagal memuat data utama:", error);
-            recalculateAllReports(); 
-            renderAppView();
-            populateFilters();
         });
     }
 
@@ -493,7 +500,6 @@
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
 
-        // Isi Bulan
         monthFilter.innerHTML = '';
         bulanNama.forEach((name, index) => {
             const option = document.createElement('option');
@@ -506,7 +512,6 @@
         });
         currentFilterMonth = currentMonth + 1;
 
-        // Isi Tahun
         yearFilter.innerHTML = '';
         for (let year = currentYear; year >= currentYear - 5; year--) {
             const option = document.createElement('option');
@@ -536,7 +541,7 @@
             document.getElementById('logout-info').style.display = 'none';
             document.getElementById('logout-message').textContent = '';
         }
-        recalculateAllReports(); // Update view based on login status
+        recalculateAllReports(); 
     });
 
     function login() {
@@ -554,25 +559,24 @@
 
     function updateAdminViewVisibility(loggedIn) {
         document.querySelectorAll('.admin-only').forEach(el => {
-             // Handle display type based on element tag for table compatibility
              const displayStyle = loggedIn ? (el.tagName === 'TD' || el.tagName === 'TH' ? 'table-cell' : 'flex') : 'none';
              el.style.display = displayStyle;
         });
-        // Ensure forms are blocks
         document.getElementById('m1-form').style.display = loggedIn ? 'block' : 'none';
         document.getElementById('m2-form').style.display = loggedIn ? 'block' : 'none';
     }
 
 
     // ===========================================
-    // --- MODUL 1 LOGIC ---
+    // --- MODUL 1 LOGIC (SIMPAN DIPERBAIKI) ---
     // ===========================================
     function saveM1aTransaction(event) {
         event.preventDefault();
-        if (!isLoggedIn) { alert("Anda harus login untuk menyimpan data."); return; }
+        if (!isLoggedIn) { alert("Anda harus login untuk menyimpan data. Silakan login di bawah."); return; }
 
         const nominal = parseFloat(document.getElementById('m1_nominal').value);
         if (nominal <= 0) { alert("Nominal harus lebih dari 0."); return; }
+        if (!document.getElementById('m1_tanggal').value) { alert("Tanggal harus diisi."); return; }
 
         const newTransaction = {
             tanggal: document.getElementById('m1_tanggal').value,
@@ -581,16 +585,20 @@
             donatur: document.getElementById('m1_donatur').value,
             alamat: document.getElementById('m1_alamat').value,
             nominal: nominal,
-            timestamp: firebase.database.ServerValue.TIMESTAMP // Untuk urutan data
+            timestamp: firebase.database.ServerValue.TIMESTAMP 
         };
 
+        // KONEKSI PUSH KE FIREBASE REALTIME DATABASE
         database.ref('transactions/m1a').push(newTransaction)
             .then(() => {
                 alert('Data Koin berhasil disimpan!');
                 document.getElementById('m1-form').reset();
                 loadAllDataAndRecalculate(); // Muat ulang data
             })
-            .catch(error => console.error("Gagal menyimpan data:", error));
+            .catch(error => {
+                console.error("Gagal menyimpan data:", error);
+                alert("Gagal menyimpan data ke Firebase. Kemungkinan: Aturan Keamanan 'write' masih tertutup, atau konfigurasi salah. Error: " + error.message);
+            });
     }
 
     function updateModul1() {
@@ -611,6 +619,7 @@
             const pc = nominal * 0.05;
 
             const row = tableBody.insertRow();
+            // Data baru di bawah data lama (Sudah diurutkan saat loading)
             row.innerHTML = `
                 <td class="text-center">${index + 1}</td>
                 <td class="text-center">${formatDate(t.tanggal)}</td>
@@ -632,10 +641,9 @@
     }
 
     // ===========================================
-    // --- MODUL 2 LOGIC (Jurnal Umum) ---
+    // --- MODUL 2 LOGIC (SIMPAN DIPERBAIKI) ---
     // ===========================================
     function getM1aAggregates() {
-        // Hanya hitung agregat dari Koin yang sesuai filter bulan/tahun
         const filteredKoin = m1aTransactions.filter(t => {
             const dateInfo = getMonthYearFromDate(t.tanggal);
             return dateInfo.month === currentFilterMonth && dateInfo.year === currentFilterYear;
@@ -650,13 +658,14 @@
 
     function saveM2ManualTransaction(event) {
         event.preventDefault();
-        if (!isLoggedIn) { alert("Anda harus login untuk menyimpan data."); return; }
+        if (!isLoggedIn) { alert("Anda harus login untuk menyimpan data. Silakan login di bawah."); return; }
         
         const danaMasuk = parseFloat(document.getElementById('m2_dana_masuk').value) || 0;
         const danaKeluar = parseFloat(document.getElementById('m2_dana_keluar').value) || 0;
         
-        if (danaMasuk === 0 && danaKeluar === 0) { alert("Dana Masuk atau Dana Keluar harus diisi."); return; }
-        
+        if (danaMasuk === 0 && danaKeluar === 0) { alert("Dana Masuk atau Dana Keluar harus diisi (salah satu harus > 0)."); return; }
+        if (!document.getElementById('m2_tanggal').value) { alert("Tanggal harus diisi."); return; }
+
         const newTransaction = {
             tanggal: document.getElementById('m2_tanggal').value,
             keterangan: document.getElementById('m2_keterangan').value,
@@ -673,13 +682,17 @@
             timestamp: firebase.database.ServerValue.TIMESTAMP
         };
 
+        // KONEKSI PUSH KE FIREBASE REALTIME DATABASE
         database.ref('transactions/m2').push(newTransaction)
             .then(() => {
                 alert('Transaksi Manual berhasil disimpan!');
                 document.getElementById('m2-form').reset();
                 loadAllDataAndRecalculate(); // Muat ulang data
             })
-            .catch(error => console.error("Gagal menyimpan data:", error));
+            .catch(error => {
+                console.error("Gagal menyimpan data:", error);
+                alert("Gagal menyimpan data ke Firebase. Kemungkinan: Aturan Keamanan 'write' masih tertutup, atau konfigurasi salah. Error: " + error.message);
+            });
     }
 
 
@@ -691,7 +704,6 @@
         const aggregates = getM1aAggregates();
         let runningSaldo = 0;
         
-        // Dapatkan Saldo Bulan Lalu (Ambil dari input jika ada, jika tidak, ambil 0)
         let saldoBulanLaluInput = document.getElementById('m2-saldo-awal-input');
         let saldoBulanLalu = parseFloat(saldoBulanLaluInput ? saldoBulanLaluInput.value : 0) || 0;
 
@@ -767,7 +779,7 @@
         `;
 
         // --- BARIS TRANSAKSI MANUAL (Mulai Penomoran dari 1) ---
-        let rowCount = 1; // Mulai penomoran di baris keenam di tabel
+        let rowCount = 1; 
 
         const filteredManualTxns = m2ManualTransactions.filter(t => {
             const dateInfo = getMonthYearFromDate(t.tanggal);
@@ -803,11 +815,7 @@
 
     // [PLACEHOLDER] - Fungsi ini akan mengupdate nilai Saldo Bulan Lalu di Firebase/Global State
     function updateM2SaldoAwal(value) {
-        // Logika untuk menyimpan Saldo Bulan Lalu ke Firebase (khusus bulan tersebut)
-        // Diperlukan struktur data baru di Firebase: /saldoBulanLalu/tahun/bulan: nilai
-        // Karena ini hanya berlaku untuk bulan yang dibuka dan bisa diedit.
-        
-        // Untuk DEMO, kita hanya panggil recalculate
+        // Karena ini hanya berlaku untuk bulan yang dibuka dan bisa diedit, kita muat ulang.
         recalculateAllReports();
     }
     
@@ -833,16 +841,12 @@
             })
             .catch((error) => {
                 console.error("Gagal menyimpan saldo awal:", error);
-                alert("Gagal menyimpan data.");
+                alert("Gagal menyimpan data. Kemungkinan: Aturan Keamanan 'write' masih tertutup.");
             });
     }
 
     function getMonthlyAggregates(year) {
-        // [COMPLEX LOGIC PLACEHOLDER]
-        // Ini adalah tempat logika agregasi yang sangat kompleks
-        // yang menggabungkan M1A dan M2 untuk menghasilkan laporan bulanan.
-        
-        // Untuk DEMO, nilai bulanan diisi 0.
+        // [COMPLEX LOGIC PLACEHOLDER: Data agregat M1A dan M2]
         return Array(12).fill(0).map((_, i) => ({
             bulan: bulanNama[i],
             penerimaan: 0,
@@ -852,9 +856,6 @@
     }
 
     function updateLaporanTahunan() {
-        // SaldoBankAwal dan SaldoTunaiAwal dijamin sudah terisi dari loadSettings()
-        console.log("M3 Saldo Bank Awal Final:", saldoBankAwal);
-
         const tableBody = document.getElementById('m3-table-body');
         if (!tableBody) return;
         tableBody.innerHTML = '';
@@ -892,12 +893,10 @@
         
         // --- BARIS DATA BULANAN (Baris 3 - 14) ---
         monthlyData.forEach((data, index) => {
-            const bulanIndex = index + 1;
             const saldoAkhirBulanIni = data.penerimaan - data.totalPengeluaran;
             runningSaldoTahunan += saldoAkhirBulanIni;
 
             const row = tableBody.insertRow();
-            // [Tabel sangat lebar, hanya mengisi kolom penting]
             row.innerHTML = `
                 <td class="text-center">${index + 3}</td>
                 <td>${data.bulan}</td>
@@ -918,7 +917,6 @@
     function generatePDF() { alert('Fungsi Unduh PDF akan diimplementasikan di sini.'); }
     function resetApp() { 
         if (confirm("ANDA YAKIN INGIN MERESET SEMUA DATA? Tindakan ini tidak bisa dibatalkan.")) {
-            // Logika untuk menghapus node 'settings' dan 'transactions'
             database.ref('/').remove()
                 .then(() => {
                     alert("Semua data berhasil dihapus! Aplikasi akan dimuat ulang.");
@@ -937,5 +935,3 @@
 </script>
 </body>
 </html>
-
-
