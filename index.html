@@ -28,7 +28,7 @@
         /* Table Styles */
         .text-right { text-align: right; }
         .text-center { text-align: center; }
-        .saldo-awal-row { font-weight: bold; background-color: #f0f0f0; }
+        .saldo-awal-row { font-weight: bold; background-color: #e0f2f1; } /* Warna berbeda agar menonjol */
         .auto-transaction-row { background-color: #fffacd; }
         
         input[type="text"], input[type="number"], input[type="date"], select { padding: 5px; margin-right: 5px; border: 1px solid #ccc; }
@@ -126,11 +126,8 @@
                     <tr class="saldo-awal-row">
                         <td colspan="6" class="text-right">SALDO AWAL KAS (Bank + Tunai):</td>
                         <td class="text-right">
-                            <span id="m2-saldo-awal-static" style="display: none;">0</span>
-                            <div id="m2-saldo-awal-display-container">
-                                <input type="number" id="m2-saldo-awal-input" value="15000000" style="width: 80px; text-align: right; display: none;">
-                                <span id="m2-saldo-awal-display">0</span>
-                            </div>
+                            <span id="m2-saldo-awal-display">0</span> 
+                            <input type="number" id="m2-saldo-awal-input" value="15000000" style="width: 100px; text-align: right; display: none;">
                         </td>
                         <td id="td-m2-saldo-awal-aksi" style="display: none;"></td>
                     </tr>
@@ -254,15 +251,49 @@
         const months = ['Semua Bulan', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         let currentFilterMonth = 0; 
         let currentFilterYear = new Date().getFullYear();
-        let saldoBankAwal = 10000000;
-        let saldoTunaiAwal = 5000000;
+        
+        // Saldo Awal hardcode (jika tidak diatur di Modul 3, ini digunakan)
+        const DEFAULT_SALDO_AWAL = 15000000; 
+        
         const M2_CATEGORIES = ['Infaq dan Shodaqoh', 'Zakat', 'Dana Lain-lain Masuk', 'Pendidikan', 'Kesehatan', 'Sosial Umum', 'Banom', 'Penanggulangan Bencana', 'Biaya Rapat/Operasional', 'Perawatan Inventaris', 'Biaya Bank/Administrasi', 'Pengeluaran Lain-lain'];
+
+
+        // ===================================
+        // --- UTILITY FUNCTIONS ---
+        // ===================================
+        
+        function formatNominal(number) {
+            if (typeof number !== 'number' || isNaN(number)) return '0';
+            return number.toLocaleString('id-ID');
+        }
+        
+        // FUNGSI INI WAJIB: Membuat template 12 bulan (data agregat)
+        function createDefaultInitialData(year) {
+            return Array.from({ length: 12 }, (_, i) => ({ 
+                bulan: months[i + 1], 
+                order: i + 1, 
+                year: year, 
+                penerimaan: 0, donatur: 0, 
+                pendUang: 0, pendPenerima: 0, 
+                kesUang: 0, kesPenerima: 0, 
+                ekoUang: 0, ekoPenerima: 0, 
+                sosumUang: 0, sosumPenerima: 0, 
+                banomUang: 0, banomPenerima: 0, 
+                bencanaUang: 0, bencanaPenerima: 0, 
+                rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, 
+                honorWajibPercent: 0.40,
+                id: null // Tandai bahwa data ini belum disimpan
+            }));
+        }
 
         // ===================================
         // --- FIREBASE DATA HANDLING ---
         // ===================================
         
         async function loadDataFromFirebase() {
+            // Reset dulu data agregat ke template kosong (12 bulan)
+            initialData = createDefaultInitialData(currentFilterYear); 
+            
             try {
                 // 1. Load M1A
                 const m1aSnapshot = await db.collection(M1A_COLLECTION).where('year', '==', currentFilterYear).orderBy('date', 'asc').get();
@@ -283,45 +314,27 @@
 
                 // 3. Load M1 (Laporan Tahunan - Agregat)
                 const m1Snapshot = await db.collection(M1_COLLECTION).where('year', '==', currentFilterYear).orderBy('order', 'asc').get();
-                const defaultInitialData = Array.from({ length: 12 }, (_, i) => ({ 
-                    bulan: months[i + 1], 
-                    order: i + 1, year: currentFilterYear, 
-                    penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, 
-                    kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, 
-                    sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, 
-                    bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, 
-                    biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40,
-                    id: null // Tandai bahwa data ini belum disimpan
-                }));
-
+                
                 if (!m1Snapshot.empty) {
                     const fetchedDataMap = m1Snapshot.docs.reduce((acc, doc) => {
                         const data = doc.data();
-                        // Pastikan semua field nominal di-parse
                         acc[data.order] = {
                             id: doc.id,
                             ...data,
+                            // Pastikan semua field numerik di-parse
                             penerimaan: parseFloat(data.penerimaan || 0),
-                            pendUang: parseFloat(data.pendUang || 0),
-                            kesUang: parseFloat(data.kesUang || 0),
-                            ekoUang: parseFloat(data.ekoUang || 0),
-                            sosumUang: parseFloat(data.sosumUang || 0),
-                            banomUang: parseFloat(data.banomUang || 0),
-                            bencanaUang: parseFloat(data.bencanaUang || 0),
-                            rapat: parseFloat(data.rapat || 0),
-                            perwtnMlu: parseFloat(data.perwtnMlu || 0),
-                            biayaBank: parseFloat(data.biayaBank || 0),
-                            lainLain: parseFloat(data.lainLain || 0),
+                            pendUang: parseFloat(data.pendUang || 0), kesUang: parseFloat(data.kesUang || 0),
+                            ekoUang: parseFloat(data.ekoUang || 0), sosumUang: parseFloat(data.sosumUang || 0),
+                            banomUang: parseFloat(data.banomUang || 0), bencanaUang: parseFloat(data.bencanaUang || 0),
+                            rapat: parseFloat(data.rapat || 0), perwtnMlu: parseFloat(data.perwtnMlu || 0),
+                            biayaBank: parseFloat(data.biayaBank || 0), lainLain: parseFloat(data.lainLain || 0),
                             honorWajibPercent: parseFloat(data.honorWajibPercent || 0.40)
                         };
                         return acc;
                     }, {});
 
-                    // Merge default data with fetched data
-                    initialData = defaultInitialData.map(def => fetchedDataMap[def.order] || def);
-
-                } else {
-                    initialData = defaultInitialData;
+                    // Merge template default data dengan fetched data
+                    initialData = initialData.map(def => fetchedDataMap[def.order] || def);
                 }
 
             } catch (error) {
@@ -330,33 +343,8 @@
         }
 
         // ===================================
-        // --- UTILITY & FILTERING LOGIC ---
+        // --- FILTERING & MODULE SWITCHING ---
         // ===================================
-        
-        function formatNominal(number) {
-            if (typeof number !== 'number' || isNaN(number)) return '0';
-            return number.toLocaleString('id-ID');
-        }
-
-        function getFilteredM1aTransactions() {
-            const month = currentFilterMonth;
-            const year = currentFilterYear;
-            let filtered = m1aTransactions.filter(t => new Date(t.date).getFullYear() === year);
-            if (month !== 0) {
-                filtered = filtered.filter(t => new Date(t.date).getMonth() === (month - 1));
-            }
-            return filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
-        }
-
-        function getFilteredM2ManualTransactions() {
-            const month = currentFilterMonth;
-            const year = currentFilterYear;
-            let filtered = m2ManualTransactions.filter(t => new Date(t.date).getFullYear() === year);
-            if (month !== 0) {
-                filtered = filtered.filter(t => new Date(t.date).getMonth() === (month - 1));
-            }
-            return filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
-        }
 
         function switchModule(moduleID) {
             document.querySelectorAll('.module-section').forEach(section => { section.style.display = 'none'; });
@@ -400,9 +388,11 @@
                 currentFilterMonth = val;
             } else if (id.includes('tahun')) {
                 currentFilterYear = val;
-                // Re-load data when year changes
                 if (isLoggedIn) {
                     await loadDataFromFirebase();
+                } else {
+                    // Jika ganti tahun saat logout, reset initialData ke template tahun baru
+                    initialData = createDefaultInitialData(currentFilterYear); 
                 }
             }
             const targetPrefix = id.includes('bulan') ? 'filter-bulan-' : 'filter-tahun-';
@@ -413,7 +403,7 @@
         }
         
         // ===================================
-        // --- MODUL 1A & 2 LOGIC (Data Flow 1A -> 2) ---
+        // --- MODUL 1A & 2 LOGIC ---
         // ===================================
         
         function getKoinNUAggregateData() {
@@ -472,15 +462,21 @@
         }
 
         function updateJurnalUmum() {
-            // ... (Logic untuk render table M2 dari m2ManualTransactions + 4 auto transactions) ...
             const tableBody = document.getElementById('m2-transaction-body');
+            
+            // Hapus semua baris kecuali baris Saldo Awal (class="saldo-awal-row")
             const rowsToRemove = tableBody.querySelectorAll('tr:not(.saldo-awal-row)');
             rowsToRemove.forEach(row => row.remove());
 
-            let saldoAwal = parseFloat(document.getElementById('m2-saldo-awal-input').value || 0);
+            const saldoAwalInput = document.getElementById('m2-saldo-awal-input');
+            const saldoAwalDisplay = document.getElementById('m2-saldo-awal-display');
+
+            let saldoAwal = parseFloat(saldoAwalInput.value || DEFAULT_SALDO_AWAL);
             let runningSaldo = saldoAwal;
-            document.getElementById('m2-saldo-awal-display').textContent = formatNominal(saldoAwal);
-            document.getElementById('m2-saldo-awal-static').textContent = formatNominal(saldoAwal);
+            
+            // Tampilkan saldo awal yang benar
+            saldoAwalInput.value = saldoAwal;
+            saldoAwalDisplay.textContent = formatNominal(saldoAwal); 
 
             const aksiVisibilityStyle = isLoggedIn ? '' : 'none';
             const saldoAwalAksiTd = document.getElementById('td-m2-saldo-awal-aksi');
@@ -491,6 +487,7 @@
             const autoTransactions = [];
             
             if (totalNominalKoin > 0) {
+                // Transaksi Honor Otomatis
                 autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Penerimaan Koin NU (100% dari Modul 1A)', kategori: 'Koin NU (Otomatis)', debit: totalNominalKoin, kredit: 0, isAuto: true, order: 1 });
                 autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Pengeluaran Honor Petugas (10%)', kategori: 'Honor Petugas (Otomatis)', debit: 0, kredit: koinNUData.totalHonorPetugas, isAuto: true, order: 2 });
                 autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Pengeluaran Honor MWC (25%)', kategori: 'Honor MWC (Otomatis)', debit: 0, kredit: koinNUData.totalHonorMWC, isAuto: true, order: 3 });
@@ -499,23 +496,24 @@
             
             const sortedManualTransactions = getFilteredM2ManualTransactions();
             
-            // Gabungkan Transaksi Otomatis dan Manual, lalu urutkan Manual berdasarkan tanggal
             const allTransactions = [
                 ...autoTransactions, 
-                ...sortedManualTransactions.map(tx => ({ ...tx, order: 5 })) // Beri order yang sama agar urut setelah auto transactions
+                ...sortedManualTransactions.map(tx => ({ ...tx, order: 5 }))
             ].sort((a, b) => {
                 if (a.isAuto && !b.isAuto) return -1;
                 if (!a.isAuto && b.isAuto) return 1;
-                return new Date(a.date) - new Date(b.date); // Urutkan manual transactions by date
+                return new Date(a.date) - new Date(b.date);
             });
 
 
             let totalMasuk = 0;
             let totalKeluar = 0;
+            let rowIndex = 0;
 
-            allTransactions.forEach((tx, index) => {
-                const row = tableBody.insertRow();
+            allTransactions.forEach((tx) => {
+                const row = tableBody.insertRow(-1); // Sisipkan di akhir
                 row.classList.add(tx.isAuto ? 'auto-transaction-row' : '');
+                rowIndex++;
 
                 runningSaldo += tx.debit - tx.kredit;
                 totalMasuk += tx.debit;
@@ -527,7 +525,7 @@
                 `;
 
                 row.innerHTML = `
-                    <td class="text-center">${index + 1}</td>
+                    <td class="text-center">${rowIndex}</td>
                     <td>${tx.date ? tx.date : '-'}</td>
                     <td>${tx.keterangan}</td>
                     <td>${tx.kategori}</td>
@@ -560,10 +558,10 @@
             const prefix = `m1-${monthData.order}-`;
             
             const updatedData = {
-                // Semua input harus diambil dari form
                 bulan: monthData.bulan,
                 order: monthData.order,
-                year: currentFilterYear, // Simpan dengan tahun aktif
+                year: currentFilterYear, 
+                // Semua input diambil dari nilai di form, bukan dari monthData
                 penerimaan: parseInput(prefix + 'penerimaan'),
                 donatur: parseInput(prefix + 'donatur'),
                 pendUang: parseInput(prefix + 'pendUang'),
@@ -589,7 +587,9 @@
                 if (monthData.id) {
                     await db.collection(M1_COLLECTION).doc(monthData.id).update(updatedData);
                 } else {
-                    await db.collection(M1_COLLECTION).add(updatedData);
+                    const docRef = await db.collection(M1_COLLECTION).add(updatedData);
+                    // Update ID di initialData agar bulan berikutnya bisa diupdate
+                    monthData.id = docRef.id; 
                 }
 
                 alert(`Data Agregat Bulan ${monthData.bulan} berhasil disimpan.`);
@@ -606,10 +606,8 @@
             const inputBody = document.getElementById('m1-input-body');
             inputBody.innerHTML = '';
             
-            // Filter Modul 1 tidak bergantung pada filter bulan, hanya filter tahun
-            const dataToRender = initialData.filter(d => d.year === currentFilterYear).length === 12 
-                               ? initialData.filter(d => d.year === currentFilterYear)
-                               : initialData; // Gunakan initialData default (12 bulan kosong)
+            // Pastikan data yang digunakan adalah initialData yang sudah diisi 12 bulan
+            const dataToRender = initialData.filter(d => d.year === currentFilterYear);
 
             const aksiVisibilityStyle = isLoggedIn ? '' : 'none';
             const inputDisplay = isLoggedIn ? 'block' : 'none';
@@ -620,9 +618,11 @@
                 const row = inputBody.insertRow();
                 
                 // Gunakan JSON.stringify dan penggantian &quot; untuk memastikan objek data yang kompleks dapat dilewatkan ke onclick
-                const saveFunctionCall = `saveModul1Data(${JSON.stringify(data).replace(/"/g, '&quot;')})`;
+                const dataString = JSON.stringify(data).replace(/"/g, '&quot;');
+                const saveFunctionCall = `saveModul1Data(JSON.parse('${dataString}'))`;
                 const actionButton = `<button onclick="${saveFunctionCall}" style="padding: 3px 8px; background-color: #007bff; color: white; border: none; cursor: pointer;">SIMPAN</button>`;
                 
+                // BARIS BULAN DAN HEADERS TETAP MUNCUL KARENA INI ADALAH LOGIKA GENERASI BARIS
                 row.innerHTML = `
                     <td class="text-center">${data.order}</td>
                     <td>${data.bulan}</td>
@@ -664,7 +664,6 @@
         // ===================================
 
         function updateLaporanTahunan() {
-            // Logika Modul 3 adalah aggregasi tahunan dari data Modul 1 (initialData)
             const reportBody = document.getElementById('m3-report-body');
             const reportFooter = document.getElementById('m3-report-footer');
             const yearDisplay = document.getElementById('m3-tahun-display');
@@ -674,31 +673,25 @@
             yearDisplay.textContent = currentFilterYear;
             const dataForReport = initialData.filter(d => d.year === currentFilterYear);
             
-            if (dataForReport.length === 0) {
-                 // Gunakan data default jika belum ada data untuk tahun ini (meski sudah dicover di loadData)
-                 reportFooter.innerHTML = `<tr><td colspan="22" class="text-center">Tidak ada data agregat untuk tahun ${currentFilterYear}. Silakan input di Modul 1.</td></tr>`;
-                 return;
-            }
-
+            // Data array dijamin ada 12 bulan (dari initialData), jadi hanya perlu render
+            
             let totalPenerimaan = 0;
             let totalHonor = 0;
             let totalPengeluaranNonHonor = 0;
             
-            dataForReport.forEach((data, index) => {
+            dataForReport.forEach((data) => {
                 const row = reportBody.insertRow();
                 
-                // Perhitungan Honor Wajib (40% dari Penerimaan bulan itu)
                 const honorWajib = data.penerimaan * data.honorWajibPercent;
                 totalHonor += honorWajib;
                 totalPenerimaan += data.penerimaan;
                 
-                // Total Pengeluaran Non-Honor
                 const pengeluaranNonHonor = data.pendUang + data.kesUang + data.ekoUang + data.sosumUang + data.banomUang + data.bencanaUang + data.rapat + data.perwtnMlu + data.biayaBank + data.lainLain;
                 totalPengeluaranNonHonor += pengeluaranNonHonor;
                 
-                // Saldo Akhir (Estimasi) = Penerimaan - Honor - Pengeluaran Non Honor
                 const saldoAkhir = data.penerimaan - honorWajib - pengeluaranNonHonor;
 
+                // BARIS BULAN DAN SEMUA KOLOM (termasuk nilai nol) TETAP MUNCUL
                 row.innerHTML = `
                     <td class="text-center">${data.bulan}</td>
                     <td class="text-right">${formatNominal(data.penerimaan)}</td>
@@ -735,6 +728,7 @@
             const totalPengeluaranGabungan = totalHonor + totalPengeluaranNonHonor;
             const totalSaldoAkhirTahun = totalPenerimaan - totalPengeluaranGabungan;
 
+            // FOOTER TOTAL TETAP MUNCUL
             reportFooter.innerHTML = `
                 <tr style="font-weight: bold; background-color: #e0f2f1;">
                     <td class="text-right">TOTAL TAHUNAN</td>
@@ -752,9 +746,6 @@
         // ===================================
 
         async function recalculateAllReports() {
-            // Alur Logika dipastikan berjalan secara berurutan:
-            // 1A -> 2 (Koin NU menghitung Jurnal Umum)
-            // 1 -> 3 (Agregat Manual menghasilkan Laporan Tahunan)
             updatePenerimaanDetail();
             updateJurnalUmum(); 
             updateModul1(); 
@@ -792,6 +783,7 @@
             const adminStatus = document.getElementById('admin-status');
             const adminElements = document.querySelectorAll('.admin-only');
             const saldoInput = document.getElementById('m2-saldo-awal-input');
+            const saldoDisplay = document.getElementById('m2-saldo-awal-display');
 
             isLoggedIn = !!user;
             currentAdminEmail = user ? user.email : 'Belum Login';
@@ -801,17 +793,21 @@
                 logoutContainer.style.display = 'flex';
                 adminStatus.textContent = currentAdminEmail;
                 adminElements.forEach(el => el.style.display = 'block');
-                if (saldoInput) {
+                
+                // Saldo Awal saat login: tampilkan input, sembunyikan display statis
+                if (saldoInput && saldoDisplay) {
                     saldoInput.style.display = 'block';
-                    document.getElementById('m2-saldo-awal-static').style.display = 'none';
+                    saldoDisplay.style.display = 'none';
                 }
             } else {
                 loginContainer.style.display = 'flex';
                 logoutContainer.style.display = 'none';
                 adminElements.forEach(el => el.style.display = 'none');
-                if (saldoInput) {
+                
+                // Saldo Awal saat logout: sembunyikan input, tampilkan display statis
+                if (saldoInput && saldoDisplay) {
                     saldoInput.style.display = 'none';
-                    document.getElementById('m2-saldo-awal-static').style.display = 'block';
+                    saldoDisplay.style.display = 'block';
                 }
             }
         }
@@ -831,9 +827,10 @@
                 if (user) {
                     await loadDataFromFirebase();
                 } else {
+                    // FIX PENTING: Saat logout, data numerik di-reset, tapi struktur 12 bulan tetap ada
                     m1aTransactions = [];
                     m2ManualTransactions = [];
-                    initialData = initialData.map(data => ({ ...data, penerimaan: 0, donatur: 0, /* reset all values */ }));
+                    initialData = createDefaultInitialData(currentFilterYear); 
                 }
                 
                 recalculateAllReports(); 
