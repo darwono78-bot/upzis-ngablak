@@ -2,71 +2,127 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Keuangan - STRUKTUR UTUH & MODUL 1 DIPERBAIKI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Input & Laporan KOIN NU Paling Detail</title>
     <style>
-        /* ======================================= */
-        /* === 1. STYLE UMUM DAN NAVIGASI === */
-        /* ======================================= */
-        body { 
-            font-family: sans-serif; 
-            margin: 20px; 
-            background-color: #f4f4f4; 
-        }
-
-        h3 {
-            color: #006400;
-        }
-
-        .tab-button {
-            padding: 10px 15px;
-            margin-right: 5px;
-            cursor: pointer;
-            border: 1px solid #ccc;
-            background-color: #eee;
-        }
-
-        .tab-button.active {
+        body { font-family: Arial, sans-serif; padding: 0 0 80px 0; background-color: #f8f9fa; margin: 0; }
+        h1, h2 { color: #006400; margin: 15px 0 10px 0;}
+        
+        /* CSS untuk Navbar */
+        #main-nav {
             background-color: #006400;
+            padding: 10px 20px;
             color: white;
-            border-bottom: 1px solid #006400;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #main-nav h1 {
+            color: white;
+            font-size: 18px;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        #nav-menu {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #nav-menu li {
+            margin-left: 20px;
+        }
+        #nav-menu button {
+            background: none;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        #nav-menu button.active {
+            background-color: #4CAF50;
+        }
+        #nav-menu button:hover {
+            background-color: #004d00;
         }
 
-        .module-content {
-            border: 1px solid #ccc;
+        /* Kontainer Utama Laporan */
+        #report-container {
             padding: 20px;
-            background-color: white;
-            margin-top: -1px; 
         }
 
-        .input-table { 
+        /* Kontainer Modul */
+        .module-section {
+            padding: 15px 0;
+        }
+        
+        /* === NEW: TABLE SCROLL WRAPPER === */
+        .table-scroll-wrapper {
+            width: 100%;
+            overflow-x: auto; /* Enable horizontal scrolling */
+            margin-bottom: 20px;
+        }
+        
+        /* Tabel Styles */
+        table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin-bottom: 20px; 
+            min-width: 1000px; 
+            background-color: white; 
+            font-size: 11px; 
+            table-layout: auto; /* PERUBAHAN UTAMA: Memungkinkan kolom menyesuaikan lebar konten */
+        } 
+        /* Modul 3 perlu lebih lebar minimum */
+        #tabel-modul-3 {
+            min-width: 2500px; /* Lebar Minimum diperbesar */
         }
         
-        /* Padding dikurangi untuk efisiensi ruang */
-        .input-table th, .input-table td { 
-            border: 1px solid #ccc; 
-            padding: 3px; 
-            text-align: left; 
-            box-sizing: border-box;
+        /* Style Kolom Uang agar memiliki minimum width */
+        .col-nominal {
+            min-width: 100px; /* Lebar minimum untuk nominal uang di M1A/M2 */
+        }
+        .col-aksi {
+            width: 40px; /* Tetapkan lebar tetap untuk kolom aksi */
         }
         
-        .input-table th { 
-            background-color: #006400; 
-            color: white; 
-            text-align: center; 
-            font-size: 10px; 
-            vertical-align: middle;
-            line-height: 1.2;
+        /* === FIX BARU: Lebar Kolom Operasional Modul 1 & Modul 3 disamakan dengan Jml Uang (70px) === */
+        /* Kolom Jml Uang di Modul 1 & 3 memiliki min-width: 70px */
+        /* Modul 1 (Kolom 16, 17, 18, 19): Rapat, PERWTN MLU, BIAYA REK BANK, Lain - Lain */
+        #tabel-modul-1 th:nth-child(16), #tabel-modul-1 td:nth-child(16),
+        #tabel-modul-1 th:nth-child(17), #tabel-modul-1 td:nth-child(17),
+        #tabel-modul-1 th:nth-child(18), #tabel-modul-1 td:nth-child(18),
+        #tabel-modul-1 th:nth-child(19), #tabel-modul-1 td:nth-child(19),
+        /* Modul 3 (Kolom 17, 18, 19, 20): Rapat, PERWTN MLU, BIAYA REK BANK, Lain - Lain */
+        #tabel-modul-3 th:nth-child(17), #tabel-modul-3 td:nth-child(17),
+        #tabel-modul-3 th:nth-child(18), #tabel-modul-3 td:nth-child(18),
+        #tabel-modul-3 th:nth-child(19), #tabel-modul-3 td:nth-child(19),
+        #tabel-modul-3 th:nth-child(20), #tabel-modul-3 td:nth-child(20) {
+            min-width: 70px !important; /* Disamakan dengan Jml Uang */
         }
+        /* ====================================================================================== */
         
-        .text-center { 
-            text-align: center !important; 
+        /* Overrides untuk kolom-kolom yang tidak boleh terlalu kecil */
+        #tabel-modul-2 th:nth-child(3) { min-width: 200px; } /* KETERANGAN */
+        #tabel-modul-2 th:nth-child(5), /* DEBIT */
+        #tabel-modul-2 th:nth-child(6), /* KREDIT */
+        #tabel-modul-2 th:nth-child(7) { /* SALDO */
+            min-width: 120px; /* Lebar minimum lebih besar untuk nominal di M2 */
         }
 
-        /* Input Styling */
-        input[type="number"] { 
+        th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left; word-wrap: break-word; } 
+        th { background-color: #006400; color: white; text-align: center; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .footer-total { background-color: #e6ffe6; font-weight: bold; }
+        .koin-nu-header { background-color: #4CAF50 !important; color: white !important; }
+        
+        /* Input Styles */
+        input[type="number"], input[type="text"], input[type="date"], select { 
+            width: 90%; 
             padding: 2px; 
             border: 1px solid #ccc; 
             text-align: right; 
@@ -74,260 +130,1357 @@
             font-size: 11px; 
             background-color: white;
         }
-
-        /* ======================================= */
-        /* === 2. CSS PERBAIKAN LEBAR KOLOM (Modul 1) === */
-        /* Kolom Uang (Jml Uang) dan Operasional (Rapat, dll.) diatur min-width 100px */
-        /* ======================================= */
-        
-        /* Selektor untuk kolom uang (3, 5, 7, 9, 11, 13, 15) dan kolom operasional (17, 18, 19, 20) */
-        #tabel-modul-1 td:nth-child(3), 
-        #tabel-modul-1 td:nth-child(5), 
-        #tabel-modul-1 td:nth-child(7), 
-        #tabel-modul-1 td:nth-child(9), 
-        #tabel-modul-1 td:nth-child(11), 
-        #tabel-modul-1 td:nth-child(13), 
-        #tabel-modul-1 td:nth-child(15), 
-        
-        /* Kolom Operasional (Rapat, PERWTN MLU, BIAYA REK BANK, Lain - Lain) */
-        #tabel-modul-1 td:nth-child(17), 
-        #tabel-modul-1 td:nth-child(18), 
-        #tabel-modul-1 td:nth-child(19), 
-        #tabel-modul-1 td:nth-child(20),
-        
-        /* Header-nya juga disesuaikan */
-        #tabel-modul-1 th:nth-child(3), 
-        #tabel-modul-1 th:nth-child(5), 
-        #tabel-modul-1 th:nth-child(7), 
-        #tabel-modul-1 th:nth-child(9), 
-        #tabel-modul-1 th:nth-child(11), 
-        #tabel-modul-1 th:nth-child(13), 
-        #tabel-modul-1 th:nth-child(15), 
-        #tabel-modul-1 th:nth-child(17), 
-        #tabel-modul-1 th:nth-child(18), 
-        #tabel-modul-1 th:nth-child(19), 
-        #tabel-modul-1 th:nth-child(20) 
-        {
-            min-width: 100px !important; /* Lebar minimum 100px untuk nominal */
+        .input-form-container { 
+            background-color: #e9f5ff; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-bottom: 20px;
+            border: 1px solid #cceeff;
         }
+        .form-row { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-end; }
+        .form-row > div { flex: 1; }
+        .form-row label { display: block; font-weight: bold; font-size: 11px; margin-bottom: 3px; }
+        .form-row > div.flex-fix { flex: 0 0 120px; } /* Untuk kolom tanggal/nominal yang fix */
         
-        /* Menyesuaikan lebar kolom NO, BULAN, dan kolom total */
-        #tabel-modul-1 td:nth-child(1), #tabel-modul-1 th:nth-child(1) { width: 30px; } 
-        #tabel-modul-1 td:nth-child(2), #tabel-modul-1 th:nth-child(2) { width: 70px; } 
-        #tabel-modul-1 td:nth-child(21), #tabel-modul-1 th:nth-child(21) { width: 100px; } 
-        #tabel-modul-1 td:nth-child(22), #tabel-modul-1 th:nth-child(22) { width: 100px; } 
-        #tabel-modul-1 td:nth-child(23), #tabel-modul-1 th:nth-child(23) { width: 100px; } 
+        /* Teks Input non-angka harus rata kiri */
+        #m1a-keterangan-input, #m2-keterangan-input, #m1a-nama-petugas-input, #m1a-donatur-input, #m1a-alamat-input {
+            text-align: left !important;
+        }
 
+        /* Baris Khusus */
+        .auto-transaction-row td { background-color: #ffcccc; font-style: italic; }
+        .saldo-awal-row td { background-color: #fffacd; font-weight: bold; } 
+        
+        /* Style untuk tombol aksi */
+        .action-btn { 
+            padding: 1px 3px; 
+            font-size: 9px; 
+            border: none; 
+            cursor: pointer; 
+            margin: 0; 
+            flex-shrink: 0;
+        }
+        .edit-btn { background-color: #ffc107; color: black; }
+        .delete-btn { background-color: #dc3545; color: white; }
+
+        /* Login/Logout Bar (Fixed Bottom) */
+        #login-container-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #343a40; 
+            color: white;
+            padding: 8px 20px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: flex-end; 
+            align-items: center;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+        #login-form-content-bar {
+            display: flex;
+            align-items: center;
+        }
+        #login-form-content-bar input {
+            width: 120px;
+            margin: 0 5px;
+            padding: 5px;
+            font-size: 12px;
+            border: 1px solid #6c757d;
+            background-color: #495057;
+            color: white;
+        }
+        #login-form-content-bar label {
+             font-size: 12px;
+             margin-right: 5px;
+        }
+        #login-form-content-bar button {
+            padding: 5px 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        #login-message-bar {
+            color: #ffc107;
+            margin-left: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        #logout-form-content-bar {
+            display: flex;
+            align-items: center;
+        }
+        #logout-form-content-bar p {
+            margin: 0 15px 0 0;
+            font-weight: bold;
+            color: #28a745;
+            font-size: 12px;
+        }
+        #logout-form-content-bar button {
+            padding: 5px 15px; 
+            background-color: #dc3545; 
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
-
-    <div id="app-container">
+    
+    <nav id="main-nav">
+        <h1>Sistem Laporan KOIN NU</h1>
+        <ul id="nav-menu">
+            <li><button id="nav-m1a" onclick="switchModule('modul-1a-section')" class="active">Modul 1A (Penerimaan Detail)</button></li>
+            <li><button id="nav-m2" onclick="switchModule('modul-2-section')">Modul 2 (Jurnal Umum)</button></li>
+            <li><button id="nav-m3" onclick="switchModule('modul-3-section')">Modul 3 (Laporan Tahunan)</button></li>
+            <li><button id="nav-m1" onclick="switchModule('modul-1-section')">Modul 1 (Input Agregat)</button></li>
+        </ul>
+    </nav>
+    
+    <div id="report-container">
         
-        <div id="tab-nav">
-            <button class="tab-button active" onclick="showModule(1)">MODUL 1</button>
-            <button class="tab-button" onclick="showModule(2)">MODUL 2</button>
-            <button class="tab-button" onclick="showModule(3)">MODUL 3</button>
-        </div>
-
-        <div id="modul-1-content" class="module-content">
-            <h3>MODUL 1: DATA AGREGAT BULANAN</h3>
+        <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 10px;">
             
-            <table id="tabel-modul-1" class="input-table">
-                <thead>
-                    <tr>
-                        <th rowspan="4">NO</th>
-                        <th rowspan="4">BULAN</th>
-                        <th colspan="2">PENERIMAAN</th>
-                        <th colspan="12">PENGELUARAN SOSIAL (JML UANG / JML PENERIMA)</th>
-                        <th colspan="4">PENGELUARAN OPERASIONAL</th>
-                        <th rowspan="4">JML PENGELUARAN (7)</th>
-                        <th rowspan="4">SALDO AKHIR BULAN INI (8)</th>
-                        <th rowspan="4">SALDO KAS TAHUN BERJALAN (9)</th>
-                    </tr>
-                    <tr>
-                        <th rowspan="3">Total Penerimaan Koin (3)</th>
-                        <th rowspan="3">Jml Donatur (4)</th>
-                        <th colspan="2">Pendidikan</th>
-                        <th colspan="2">Kesehatan</th>
-                        <th colspan="2">Ekonomi</th>
-                        <th colspan="2">Sosial Umum</th>
-                        <th colspan="2">Subsidi Banom & Lembaga NU</th>
-                        <th colspan="2">Bencana</th>
-                        <th rowspan="3">Rapat</th>
-                        <th rowspan="3">PERWTN MLU</th>
-                        <th rowspan="3">BIAYA REK BANK</th>
-                        <th rowspan="3">Lain - Lain</th>
-                    </tr>
-                    <tr>
-                        <th colspan="12">Rincian Per Bidang (Uang & Penerima)</th>
-                    </tr>
-                    <tr>
-                        <th>Jml Uang</th>
-                        <th>Jml Penerima</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Penerima</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Penerima</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Penerima</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Penerima</th>
-                        <th>Jml Uang</th>
-                        <th>Jml Penerima</th>
-                    </tr>
-                </thead>
-                <tbody id="m1-input-body">
-                    </tbody>
-            </table>
+            <div style="
+                width: 100px; 
+                height: 100px; 
+                margin-right: 15px; 
+                background-image: url('logo-lazisnu.png'); 
+                background-size: contain; /* Memastikan gambar penuh dan pita bawah terlihat */
+                background-repeat: no-repeat;
+                background-position: center; 
+                flex-shrink: 0;
+            "></div>
+            
+            <div style="text-align: left;">
+                <h2 style="margin: 0; color: #006400; font-size: 22px;">NU CARE UPZIS - LAZISNU RANTING NGABLAK</h2>
+                <p style="margin: 0; font-size: 15px; color: #333;">Sekretariat: Jalan [Nama Jalan], Desa Ngablak, Kec. [Kecamatan], Kab. [Kabupaten]</p>
+            </div>
+            
+        </div>
+        <hr style="border-top: 3px double #000; margin-top: 0px; margin-bottom: 20px;">
+        <div id="modul-1a-section" class="module-section">
+            <h2>MODUL 1A: JURNAL PENERIMAAN KOIN NU DETAIL</h2>
+            
+            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding: 5px; border-left: 5px solid #006400;">
+                <h3 style="margin: 0; color: #006400; font-size: 16px; flex-shrink: 0;">Filter Data:</h3>
+                <div>
+                    <label for="filter-bulan-m1a" style="font-size: 12px;">Bulan:</label>
+                    <select id="filter-bulan-m1a" onchange="updateFilters(this.id, this.value)"></select>
+                </div>
+                <div>
+                    <label for="filter-tahun-m1a" style="font-size: 12px;">Tahun:</label>
+                    <select id="filter-tahun-m1a" onchange="updateFilters(this.id, this.value)"></select>
+                </div>
+            </div>
+            
+            <div class="table-scroll-wrapper">
+                <table id="tabel-modul-1a">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;">NO</th>
+                            <th style="width: 80px;">TANGGAL</th>
+                            <th style="min-width: 100px;">NAMA PETUGAS</th>
+                            <th style="width: 70px;">NO HP</th>
+                            <th style="min-width: 120px;">DONATUR/KELOMPOK</th>
+                            <th>ALAMAT (RT/RW)</th>
+                            <th class="col-nominal">NOMINAL (100%)</th>
+                            <th class="koin-nu-header col-nominal">Petugas (10%)</th>
+                            <th class="koin-nu-header col-nominal">MWC (25%)</th>
+                            <th class="koin-nu-header col-nominal">PC (5%)</th>
+                            <th class="koin-nu-header col-nominal">Ranting (60%)</th>
+                            <th id="th-m1a-aksi" class="col-aksi">AKSI</th> 
+                        </tr>
+                    </thead>
+                    <tbody id="m1a-transaction-body">
+                        </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" class="footer-total text-right">TOTAL PENERIMAAN KOIN NU</td>
+                            <td id="m1a-total-nominal" class="footer-total text-right">0</td>
+                            <td id="m1a-total-petugas" class="footer-total text-right">0</td>
+                            <td id="m1a-total-mwc" class="footer-total text-right">0</td>
+                            <td id="m1a-total-pc" class="footer-total text-right">0</td>
+                            <td id="m1a-total-ranting" class="footer-total text-right">0</td>
+                            <td id="tf-m1a-aksi" class="footer-total text-center">-</td> 
+                        </tr>
+                    </tfoot>
+                </table>
+            </div> <div class="admin-only" style="margin-bottom: 15px; border: 1px solid #dc3545; padding: 10px; border-radius: 5px; background-color: #f8d7da;">
+                <p style="color: #721c24; font-weight: bold; margin-bottom: 5px;">
+                    ⚠️ **PERHATIAN:** Klik tombol ini untuk menghapus **SEMUA** data transaksi yang ada di Modul 1A dan Modul 2. Tindakan ini **TIDAK** dapat dibatalkan.
+                </p>
+                <button onclick="resetAllData()" style="padding: 5px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer; font-weight: bold;">
+                    <span id="reset-button-text">RESET SEMUA DATA TRANSAKSI</span>
+                </button>
+            </div>
+
+            <div class="input-form-container admin-only">
+                <h3 style="margin-top: 0; color: #4CAF50;">Input Transaksi Koin NU</h3>
+                <div class="form-row">
+                    <div class="flex-fix">
+                        <label for="m1a-tanggal-input">Tanggal</label>
+                        <input type="date" id="m1a-tanggal-input" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label for="m1a-nama-petugas-input">Nama Petugas</label>
+                        <input type="text" id="m1a-nama-petugas-input" style="width: 100%; text-align: left;">
+                    </div>
+                    <div class="flex-fix">
+                        <label for="m1a-no-hp-input">No HP</label>
+                        <input type="text" id="m1a-no-hp-input" style="width: 100%; text-align: left;">
+                    </div>
+                    <div>
+                        <label for="m1a-donatur-input">Donatur/Kelompok</label>
+                        <input type="text" id="m1a-donatur-input" style="width: 100%; text-align: left;">
+                    </div>
+                    <div>
+                        <label for="m1a-alamat-input">Alamat (RT/RW)</label>
+                        <input type="text" id="m1a-alamat-input" style="width: 100%; text-align: left;">
+                    </div>
+                    <div style="flex: 1.5;">
+                        <label for="m1a-nominal-input">NOMINAL Koin NU (100%)</label>
+                        <input type="number" id="m1a-nominal-input" value="" min="1" placeholder="Masukkan Nominal">
+                    </div>
+                </div>
+                <button onclick="addKoinNUTransaction()" style="padding: 5px 15px; background-color: #4CAF50; color: white; border: none; cursor: pointer;">+ Tambah Koin NU</button>
+                <button onclick="clearKoinNUInputs()" style="padding: 5px 15px; background-color: #f44336; color: white; border: none; cursor: pointer;">Bersihkan Input</button>
+            </div>
         </div>
 
-        <div id="modul-2-content" class="module-content" style="display: none;">
-            <h3>MODUL 2: TAMPILAN JURNAL UMUM</h3>
-            <p>Ini adalah konten Modul 2. Klik tombol MODUL 2 di atas untuk melihatnya.</p>
-            <table class="input-table">
-                <thead>
-                    <tr>
-                        <th>NO</th>
-                        <th>KETERANGAN</th>
-                        <th>DEBIT (Dana Masuk)</th>
-                        <th>KREDIT (Dana Keluar)</th>
-                        <th>SALDO</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>Saldo Bulan Lalu</td>
-                        <td>0</td>
-                        <td>0</td>
-                        <td>0</td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>Total Penerimaan Bulan Ini (dari Modul 1)</td>
-                        <td>4.000.000</td>
-                        <td>0</td>
-                        <td>4.000.000</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <div id="modul-2-section" class="module-section" style="display: none;">
+            <h2>MODUL 2: JURNAL UMUM (Buku Kas)</h2>
+            
+            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding: 5px; border-left: 5px solid #006400;">
+                <h3 style="margin: 0; color: #006400; font-size: 16px; flex-shrink: 0;">Filter Data:</h3>
+                <div>
+                    <label for="filter-bulan-m2" style="font-size: 12px;">Bulan:</label>
+                    <select id="filter-bulan-m2" onchange="updateFilters(this.id, this.value)"></select>
+                </div>
+                <div>
+                    <label for="filter-tahun-m2" style="font-size: 12px;">Tahun:</label>
+                    <select id="filter-tahun-m2" onchange="updateFilters(this.id, this.value)"></select>
+                </div>
+            </div>
+            
+            <div class="table-scroll-wrapper">
+                <table id="tabel-modul-2">
+                    <thead>
+                        <tr>
+                            <th style="width: 30px;">NO</th>
+                            <th style="width: 90px;">TANGGAL</th>
+                            <th style="min-width: 200px;">KETERANGAN</th>
+                            <th>KATEGORI</th>
+                            <th style="min-width: 120px;">DANA MASUK (DEBIT)</th>
+                            <th style="min-width: 120px;">DANA KELUAR (KREDIT)</th>
+                            <th style="min-width: 120px;">SALDO</th>
+                            <th id="th-m2-aksi" class="col-aksi">AKSI</th> 
+                        </tr>
+                    </thead>
+                    <tbody id="m2-transaction-body">
+                        <tr>
+                            <td colspan="4" class="saldo-awal-row text-right">Saldo Bulan Lalu:</td>
+                            <td colspan="2">
+                                <div id="m2-saldo-awal-display-container" class="admin-only" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 0; box-sizing: border-box;">
+                                    <input type="number" id="m2-saldo-awal-input" value="15000000" min="0" oninput="recalculateAllReports()" style="width: 100%; text-align: right; background-color: #fffacd; font-weight: bold; padding: 2px;">
+                                </div>
+                                <div id="m2-saldo-awal-static" class="saldo-awal-row text-right" style="padding: 2px 6px; display: none;"></div> </td>
+                            <td id="m2-saldo-awal-display" class="saldo-awal-row text-right">0</td>
+                            <td id="td-m2-saldo-awal-aksi" class="saldo-awal-row text-center">-</td> 
+                        </tr>
+                        </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="footer-total text-right">TOTAL</td>
+                            <td id="m2-total-masuk" class="footer-total text-right">0</td>
+                            <td id="m2-total-keluar" class="footer-total text-right">0</td>
+                            <td id="m2-footer-saldo-total" class="footer-total text-right">0</td>
+                            <td id="tf-m2-aksi" class="footer-total text-center">-</td> 
+                        </tr>
+                    </tfoot>
+                </table>
+            </div> <div class="admin-only" style="margin-bottom: 15px; border: 1px solid #dc3545; padding: 10px; border-radius: 5px; background-color: #f8d7da;">
+                <p style="color: #721c24; font-weight: bold; margin-bottom: 5px;">
+                    ⚠️ **PERHATIAN:** Klik tombol ini untuk menghapus **SEMUA** data transaksi yang ada di Modul 1A dan Modul 2. Tindakan ini **TIDAK** dapat dibatalkan.
+                </p>
+                <button onclick="resetAllData()" style="padding: 5px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer; font-weight: bold;">
+                    <span id="reset-button-text-m2">RESET SEMUA DATA TRANSAKSI</span>
+                </button>
+            </div>
 
-        <div id="modul-3-content" class="module-content" style="display: none;">
-            <h3>MODUL 3: REKAPITULASI KOIN</h3>
-            <p>Ini adalah konten Modul 3. Klik tombol MODUL 3 di atas untuk melihatnya.</p>
-            <table class="input-table">
-                 <thead>
-                    <tr>
-                        <th>NO</th>
-                        <th>TANGGAL</th>
-                        <th>KETERANGAN</th>
-                        <th>JML PENERIMA</th>
-                        <th>JML UANG</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>05/01/2025</td>
-                        <td>Penyaluran Santunan Pendidikan</td>
-                        <td>10</td>
-                        <td>100.000</td>
-                    </tr>
-                </tbody>
-            </table>
+
+            <div class="input-form-container admin-only">
+                <h3 style="margin-top: 0; color: #007bff;">Input Transaksi Lainnya (Non-Koin NU)</h3>
+                <div class="form-row">
+                    <div class="flex-fix">
+                        <label for="m2-tanggal-input">Tanggal</label>
+                        <input type="date" id="m2-tanggal-input" style="width: 100%;">
+                    </div>
+                    <div style="flex: 2;">
+                        <label for="m2-keterangan-input">Keterangan</label>
+                        <input type="text" id="m2-keterangan-input" style="width: 100%; text-align: left;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="m2-kategori-input">Kategori</label>
+                        <select id="m2-kategori-input" style="width: 100%; text-align: left; background-color: white;">
+                            <option value="">-- Pilih Kategori --</option>
+                            <optgroup label="Dana Masuk (Debit) Non-Koin">
+                                <option value="Donatur Umum">Donatur Umum</option>
+                                <option value="Zakat Maal">Zakat Maal</option>
+                                <option value="Infaq dan Shodaqoh">Infaq dan Shodaqoh</option>
+                                <option value="Hasil Usaha">Hasil Usaha</option>
+                            </optgroup>
+                            <optgroup label="Dana Keluar Lain-Lain (Kredit)">
+                                <option value="Pendidikan (Lainnya)">Pendidikan (Lainnya)</option>
+                                <option value="Sosial (Lainnya)">Sosial (Lainnya)</option>
+                                <option value="Ekonomi (Lainnya)">Ekonomi (Lainnya)</option>
+                                <option value="Kesehatan (Lainnya)">Kesehatan (Lainnya)</option>
+                                <option value="Subsidi Banom (Lainnya)">Subsidi Banom (Lainnya)</option>
+                                <option value="Bencana (Lainnya)">Bencana (Lainnya)</option>
+                                <option value="Rapat">Rapat</option>
+                                <option value="Perawatan MLU">PERWTN MLU</option>
+                                <option value="Biaya Bank">BIAYA REK BANK</option>
+                                <option value="Lain-Lain">Lain - Lain</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="m2-debit-input">DANA MASUK (DEBIT)</label>
+                        <input type="number" id="m2-debit-input" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="m2-kredit-input">DANA KELUAR (KREDIT)</label>
+                        <input type="number" id="m2-kredit-input" value="0" min="0" onfocus="if(this.value=='0')this.value=''" onblur="if(this.value=='')this.value='0'">
+                    </div>
+                </div>
+                <button onclick="addManualTransaction()" style="padding: 5px 15px; background-color: #28a745; color: white; border: none; cursor: pointer;">+ Tambah Transaksi Lain</button>
+                <button onclick="clearManualTransactionInputs()" style="padding: 5px 15px; background-color: #dc3545; color: white; border: none; cursor: pointer;">Bersihkan Input</button>
+            </div>
         </div>
         
+        <div id="modul-3-section" class="module-section" style="display: none;">
+            <h2>MODUL 3: TAMPILAN LAPORAN TAHUNAN</h2>
+            
+            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding: 5px; border-left: 5px solid #006400;">
+                <h3 style="margin: 0; color: #006400; font-size: 16px; flex-shrink: 0;">Filter Data:</h3>
+                <div>
+                    <label for="filter-bulan-m3" style="font-size: 12px;">Bulan:</label>
+                    <select id="filter-bulan-m3" onchange="updateFilters(this.id, this.value)"></select>
+                </div>
+                <div>
+                    <label for="filter-tahun-m3" style="font-size: 12px;">Tahun:</label>
+                    <select id="filter-tahun-m3" onchange="updateFilters(this.id, this.value)"></select>
+                </div>
+            </div>
+            
+            <div class="table-scroll-wrapper">
+                <table id="tabel-modul-3">
+                    <thead>
+                        <tr>
+                            <th rowspan="3" style="width: 20px;">NO</th>
+                            <th rowspan="3" style="width: 70px;">BULAN</th>
+                            <th colspan="2">PENERIMAAN</th>
+                            <th colspan="12">PENGELUARAN SOSIAL (JML UANG/JML PENERIMA)</th>
+                            <th colspan="4">PENGELUARAN OPERASIONAL</th>
+                            <th rowspan="3" style="min-width: 80px;">Honor Wajib (40%)</th>
+                            <th rowspan="3" style="min-width: 80px;">JML PENGELUARAN (7)</th>
+                            <th rowspan="3" style="min-width: 80px;">SALDO AKHIR BULAN INI (8)</th>
+                            <th rowspan="3" style="min-width: 80px;">SALDO KAS TAHUN BERJALAN (9)</th>
+                        </tr>
+                        <tr>
+                            <th rowspan="2" style="min-width: 80px;">Total Koin (3)</th>
+                            <th rowspan="2" style="width: 50px;">JML Donatur (4)</th>
+                            <th colspan="2">Pendidikan</th>
+                            <th colspan="2">Kesehatan</th>
+                            <th colspan="2">Ekonomi</th>
+                            <th colspan="2">Sosial Umum</th>
+                            <th colspan="2">Subsidi Banom & Lembaga NU</th>
+                            <th colspan="2">Bencana</th>
+                            <th rowspan="2">Rapat</th>
+                            <th rowspan="2">PERWTN MLU</th>
+                            <th rowspan="2">BIAYA REK BANK</th>
+                            <th rowspan="2">Lain - Lain</th>
+                        </tr>
+                        <tr>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="m3-data-body">
+                        </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="footer-total text-right">TOTAL TAHUNAN</td>
+                            <td class="footer-total text-right" id="m3-total-penerimaan">0</td>
+                            <td class="footer-total text-right" id="m3-total-donatur">0</td>
+                            <td class="footer-total text-right" id="m3-total-pend-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-pend-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-kes-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-kes-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-eko-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-eko-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-sosum-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-sosum-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-banom-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-banom-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-bencana-uang">0</td>
+                            <td class="footer-total text-right" id="m3-total-bencana-pnm">0</td>
+                            <td class="footer-total text-right" id="m3-total-rapat">0</td>
+                            <td class="footer-total text-right" id="m3-total-perwtn">0</td>
+                            <td class="footer-total text-right" id="m3-total-bank">0</td>
+                            <td class="footer-total text-right" id="m3-total-lain">0</td>
+                            <td class="footer-total text-right" id="m3-total-honor">0</td>
+                            <td class="footer-total text-right" id="m3-total-pengeluaran">0</td>
+                            <td class="footer-total text-right" id="m3-footer-saldo-akhir">0</td>
+                            <td class="footer-total text-right" id="m3-footer-saldo-kas">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div> <input type="hidden" id="saldo-bank-awal-input" value="10000000">
+            <input type="hidden" id="saldo-tunai-awal-input" value="5000000">
+        </div>
+
+        <div id="modul-1-section" class="module-section" style="display: none;">
+            <h2 class="admin-only">MODUL 1: DATA AGREGAT BULANAN (Input Lama - Untuk Laporan Tahunan)</h2>
+            <p class="admin-only" style="color: blue; font-style: italic;">(Data di modul ini hanya digunakan untuk laporan tahunan, tidak terhubung dengan Modul 1A/2)</p>
+            
+            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding: 5px; border-left: 5px solid #006400;">
+                <h3 style="margin: 0; color: #006400; font-size: 16px; flex-shrink: 0;">Filter Data:</h3>
+                <div>
+                    <label for="filter-bulan-m1" style="font-size: 12px;">Bulan:</label>
+                    <select id="filter-bulan-m1" onchange="updateFilters(this.id, this.value)"></select>
+                </div>
+                <div>
+                    <label for="filter-tahun-m1" style="font-size: 12px;">Tahun:</label>
+                    <select id="filter-tahun-m1" onchange="updateFilters(this.id, this.value)"></select>
+                </div>
+            </div>
+            
+            <div class="table-scroll-wrapper">
+                <table id="tabel-modul-1" class="input-table admin-only">
+                    <thead>
+                        <tr>
+                            <th rowspan="3">BULAN</th>
+                            <th colspan="2">PENERIMAAN</th>
+                            <th colspan="12">PENGELUARAN DANA SOSIAL/BANTUAN</th>
+                            <th colspan="4">PENGELUARAN OPERASIONAL</th>
+                        </tr>
+                        <tr>
+                            <th rowspan="2" style="min-width: 80px;">TOTAL KOIN</th>
+                            <th rowspan="2" style="width: 50px;">JML DONATUR</th>
+                            <th colspan="2">Pendidikan</th>
+                            <th colspan="2">Kesehatan</th>
+                            <th colspan="2">Ekonomi</th>
+                            <th colspan="2">Sosial Umum</th>
+                            <th colspan="2">Subsidi Banom & Lembaga NU</th>
+                            <th colspan="2">Bencana</th>
+                            <th rowspan="2">Rapat</th>
+                            <th rowspan="2">PERWTN MLU</th>
+                            <th rowspan="2">BIAYA REK BANK</th>
+                            <th rowspan="2">Lain - Lain</th>
+                        </tr>
+                        <tr>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                            <th style="min-width: 70px;">Jml Uang</th>
+                            <th style="width: 40px;">Jml Pnm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="m1-input-body">
+                        </tbody>
+                </table>
+            </div> </div>
+    </div>
+    
+    <div id="login-container-bar">
+        <div id="login-form-content-bar" style="display: none;">
+            <label for="username">Username:</label>
+            <input type="text" id="username">
+            <label for="password">Password:</label>
+            <input type="password" id="password">
+            <button onclick="handleLogin()">Login</button>
+            <p id="login-message-bar" style="color: white; margin-left: 10px;">(Akses terbatas Admin)</p>
+        </div>
+        
+        <div id="logout-form-content-bar" style="display: none;"> 
+            <p>Mode Admin Aktif</p>
+            <button onclick="handleLogout()">Logout</button>
+        </div>
     </div>
 
     <script>
-        // Data Contoh
-        const INITIAL_DATA_SOURCE = [
-            { bulan: 'Januari', penerimaan: 4000000, donatur: 50, pendUang: 100000, pendPenerima: 10, kesUang: 50000, kesPenerima: 5, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 200, perwtnMlu: 50000, biayaBank: 100, lainLain: 14 },
-            { bulan: 'Februari', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'Maret', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'April', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'Mei', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'Juni', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'Juli', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'Agustus', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'September', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'Oktober', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'November', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 },
-            { bulan: 'Desember', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 }
+        // --- GLOBAL CONFIG & CREDENTIALS ---
+        const USERNAME = 'admin';
+        const PASSWORD = 'admin123';
+        let isLoggedIn = false;
+        let activeModule = 'modul-1a-section'; // Default active module
+        
+        // Filter States
+        const CURRENT_YEAR = new Date().getFullYear();
+        let currentFilterMonth = 0; // 0 = All Months, 1 = January, ...
+        let currentFilterYear = CURRENT_YEAR; 
+        const MONTHS = ["Semua Bulan", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        
+        // Data Modul 1 (Input Aggregat Lama) - Will be stored in global memory for demo, real system would use a DB
+        let initialData = [
+            { bulan: 'Januari', penerimaan: 4000000, donatur: 200, pendUang: 500000, pendPenerima: 5, kesUang: 300000, kesPenerima: 3, ekoUang: 400000, ekoPenerima: 4, sosumUang: 300000, sosumPenerima: 10, banomUang: 300000, banomPenerima: 2, bencanaUang: 0, bencanaPenerima: 0, rapat: 200000, perwtnMlu: 50000, biayaBank: 10000, lainLain: 140000, honorWajibPercent: 0.40 },
+            { bulan: 'Februari', penerimaan: 5000000, donatur: 250, pendUang: 600000, pendPenerima: 6, kesUang: 0, kesPenerima: 0, ekoUang: 500000, ekoPenerima: 5, sosumUang: 400000, sosumPenerima: 15, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'Maret', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'April', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'Mei', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'Juni', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'Juli', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'Agustus', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'September', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'Oktober', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'November', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 },
+            { bulan: 'Desember', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40 }
         ];
 
-        // --- FUNGSI NAVIGASI TAB ---
-        function showModule(moduleNumber) {
-            const contents = document.querySelectorAll('.module-content');
-            const buttons = document.querySelectorAll('.tab-button');
+        // Transaction Data (for Modul 1A & 2)
+        let m1aTransactions = []; // Stores detailed Koin NU transactions
+        let m2ManualTransactions = []; // Stores other manual transactions (Debit/Kredit)
+        
+        // Honor Rates for Koin NU split (used in Modul 1A & Modul 2 auto-transactions)
+        const HONOR_RATES = {
+            petugas: 0.10, // 10%
+            mwc: 0.25,     // 25%
+            pc: 0.05,      // 5%
+            ranting: 0.60  // 60%
+        };
+        
+        // --- UTILITY FUNCTIONS ---
+        const formatNominal = (angka) => {
+            if (typeof angka !== 'number' || isNaN(angka)) return '0';
+            return angka.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        };
+        const parseInput = (id) => {
+            const element = document.getElementById(id);
+            if (element) {
+                return parseFloat(element.value) || 0;
+            }
+            return 0;
+        };
 
-            contents.forEach(content => {
-                content.style.display = 'none';
+        // ===================================
+        // --- FILTER LOGIC ---
+        // ===================================
+        function populateFilters() {
+            const monthSelects = document.querySelectorAll('[id^="filter-bulan-"]');
+            const yearSelects = document.querySelectorAll('[id^="filter-tahun-"]');
+            const startYear = 2024; 
+
+            // Populate Months
+            monthSelects.forEach(select => {
+                select.innerHTML = ''; // Clear existing options
+                MONTHS.forEach((month, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = month;
+                    select.appendChild(option);
+                });
+                select.value = currentFilterMonth;
             });
-            buttons.forEach(button => {
+
+            // Populate Years
+            yearSelects.forEach(select => {
+                select.innerHTML = ''; // Clear existing options
+                for (let year = CURRENT_YEAR + 1; year >= startYear; year--) {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    select.appendChild(option);
+                }
+                select.value = currentFilterYear;
+            });
+            
+            // Sync all filter values to the current global state
+            monthSelects.forEach(select => select.value = currentFilterMonth);
+            yearSelects.forEach(select => select.value = currentFilterYear);
+        }
+
+        function updateFilters(id, value) {
+            const val = parseInt(value);
+            if (id.includes('bulan')) {
+                currentFilterMonth = val;
+            } else if (id.includes('tahun')) {
+                currentFilterYear = val;
+            }
+
+            // Sync all filter dropdowns to the new value
+            const targetPrefix = id.includes('bulan') ? 'filter-bulan-' : 'filter-tahun-';
+            document.querySelectorAll(`[id^="${targetPrefix}"]`).forEach(select => {
+                select.value = val;
+            });
+
+            recalculateAllReports();
+        }
+
+        function getFilteredM1aTransactions() {
+            const month = currentFilterMonth;
+            const year = currentFilterYear;
+            let filtered = m1aTransactions.filter(t => new Date(t.date).getFullYear() === year);
+            if (month !== 0) {
+                filtered = filtered.filter(t => new Date(t.date).getMonth() === (month - 1));
+            }
+            return filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+        function getFilteredM2ManualTransactions() {
+            const month = currentFilterMonth;
+            const year = currentFilterYear;
+            let filtered = m2ManualTransactions.filter(t => new Date(t.date).getFullYear() === year);
+            if (month !== 0) {
+                filtered = filtered.filter(t => new Date(t.date).getMonth() === (month - 1));
+            }
+            return filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+
+
+        // ===================================
+        // --- MODULE SWITCHING ---
+        // ===================================
+        function switchModule(moduleID) {
+            // Hide all modules
+            document.querySelectorAll('.module-section').forEach(section => {
+                section.style.display = 'none';
+            });
+
+            // Deactivate all nav buttons
+            document.querySelectorAll('#nav-menu button').forEach(button => {
                 button.classList.remove('active');
             });
 
-            document.getElementById(`modul-${moduleNumber}-content`).style.display = 'block';
-            document.querySelector(`#tab-nav button:nth-child(${moduleNumber})`).classList.add('active');
+            // Show target module
+            document.getElementById(moduleID).style.display = 'block';
+            activeModule = moduleID;
+
+            // Activate target nav button
+            const navButtonId = moduleID.replace('-section', '');
+            const activeButton = document.getElementById('nav-' + navButtonId);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+            
+            // Re-render only if needed
+            if (moduleID === 'modul-1a-section') updatePenerimaanDetail();
+            if (moduleID === 'modul-2-section') updateJurnalUmum();
+            if (moduleID === 'modul-3-section') updateLaporanTahunan();
+            if (moduleID === 'modul-1-section') updateModul1(); // For visual consistency
         }
 
-        // --- INITIALIZATION (Modul 1) ---
-        function initializeLaporan() {
-            const inputBody = document.getElementById('m1-input-body');
-            
-            for (let i = 0; i < 12; i++) {
-                const data = i < INITIAL_DATA_SOURCE.length ? INITIAL_DATA_SOURCE[i] : {
-                    bulan: (i + 1).toString().padStart(2, '0'),
-                    penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0
-                };
-                const prefix = `m1-${i}-`;
-                const row = inputBody.insertRow();
+        // ===================================
+        // --- MODUL 1A LOGIC: PENERIMAAN DETAIL ---
+        // ===================================
+        function getKoinNUAggregateData() {
+            const filtered = getFilteredM1aTransactions();
+            let totalNominal = 0;
+            filtered.forEach(t => totalNominal += t.nominal);
+
+            const totalHonorPetugas = totalNominal * HONOR_RATES.petugas;
+            const totalHonorMWC = totalNominal * HONOR_RATES.mwc;
+            const totalHonorPC = totalNominal * HONOR_RATES.pc;
+            const totalDanaRanting = totalNominal * HONOR_RATES.ranting;
+
+            return { totalNominal, totalHonorPetugas, totalHonorMWC, totalHonorPC, totalDanaRanting };
+        }
+
+        function deleteKoinNUTxn(index) {
+            if (!isLoggedIn) return;
+            if (confirm(`Yakin ingin menghapus transaksi Koin NU #${index + 1}?`)) {
+                // Find the transaction object in the filtered list
+                const filteredTx = getFilteredM1aTransactions()[index]; 
+                // Find the index of that object in the main array (m1aTransactions)
+                const originalIndex = m1aTransactions.findIndex(t => t === filteredTx); 
                 
-                // style="width: 100%;" diterapkan di sini untuk semua input
-                row.innerHTML = `
-                    <td class="text-center">${i + 1}</td>
-                    <td class="text-center">${data.bulan.toUpperCase()}</td>
-                    <td><input type="number" id="${prefix}penerimaan" value="${data.penerimaan}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}donatur" value="${data.donatur}" min="0" style="width: 100%;"></td>
-                    
-                    <td><input type="number" id="${prefix}pendUang" value="${data.pendUang}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}pendPenerima" value="${data.pendPenerima}" min="0" style="width: 100%;"></td>
-                    
-                    <td><input type="number" id="${prefix}kesUang" value="${data.kesUang}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}kesPenerima" value="${data.kesPenerima}" min="0" style="width: 100%;"></td>
-
-                    <td><input type="number" id="${prefix}ekoUang" value="${data.ekoUang}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}ekoPenerima" value="${data.ekoPenerima}" min="0" style="width: 100%;"></td>
-
-                    <td><input type="number" id="${prefix}sosumUang" value="${data.sosumUang}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}sosumPenerima" value="${data.sosumPenerima}" min="0" style="width: 100%;"></td>
-                    
-                    <td><input type="number" id="${prefix}banomUang" value="${data.banomUang}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}banomPenerima" value="${data.banomPenerima}" min="0" style="width: 100%;"></td>
-                    
-                    <td><input type="number" id="${prefix}bencanaUang" value="${data.bencanaUang}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}bencanaPenerima" value="${data.bencanaPenerima}" min="0" style="width: 100%;"></td>
-                    
-                    <td><input type="number" id="${prefix}rapat" value="${data.rapat}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}perwtnMlu" value="${data.perwtnMlu}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}biayaBank" value="${data.biayaBank}" min="0" style="width: 100%;"></td>
-                    <td><input type="number" id="${prefix}lainLain" value="${data.lainLain}" min="0" style="width: 100%;"></td>
-
-                    <td class="total-cell">0</td> 
-                    <td class="total-cell">0</td> 
-                    <td class="total-cell">0</td> 
-                `;
+                if (originalIndex > -1) {
+                    m1aTransactions.splice(originalIndex, 1);
+                    recalculateAllReports();
+                } else {
+                    alert("Error: Transaksi tidak ditemukan di data utama.");
+                }
             }
         }
 
+        function editKoinNUTxn(index) {
+            if (!isLoggedIn) return;
+            // Find the transaction object in the filtered list
+            const filteredTx = getFilteredM1aTransactions()[index]; 
+            // Find the index of that object in the main array (m1aTransactions)
+            const originalIndex = m1aTransactions.findIndex(t => t === filteredTx); 
+            
+            if (originalIndex > -1) {
+                const tx = m1aTransactions[originalIndex];
+                document.getElementById('m1a-tanggal-input').value = tx.date;
+                document.getElementById('m1a-nama-petugas-input').value = tx.petugas;
+                document.getElementById('m1a-no-hp-input').value = tx.noHp;
+                document.getElementById('m1a-donatur-input').value = tx.donatur;
+                document.getElementById('m1a-alamat-input').value = tx.alamat;
+                document.getElementById('m1a-nominal-input').value = tx.nominal;
+                
+                m1aTransactions.splice(originalIndex, 1);
+                recalculateAllReports();
+                alert('Data dipindahkan ke form input. Silakan edit dan klik "Tambah Koin NU" lagi.');
+            } else {
+                alert("Error: Transaksi tidak ditemukan di data utama.");
+            }
+        }
+
+        function addKoinNUTransaction() {
+            if (!isLoggedIn) return;
+            const date = document.getElementById('m1a-tanggal-input').value;
+            const petugas = document.getElementById('m1a-nama-petugas-input').value.trim();
+            const noHp = document.getElementById('m1a-no-hp-input').value.trim();
+            const donatur = document.getElementById('m1a-donatur-input').value.trim();
+            const alamat = document.getElementById('m1a-alamat-input').value.trim();
+            const nominal = parseFloat(document.getElementById('m1a-nominal-input').value) || 0;
+
+            if (!date || !petugas || !nominal || nominal <= 0) {
+                alert("Mohon isi Tanggal, Nama Petugas, dan Nominal Koin NU dengan benar.");
+                return;
+            }
+
+            const newTransaction = { date, petugas, noHp, donatur, alamat, nominal };
+            m1aTransactions.push(newTransaction);
+            clearKoinNUInputs();
+            recalculateAllReports();
+        }
+
+        function clearKoinNUInputs() {
+            if (!isLoggedIn) return;
+            document.getElementById('m1a-tanggal-input').value = '';
+            document.getElementById('m1a-nama-petugas-input').value = '';
+            document.getElementById('m1a-no-hp-input').value = '';
+            document.getElementById('m1a-donatur-input').value = '';
+            document.getElementById('m1a-alamat-input').value = '';
+            document.getElementById('m1a-nominal-input').value = '';
+        }
+
+        function updatePenerimaanDetail() {
+            const transactionBody = document.getElementById('m1a-transaction-body');
+            transactionBody.innerHTML = ''; // Clear previous data
+            let totalNominal = 0;
+            const aksiVisibilityStyle = isLoggedIn ? 'table-cell' : 'none';
+
+            // 1. Render Rows (based on FILTERED data)
+            getFilteredM1aTransactions().forEach((t, index) => {
+                const honorPetugas = t.nominal * HONOR_RATES.petugas;
+                const honorMWC = t.nominal * HONOR_RATES.mwc;
+                const honorPC = t.nominal * HONOR_RATES.pc;
+                const danaRanting = t.nominal * HONOR_RATES.ranting;
+                totalNominal += t.nominal;
+
+                const actionButtons = `
+                    <button class="action-btn edit-btn" onclick="editKoinNUTxn(${index})">Ubah</button>
+                    <button class="action-btn delete-btn" onclick="deleteKoinNUTxn(${index})">Hapus</button>
+                `;
+                
+                const row = transactionBody.insertRow();
+                row.innerHTML = `
+                    <td class="text-center">${index + 1}</td>
+                    <td>${t.date}</td>
+                    <td>${t.petugas}</td>
+                    <td>${t.noHp}</td>
+                    <td>${t.donatur}</td>
+                    <td>${t.alamat}</td>
+                    <td class="text-right">${formatNominal(t.nominal)}</td>
+                    <td class="text-right">${formatNominal(honorPetugas)}</td>
+                    <td class="text-right">${formatNominal(honorMWC)}</td>
+                    <td class="text-right">${formatNominal(honorPC)}</td>
+                    <td class="text-right">${formatNominal(danaRanting)}</td>
+                    <td class="text-center" style="${aksiVisibilityStyle}">${actionButtons}</td>
+                `;
+            });
+
+            // 2. Calculate Aggregates (based on FILTERED data)
+            const koinNUData = getKoinNUAggregateData();
+            
+            // 3. Update Modul 1A Footer
+            document.getElementById('m1a-total-nominal').textContent = formatNominal(koinNUData.totalNominal);
+            document.getElementById('m1a-total-petugas').textContent = formatNominal(koinNUData.totalHonorPetugas);
+            document.getElementById('m1a-total-mwc').textContent = formatNominal(koinNUData.totalHonorMWC);
+            document.getElementById('m1a-total-pc').textContent = formatNominal(koinNUData.totalHonorPC);
+            document.getElementById('m1a-total-ranting').textContent = formatNominal(koinNUData.totalDanaRanting);
+
+            // Update footer AKSI column visibility
+            document.getElementById('th-m1a-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
+            document.getElementById('tf-m1a-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
+        }
+
+        // ===================================
+        // --- MODUL 2 LOGIC: JURNAL UMUM ---
+        // ===================================
+        function deleteManualTxn(index) {
+            if (!isLoggedIn) return;
+            if (confirm(`Yakin ingin menghapus transaksi manual #${index + 1}?`)) {
+                // Find the transaction object in the filtered list
+                const filteredTx = getFilteredM2ManualTransactions()[index]; 
+                // Find the index of that object in the main array (m2ManualTransactions)
+                const originalIndex = m2ManualTransactions.findIndex(t => t === filteredTx); 
+                
+                if (originalIndex > -1) {
+                    m2ManualTransactions.splice(originalIndex, 1);
+                    recalculateAllReports();
+                } else {
+                    alert("Error: Transaksi tidak ditemukan di data utama.");
+                }
+            }
+        }
+
+        function editManualTxn(index) {
+            if (!isLoggedIn) return;
+            // Find the transaction object in the filtered list
+            const filteredTx = getFilteredM2ManualTransactions()[index]; 
+            // Find the index of that object in the main array (m2ManualTransactions)
+            const originalIndex = m2ManualTransactions.findIndex(t => t === filteredTx); 
+            
+            if (originalIndex > -1) {
+                const tx = m2ManualTransactions[originalIndex];
+                document.getElementById('m2-tanggal-input').value = tx.date;
+                document.getElementById('m2-keterangan-input').value = tx.keterangan;
+                document.getElementById('m2-kategori-input').value = tx.kategori;
+                document.getElementById('m2-debit-input').value = tx.debit;
+                document.getElementById('m2-kredit-input').value = tx.kredit;
+                
+                m2ManualTransactions.splice(originalIndex, 1);
+                recalculateAllReports();
+                alert('Data dipindahkan ke form input. Silakan edit dan klik "Tambah Transaksi Lain" lagi.');
+            } else {
+                alert("Error: Transaksi tidak ditemukan di data utama.");
+            }
+        }
+        
+        function addManualTransaction() {
+            if (!isLoggedIn) return;
+            const date = document.getElementById('m2-tanggal-input').value;
+            const keterangan = document.getElementById('m2-keterangan-input').value.trim();
+            const kategori = document.getElementById('m2-kategori-input').value;
+            const debit = parseFloat(document.getElementById('m2-debit-input').value) || 0;
+            const kredit = parseFloat(document.getElementById('m2-kredit-input').value) || 0;
+
+            if (!date || !keterangan || !kategori || (debit === 0 && kredit === 0)) {
+                alert("Mohon isi Tanggal, Keterangan, Kategori, dan salah satu nominal (Debit/Kredit) dengan benar.");
+                return;
+            }
+            if (debit > 0 && kredit > 0) {
+                alert("Mohon isi hanya salah satu nominal: Debit (Masuk) atau Kredit (Keluar).");
+                return;
+            }
+
+            const newTransaction = { date, keterangan, kategori, debit, kredit, isAuto: false };
+            m2ManualTransactions.push(newTransaction);
+            clearManualTransactionInputs();
+            recalculateAllReports();
+        }
+
+        function clearManualTransactionInputs() {
+            if (!isLoggedIn) return;
+            document.getElementById('m2-tanggal-input').value = '';
+            document.getElementById('m2-keterangan-input').value = '';
+            document.getElementById('m2-kategori-input').value = '';
+            document.getElementById('m2-debit-input').value = '0';
+            document.getElementById('m2-kredit-input').value = '0';
+        }
+
+        function updateJurnalUmum() {
+            const transactionBody = document.getElementById('m2-transaction-body');
+            // Hapus semua baris transaksi kecuali baris Saldo Awal (yaitu baris 0)
+            while (transactionBody.rows.length > 1) { 
+                transactionBody.deleteRow(1);
+            }
+
+            // 1. Ambil Saldo Awal
+            const saldoAwalInput = document.getElementById('m2-saldo-awal-input');
+            let saldoAwal = parseInput('m2-saldo-awal-input'); 
+            let runningSaldo = saldoAwal;
+            document.getElementById('m2-saldo-awal-display').textContent = formatNominal(saldoAwal);
+            document.getElementById('m2-saldo-awal-static').textContent = formatNominal(saldoAwal);
+
+            // 2. Buat Transaksi Otomatis (Auto-Generated Transactions) - Fixed Order (Baris 2-5)
+            const koinNUData = getKoinNUAggregateData();
+            const totalNominalKoin = koinNUData.totalNominal;
+            const autoDate = null; // Tampil sebagai '-' di tabel
+
+            const autoTransactions = [];
+            if (totalNominalKoin > 0) {
+                autoTransactions.push({ date: autoDate, keterangan: 'Penerimaan Koin NU (100% dari Modul 1A)', kategori: 'Koin NU (Otomatis)', debit: totalNominalKoin, kredit: 0, isAuto: true });
+                autoTransactions.push({ date: autoDate, keterangan: 'Pengeluaran Honor Petugas (10%)', kategori: 'Honor Petugas (Otomatis)', debit: 0, kredit: koinNUData.totalHonorPetugas, isAuto: true });
+                autoTransactions.push({ date: autoDate, keterangan: 'Pengeluaran Honor MWC (25%)', kategori: 'Honor MWC (Otomatis)', debit: 0, kredit: koinNUData.totalHonorMWC, isAuto: true });
+                autoTransactions.push({ date: autoDate, keterangan: 'Pengeluaran Honor PC (5%)', kategori: 'Honor PC (Otomatis)', debit: 0, kredit: koinNUData.totalHonorPC, isAuto: true });
+            }
+
+            // 3. Urutkan Manual Transactions (SUDAH TERFILTER)
+            const sortedManualTransactions = getFilteredM2ManualTransactions();
+
+            // 4. Gabungkan Auto dan Manual Transactions (Fixed Order)
+            const allTransactions = [...autoTransactions, ...sortedManualTransactions];
+            
+            let totalMasuk = 0;
+            let totalKeluar = 0;
+            const aksiVisibilityStyle = isLoggedIn ? 'table-cell' : 'none';
+
+            // 5. Render All Transactions
+            allTransactions.forEach((t, index) => {
+                const no = index + 1;
+                const dateDisplay = t.date ? t.date : '-';
+                
+                runningSaldo += t.debit - t.kredit;
+                totalMasuk += t.debit;
+                totalKeluar += t.kredit;
+                
+                const actionButtons = t.isAuto ? '-' : `
+                    <button class="action-btn edit-btn" onclick="editManualTxn(${index - autoTransactions.length})">Ubah</button>
+                    <button class="action-btn delete-btn" onclick="deleteManualTxn(${index - autoTransactions.length})">Hapus</button>
+                `;
+                
+                const row = transactionBody.insertRow();
+                if (t.isAuto) { row.classList.add('auto-transaction-row'); }
+                row.innerHTML = `
+                    <td class="text-center">${no}</td>
+                    <td>${dateDisplay}</td>
+                    <td style="text-align: left;">${t.keterangan}</td>
+                    <td style="text-align: left;">${t.kategori}</td>
+                    <td class="text-right">${formatNominal(t.debit)}</td>
+                    <td class="text-right">${formatNominal(t.kredit)}</td>
+                    <td class="text-right">${formatNominal(runningSaldo)}</td>
+                    <td class="text-center" style="${aksiVisibilityStyle}">${actionButtons}</td>
+                `;
+            });
+
+            // 6. Update Footer
+            document.getElementById('m2-total-masuk').textContent = formatNominal(totalMasuk);
+            document.getElementById('m2-total-keluar').textContent = formatNominal(totalKeluar);
+            document.getElementById('m2-footer-saldo-total').textContent = formatNominal(runningSaldo);
+            
+            // Update header/footer AKSI column visibility
+            document.getElementById('th-m2-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
+            document.getElementById('tf-m2-aksi').style.display = isLoggedIn ? 'table-cell' : 'none';
+        }
+
+        // --- MODUL 1 & 3 LOGIC (Data Statis/Admin Input) ---
+        function gatherInputData() {
+            const data = [];
+            // Modul 3 data is not filtered by month, but by year (implicit in INITIAL_DATA_SOURCE)
+            initialData.forEach((monthData, index) => {
+                const prefix = `m1-${index}-`;
+                data.push({
+                    bulan: monthData.bulan,
+                    // Selalu baca dari input jika ada, jika tidak, gunakan default
+                    penerimaan: parseInput(prefix + 'penerimaan') || monthData.penerimaan,
+                    donatur: parseInput(prefix + 'donatur') || monthData.donatur,
+                    pendUang: parseInput(prefix + 'pendUang') || monthData.pendUang,
+                    pendPenerima: parseInput(prefix + 'pendPenerima') || monthData.pendPenerima,
+                    kesUang: parseInput(prefix + 'kesUang') || monthData.kesUang,
+                    kesPenerima: parseInput(prefix + 'kesPenerima') || monthData.kesPenerima,
+                    ekoUang: parseInput(prefix + 'ekoUang') || monthData.ekoUang,
+                    ekoPenerima: parseInput(prefix + 'ekoPenerima') || monthData.ekoPenerima,
+                    sosumUang: parseInput(prefix + 'sosumUang') || monthData.sosumUang,
+                    sosumPenerima: parseInput(prefix + 'sosumPenerima') || monthData.sosumPenerima,
+                    banomUang: parseInput(prefix + 'banomUang') || monthData.banomUang,
+                    banomPenerima: parseInput(prefix + 'banomPenerima') || monthData.banomPenerima,
+                    bencanaUang: parseInput(prefix + 'bencanaUang') || monthData.bencanaUang,
+                    bencanaPenerima: parseInput(prefix + 'bencanaPenerima') || monthData.bencanaPenerima,
+                    rapat: parseInput(prefix + 'rapat') || monthData.rapat,
+                    perwtnMlu: parseInput(prefix + 'perwtnMlu') || monthData.perwtnMlu,
+                    biayaBank: parseInput(prefix + 'biayaBank') || monthData.biayaBank,
+                    lainLain: parseInput(prefix + 'lainLain') || monthData.lainLain,
+                    honorWajibPercent: monthData.honorWajibPercent // Use the defined percentage
+                });
+            });
+            return data;
+        }
+
+        function calculateTotalNonHonorExpense(dataBulan) {
+            return dataBulan.pendUang + dataBulan.kesUang + dataBulan.ekoUang + dataBulan.sosumUang + dataBulan.banomUang + dataBulan.bencanaUang + dataBulan.rapat + dataBulan.perwtnMlu + dataBulan.biayaBank + dataBulan.lainLain;
+        }
+
+        function updateModul1() {
+            const inputBody = document.getElementById('m1-input-body');
+            inputBody.innerHTML = ''; 
+            const data = gatherInputData();
+
+            data.forEach((dataBulan, index) => {
+                const prefix = `m1-${index}-`;
+                const row = inputBody.insertRow();
+                
+                row.innerHTML = `
+                    <td class="text-center">${dataBulan.bulan.toUpperCase()}</td>
+                    <td><input type="number" id="${prefix}penerimaan" value="${dataBulan.penerimaan}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}donatur" value="${dataBulan.donatur}" min="0" oninput="recalculateAllReports()"></td>
+                    
+                    <td><input type="number" id="${prefix}pendUang" value="${dataBulan.pendUang}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}pendPenerima" value="${dataBulan.pendPenerima}" min="0" oninput="recalculateAllReports()"></td>
+                    
+                    <td><input type="number" id="${prefix}kesUang" value="${dataBulan.kesUang}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}kesPenerima" value="${dataBulan.kesPenerima}" min="0" oninput="recalculateAllReports()"></td>
+
+                    <td><input type="number" id="${prefix}ekoUang" value="${dataBulan.ekoUang}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}ekoPenerima" value="${dataBulan.ekoPenerima}" min="0" oninput="recalculateAllReports()"></td>
+
+                    <td><input type="number" id="${prefix}sosumUang" value="${dataBulan.sosumUang}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}sosumPenerima" value="${dataBulan.sosumPenerima}" min="0" oninput="recalculateAllReports()"></td>
+                    
+                    <td><input type="number" id="${prefix}banomUang" value="${dataBulan.banomUang}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}banomPenerima" value="${dataBulan.banomPenerima}" min="0" oninput="recalculateAllReports()"></td>
+                    
+                    <td><input type="number" id="${prefix}bencanaUang" value="${dataBulan.bencanaUang}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}bencanaPenerima" value="${dataBulan.bencanaPenerima}" min="0" oninput="recalculateAllReports()"></td>
+                    
+                    <td><input type="number" id="${prefix}rapat" value="${dataBulan.rapat}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}perwtnMlu" value="${dataBulan.perwtnMlu}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}biayaBank" value="${dataBulan.biayaBank}" min="0" oninput="recalculateAllReports()"></td>
+                    <td><input type="number" id="${prefix}lainLain" value="${dataBulan.lainLain}" min="0" oninput="recalculateAllReports()"></td>
+                `;
+            });
+        }
+
+        function updateLaporanTahunan() {
+            const tableBody = document.getElementById('m3-data-body');
+            tableBody.innerHTML = '';
+            
+            const data = gatherInputData();
+            let runningSaldoKas = 0;
+            const saldoBankAwal = parseInput('saldo-bank-awal-input');
+            const saldoTunaiAwal = parseInput('saldo-tunai-awal-input');
+
+            let totalPenerimaanTahunan = 0;
+            let totalDonaturTahunan = 0;
+            let totalPengeluaranTahunan = 0;
+            let totalHonorTahunan = 0;
+            let totalPendUangTahunan = 0;
+            let totalPendPnmTahunan = 0;
+            let totalKesUangTahunan = 0;
+            let totalKesPnmTahunan = 0;
+            let totalEkoUangTahunan = 0;
+            let totalEkoPnmTahunan = 0;
+            let totalSosumUangTahunan = 0;
+            let totalSosumPnmTahunan = 0;
+            let totalBanomUangTahunan = 0;
+            let totalBanomPnmTahunan = 0;
+            let totalBencanaUangTahunan = 0;
+            let totalBencanaPnmTahunan = 0;
+            let totalRapatTahunan = 0;
+            let totalPerwtnTahunan = 0;
+            let totalBankTahunan = 0;
+            let totalLainTahunan = 0;
+
+            // Baris 1: SALDO KAS BANK (Awal Tahun)
+            runningSaldoKas += saldoBankAwal;
+            let rowBank = tableBody.insertRow();
+            rowBank.classList.add('saldo-awal-row');
+            const bankSaldoContent = isLoggedIn ? `<input type="number" id="saldo-bank-awal-input" value="${saldoBankAwal}" min="0" oninput="recalculateAllReports()" style="width: 100%; font-size: 11px; text-align: right;">` : formatNominal(saldoBankAwal);
+            rowBank.innerHTML = `
+                <td>-</td>
+                <td>SALDO KAS BANK (Awal Tahun)</td>
+                <td class="text-right">${bankSaldoContent}</td>
+                <td class="text-right">-</td>
+                <td colspan="16">-</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right">-</td>
+                <td class="text-right">${formatNominal(saldoBankAwal)}</td>
+            `;
+
+            // Baris 2: SALDO KAS TUNAI (Awal Tahun)
+            runningSaldoKas += saldoTunaiAwal;
+            let rowTunai = tableBody.insertRow();
+            rowTunai.classList.add('saldo-awal-row');
+            const tunaiSaldoContent = isLoggedIn ? `<input type="number" id="saldo-tunai-awal-input" value="${saldoTunaiAwal}" min="0" oninput="recalculateAllReports()" style="width: 100%; font-size: 11px; text-align: right;">` : formatNominal(saldoTunaiAwal);
+            rowTunai.innerHTML = `
+                <td>-</td>
+                <td>SALDO KAS TUNAI (Awal Tahun)</td>
+                <td class="text-right">${tunaiSaldoContent}</td>
+                <td class="text-right">-</td>
+                <td colspan="16">-</td>
+                <td>-</td>
+                <td>-</td>
+                <td class="text-right">${formatNominal(saldoTunaiAwal)}</td>
+                <td class="text-right">${formatNominal(runningSaldoKas)}</td>
+            `;
+
+            // Data Bulanan
+            data.forEach((dataBulan, index) => {
+                const no = index + 1;
+                const honorWajib = dataBulan.penerimaan * dataBulan.honorWajibPercent;
+                const totalPengeluaranNonHonor = calculateTotalNonHonorExpense(dataBulan);
+                const jmlPengeluaranBulanIni = honorWajib + totalPengeluaranNonHonor;
+                const saldoAkhirBulanIni = dataBulan.penerimaan - jmlPengeluaranBulanIni;
+                runningSaldoKas += saldoAkhirBulanIni;
+
+                // Akumulasi Total Tahunan
+                totalPenerimaanTahunan += dataBulan.penerimaan;
+                totalDonaturTahunan += dataBulan.donatur;
+                totalPengeluaranTahunan += jmlPengeluaranBulanIni;
+                totalHonorTahunan += honorWajib;
+                totalPendUangTahunan += dataBulan.pendUang;
+                totalPendPnmTahunan += dataBulan.pendPenerima;
+                totalKesUangTahunan += dataBulan.kesUang;
+                totalKesPnmTahunan += dataBulan.kesPenerima;
+                totalEkoUangTahunan += dataBulan.ekoUang;
+                totalEkoPnmTahunan += dataBulan.ekoPenerima;
+                totalSosumUangTahunan += dataBulan.sosumUang;
+                totalSosumPnmTahunan += dataBulan.sosumPenerima;
+                totalBanomUangTahunan += dataBulan.banomUang;
+                totalBanomPnmTahunan += dataBulan.banomPenerima;
+                totalBencanaUangTahunan += dataBulan.bencanaUang;
+                totalBencanaPnmTahunan += dataBulan.bencanaPenerima;
+                totalRapatTahunan += dataBulan.rapat;
+                totalPerwtnTahunan += dataBulan.perwtnMlu;
+                totalBankTahunan += dataBulan.biayaBank;
+                totalLainTahunan += dataBulan.lainLain;
+
+                const row = tableBody.insertRow();
+                row.innerHTML = `
+                    <td class="text-center">${no}</td>
+                    <td class="text-center">${dataBulan.bulan.toUpperCase()}</td>
+                    <td class="text-right">${formatNominal(dataBulan.penerimaan)}</td>
+                    <td class="text-center">${formatNominal(dataBulan.donatur)}</td>
+                    
+                    <td class="text-right">${formatNominal(dataBulan.pendUang)}</td>
+                    <td class="text-center">${formatNominal(dataBulan.pendPenerima)}</td>
+                    <td class="text-right">${formatNominal(dataBulan.kesUang)}</td>
+                    <td class="text-center">${formatNominal(dataBulan.kesPenerima)}</td>
+                    <td class="text-right">${formatNominal(dataBulan.ekoUang)}</td>
+                    <td class="text-center">${formatNominal(dataBulan.ekoPenerima)}</td>
+                    <td class="text-right">${formatNominal(dataBulan.sosumUang)}</td>
+                    <td class="text-center">${formatNominal(dataBulan.sosumPenerima)}</td>
+                    <td class="text-right">${formatNominal(dataBulan.banomUang)}</td>
+                    <td class="text-center">${formatNominal(dataBulan.banomPenerima)}</td>
+                    <td class="text-right">${formatNominal(dataBulan.bencanaUang)}</td>
+                    <td class="text-center">${formatNominal(dataBulan.bencanaPenerima)}</td>
+                    
+                    <td class="text-right">${formatNominal(dataBulan.rapat)}</td>
+                    <td class="text-right">${formatNominal(dataBulan.perwtnMlu)}</td>
+                    <td class="text-right">${formatNominal(dataBulan.biayaBank)}</td>
+                    <td class="text-right">${formatNominal(dataBulan.lainLain)}</td>
+                    
+                    <td class="text-right">${formatNominal(honorWajib)}</td>
+                    <td class="text-right">${formatNominal(jmlPengeluaranBulanIni)}</td>
+                    <td class="text-right">${formatNominal(saldoAkhirBulanIni)}</td>
+                    <td class="text-right">${formatNominal(runningSaldoKas)}</td>
+                `;
+            });
+
+            // Update Footer Total
+            document.getElementById('m3-total-penerimaan').textContent = formatNominal(totalPenerimaanTahunan);
+            document.getElementById('m3-total-donatur').textContent = formatNominal(totalDonaturTahunan);
+            document.getElementById('m3-total-pend-uang').textContent = formatNominal(totalPendUangTahunan);
+            document.getElementById('m3-total-pend-pnm').textContent = formatNominal(totalPendPnmTahunan);
+            document.getElementById('m3-total-kes-uang').textContent = formatNominal(totalKesUangTahunan);
+            document.getElementById('m3-total-kes-pnm').textContent = formatNominal(totalKesPnmTahunan);
+            document.getElementById('m3-total-eko-uang').textContent = formatNominal(totalEkoUangTahunan);
+            document.getElementById('m3-total-eko-pnm').textContent = formatNominal(totalEkoPnmTahunan);
+            document.getElementById('m3-total-sosum-uang').textContent = formatNominal(totalSosumUangTahunan);
+            document.getElementById('m3-total-sosum-pnm').textContent = formatNominal(totalSosumPnmTahunan);
+            document.getElementById('m3-total-banom-uang').textContent = formatNominal(totalBanomUangTahunan);
+            document.getElementById('m3-total-banom-pnm').textContent = formatNominal(totalBanomPnmTahunan);
+            document.getElementById('m3-total-bencana-uang').textContent = formatNominal(totalBencanaUangTahunan);
+            document.getElementById('m3-total-bencana-pnm').textContent = formatNominal(totalBencanaPnmTahunan);
+            document.getElementById('m3-total-rapat').textContent = formatNominal(totalRapatTahunan);
+            document.getElementById('m3-total-perwtn').textContent = formatNominal(totalPerwtnTahunan);
+            document.getElementById('m3-total-bank').textContent = formatNominal(totalBankTahunan);
+            document.getElementById('m3-total-lain').textContent = formatNominal(totalLainTahunan);
+            document.getElementById('m3-total-honor').textContent = formatNominal(totalHonorTahunan);
+            document.getElementById('m3-total-pengeluaran').textContent = formatNominal(totalPengeluaranTahunan);
+            document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(data[data.length - 1].penerimaan - (data[data.length - 1].penerimaan * data[data.length - 1].honorWajibPercent) - calculateTotalNonHonorExpense(data[data.length - 1])); // Saldo Akhir bulan terakhir
+            document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(runningSaldoKas);
+            
+            // Apply filtering for Modul 3 if required (based on currentFilterMonth/Year, though typically M3 is always annual)
+        }
+
+        // ===================================
+        // --- LOGIN LOGIC (ADMIN ONLY) ---
+        // ===================================
+        function checkLoginStatus() {
+            isLoggedIn = (localStorage.getItem('isLoggedIn') === 'true');
+        }
+
+        function handleLogin() {
+            const usernameInput = document.getElementById('username').value;
+            const passwordInput = document.getElementById('password').value;
+            const message = document.getElementById('login-message-bar');
+
+            if (usernameInput === USERNAME && passwordInput === PASSWORD) {
+                localStorage.setItem('isLoggedIn', 'true');
+                isLoggedIn = true;
+                message.textContent = 'Login Berhasil!';
+                setTimeout(renderAppView, 200);
+            } else {
+                // Pesan error diubah agar tidak memuat kredensial
+                message.textContent = 'Username atau Password salah! Hubungi Admin.';
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('isLoggedIn');
+            isLoggedIn = false;
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            renderAppView();
+        }
+        
+        function updateAdminViewVisibility(loggedIn) {
+            // 1. Toggle visibility of all admin-only elements (Input forms, Modul 1, Aksi buttons)
+            const adminElements = document.querySelectorAll('.admin-only');
+            adminElements.forEach(el => {
+                // Hapus inline style terlebih dahulu
+                el.style.display = ''; 
+
+                // Set inline style based on login status: 'block' or 'none'
+                el.style.display = loggedIn ? (el.tagName === 'DIV' || el.tagName === 'P' ? 'block' : 'table') : 'none';
+                if (el.tagName === 'TD' || el.tagName === 'TH') {
+                    el.style.display = loggedIn ? 'table-cell' : 'none';
+                }
+            });
+
+            // Handle visibility for TH/TD Aksi columns explicitly
+            const aksiHeaders = document.querySelectorAll('#th-m1a-aksi, #th-m2-aksi');
+            const aksiFooters = document.querySelectorAll('#tf-m1a-aksi, #tf-m2-aksi');
+            aksiHeaders.forEach(th => th.style.display = loggedIn ? 'table-cell' : 'none');
+            aksiFooters.forEach(td => td.style.display = loggedIn ? 'table-cell' : 'none');
+
+            // 2. Toggle visibility of login/logout bar content
+            const loginBar = document.getElementById('login-form-content-bar');
+            const logoutBar = document.getElementById('logout-form-content-bar');
+            const loginMessage = document.getElementById('login-message-bar');
+            if(loginBar && logoutBar) {
+                loginBar.style.display = loggedIn ? 'none' : 'flex';
+                logoutBar.style.display = loggedIn ? 'flex' : 'none';
+            }
+            if (!loggedIn) {
+                // Reset message on logout
+                loginMessage.textContent = '(Akses terbatas Admin)';
+                loginMessage.style.color = 'white';
+            }
+
+            // 3. Toggle Saldo Awal Input vs Static Display in Modul 2
+            const saldoInputContainer = document.getElementById('m2-saldo-awal-display-container');
+            const saldoStatic = document.getElementById('m2-saldo-awal-static');
+            if (saldoInputContainer && saldoStatic) {
+                if (loggedIn) {
+                    saldoInputContainer.style.display = 'block';
+                    saldoStatic.style.display = 'none';
+                } else {
+                    saldoInputContainer.style.display = 'none';
+                    saldoStatic.style.display = 'block';
+                }
+            }
+        }
+
+        // ===================================
+        // --- MAIN CONTROL FUNCTION ---
+        // ===================================
+        function recalculateAllReports() {
+            // 1. Update Modul 1A & Modul 2 (depends on each other's output)
+            updatePenerimaanDetail(); 
+            updateJurnalUmum();
+
+            // 2. Update Modul 1 (Input Agregat)
+            updateModul1();
+
+            // 3. Update Modul 3 (Laporan Tahunan)
+            updateLaporanTahunan();
+
+            // 4. Update Admin View visibility based on login status
+            updateAdminViewVisibility(isLoggedIn);
+        }
+
+        function renderAppView() {
+            // 1. Check Login Status
+            checkLoginStatus(); 
+
+            // 2. Populate Filters (always run)
+            populateFilters();
+
+            // 3. Render all modules (will automatically apply filters and login views)
+            recalculateAllReports();
+
+            // 4. Set Initial View (Modul 1A)
+            switchModule(activeModule);
+        }
+
+        function resetAllData() {
+            if (!isLoggedIn) return;
+            const confirmation = prompt("⚠️ PERHATIAN: Tindakan ini akan menghapus SEMUA data transaksi di Modul 1A dan Modul 2. Ketik 'KONFIRMASI RESET' untuk melanjutkan.");
+            if (confirmation === 'KONFIRMASI RESET') {
+                m1aTransactions = [];
+                m2ManualTransactions = [];
+                document.getElementById('m2-saldo-awal-input').value = 0;
+
+                // Reset all Modul 1 inputs to 0
+                document.querySelectorAll('#tabel-modul-1 input[type="number"]').forEach(input => input.value = 0);
+                document.getElementById('saldo-bank-awal-input').value = 0;
+                document.getElementById('saldo-tunai-awal-input').value = 0;
+
+                alert("✅ SEMUA data transaksi (Modul 1A & 2) dan input (Modul 1 & Saldo Awal) telah DIHAPUS dan direset ke 0.");
+                
+                // Reset filters to default (All Months, Current Year)
+                currentFilterMonth = 0;
+                currentFilterYear = CURRENT_YEAR;
+                populateFilters();
+                recalculateAllReports();
+            } else if (confirmation !== null) {
+                alert("Reset dibatalkan. Konfirmasi tidak sesuai.");
+            }
+        }
+
+
+        // --- ENTRY POINT ---
         document.addEventListener('DOMContentLoaded', () => {
-            initializeLaporan();
-            // Tampilkan Modul 1 secara default
-            showModule(1);
+            // Initialize data with dummy if local storage is empty
+            if (!localStorage.getItem('m1aTransactions')) {
+                // Dummy data for Koin NU Transactions
+                m1aTransactions = [
+                    { date: '2025-01-05', petugas: 'Pak Ali', noHp: '0812...', donatur: 'Jamaah Masjid', alamat: 'RT 01/RW 03', nominal: 1000000 },
+                    { date: '2025-01-10', petugas: 'Bu Siti', noHp: '0857...', donatur: 'Majelis Taklim', alamat: 'RT 05/RW 01', nominal: 2500000 },
+                    { date: '2025-02-15', petugas: 'Pak Ali', noHp: '0812...', donatur: 'Kas Panti', alamat: 'RT 02/RW 04', nominal: 500000 }
+                ];
+
+                // Dummy data for Manual Transactions
+                m2ManualTransactions = [
+                    { date: '2025-01-15', keterangan: 'Pengeluaran Santunan Pendidikan', kategori: 'Pendidikan (Lainnya)', debit: 0, kredit: 150000, isAuto: false },
+                    { date: '2025-01-20', keterangan: 'Penerimaan Sumbangan Kotak Amal Jumat', kategori: 'Infaq dan Shodaqoh', debit: 50000, kredit: 0, isAuto: false }
+                ];
+                
+                // Set initialData to localStorage if needed in a real app. For this demo, just keep initialData global.
+            } else {
+                // Load data from localStorage (optional in this context, but good practice)
+                // m1aTransactions = JSON.parse(localStorage.getItem('m1aTransactions'));
+                // m2ManualTransactions = JSON.parse(localStorage.getItem('m2ManualTransactions'));
+            }
+
+            renderAppView();
         });
+        
+        // Fungsionalitas simpan data ke localStorage untuk real-app
+        // window.onbeforeunload = function() {
+        //     localStorage.setItem('m1aTransactions', JSON.stringify(m1aTransactions));
+        //     localStorage.setItem('m2ManualTransactions', JSON.stringify(m2ManualTransactions));
+        // };
+
     </script>
 </body>
 </html>
