@@ -130,10 +130,13 @@
         #tabel-modul-3 th:nth-child(18), #tabel-modul-3 td:nth-child(18), /* PERWTN MLU */
         #tabel-modul-3 th:nth-child(19), #tabel-modul-3 td:nth-child(19), /* BIAYA REK BANK */
         #tabel-modul-3 th:nth-child(20), #tabel-modul-3 td:nth-child(20), /* Lain - Lain */
-        #tabel-modul-3 th:nth-child(21), #tabel-modul-3 td:nth-child(21), /* Honor Wajib */
-        #tabel-modul-3 th:nth-child(22), #tabel-modul-3 td:nth-child(22), /* JML Pengeluaran */
-        #tabel-modul-3 th:nth-child(23), #tabel-modul-3 td:nth-child(23), /* SALDO AKHIR */
-        #tabel-modul-3 th:nth-child(24), #tabel-modul-3 td:nth-child(24)  /* SALDO KAS */
+        /* START: NEW HONOR WAJIB (3 COLUMNS) & SHIFTED FINAL COLUMNS */
+        #tabel-modul-3 th:nth-child(21), #tabel-modul-3 td:nth-child(21), /* Honor Petugas (10%) */
+        #tabel-modul-3 th:nth-child(22), #tabel-modul-3 td:nth-child(22), /* Honor MWC (25%) */
+        #tabel-modul-3 th:nth-child(23), #tabel-modul-3 td:nth-child(23), /* Honor PC (5%) */
+        #tabel-modul-3 th:nth-child(24), #tabel-modul-3 td:nth-child(24), /* JML Pengeluaran (7) */
+        #tabel-modul-3 th:nth-child(25), #tabel-modul-3 td:nth-child(25), /* SALDO AKHIR */
+        #tabel-modul-3 th:nth-child(26), #tabel-modul-3 td:nth-child(26)  /* SALDO KAS */
         {
             min-width: 70px !important; 
             width: 70px !important; 
@@ -517,7 +520,7 @@
                             <th colspan="2">PENERIMAAN</th>
                             <th colspan="12">PENGELUARAN SOSIAL (JML UANG/JML PENERIMA)</th>
                             <th colspan="4">PENGELUARAN OPERASIONAL</th>
-                            <th rowspan="3" style="min-width: 70px;">Honor Wajib (40%)</th>
+                            <th colspan="3" style="min-width: 210px;">HONOR WAJIB</th>
                             <th rowspan="3" style="min-width: 70px;">JML PENGELUARAN (7)</th>
                             <th rowspan="3" style="min-width: 70px;">SALDO AKHIR BULAN INI (8)</th>
                             <th rowspan="3" style="min-width: 70px;">SALDO KAS TAHUN BERJALAN (9)</th>
@@ -535,6 +538,9 @@
                             <th rowspan="2">PERWTN MLU</th>
                             <th rowspan="2">BIAYA REK BANK</th>
                             <th rowspan="2">Lain - Lain</th>
+                            <th rowspan="2" style="min-width: 70px;">Petugas (10%)</th>
+                            <th rowspan="2" style="min-width: 70px;">MWC (25%)</th>
+                            <th rowspan="2" style="min-width: 70px;">PC (5%)</th>
                         </tr>
                         <tr>
                             <th style="min-width: 70px;">Jml Uang</th>
@@ -574,7 +580,9 @@
                             <td class="footer-total text-right" id="m3-total-perwtn">0</td>
                             <td class="footer-total text-right" id="m3-total-bank">0</td>
                             <td class="footer-total text-right" id="m3-total-lain">0</td>
-                            <td class="footer-total text-right" id="m3-total-honor">0</td>
+                            <td class="footer-total text-right" id="m3-total-honor-petugas">0</td>
+                            <td class="footer-total text-right" id="m3-total-honor-mwc">0</td>
+                            <td class="footer-total text-right" id="m3-total-honor-pc">0</td>
                             <td class="footer-total text-right" id="m3-total-pengeluaran">0</td>
                             <td class="footer-total text-right" id="m3-footer-saldo-akhir">0</td>
                             <td class="footer-total text-right" id="m3-footer-saldo-kas">0</td>
@@ -1202,13 +1210,17 @@
             const saldoBankAwal = parseInput('saldo-bank-awal-input');
             const saldoTunaiAwal = parseInput('saldo-tunai-awal-input');
             
-            // NEW: Variable to calculate the sum of Column 8 (Monthly Net Cash Flow)
             let totalSaldoAkhirBulanan = 0; 
 
             let totalPenerimaanTahunan = 0;
             let totalDonaturTahunan = 0;
             let totalPengeluaranTahunan = 0;
-            let totalHonorTahunan = 0;
+            
+            // Perubahan di sini: Total Honor Tahunan dipecah
+            let totalHonorPetugasTahunan = 0; 
+            let totalHonorMWCTahunan = 0;     
+            let totalHonorPCTahunan = 0;      
+            
             let totalPendUangTahunan = 0;
             let totalPendPnmTahunan = 0;
             let totalKesUangTahunan = 0;
@@ -1231,12 +1243,13 @@
             let rowBank = tableBody.insertRow();
             rowBank.classList.add('saldo-awal-row');
             const bankSaldoContent = isLoggedIn ? `<input type="number" id="saldo-bank-awal-input" value="${saldoBankAwal}" min="0" oninput="recalculateAllReports()" style="width: 100%; font-size: 11px; text-align: right;">` : formatNominal(saldoBankAwal);
+            // Tambah 2 colspan di sini karena ada 2 kolom baru (Petugas, MWC, PC)
             rowBank.innerHTML = `
                 <td>-</td>
                 <td>SALDO KAS BANK (Awal Tahun)</td>
                 <td class="text-right">${bankSaldoContent}</td>
                 <td class="text-right">-</td>
-                <td colspan="16">-</td>
+                <td colspan="19">-</td>
                 <td>-</td>
                 <td>-</td>
                 <td class="text-right">-</td>
@@ -1248,12 +1261,13 @@
             let rowTunai = tableBody.insertRow();
             rowTunai.classList.add('saldo-awal-row');
             const tunaiSaldoContent = isLoggedIn ? `<input type="number" id="saldo-tunai-awal-input" value="${saldoTunaiAwal}" min="0" oninput="recalculateAllReports()" style="width: 100%; font-size: 11px; text-align: right;">` : formatNominal(saldoTunaiAwal);
+            // Tambah 2 colspan di sini
             rowTunai.innerHTML = `
                 <td>-</td>
                 <td>SALDO KAS TUNAI (Awal Tahun)</td>
                 <td class="text-right">${tunaiSaldoContent}</td>
                 <td class="text-right">-</td>
-                <td colspan="16">-</td>
+                <td colspan="19">-</td>
                 <td>-</td>
                 <td>-</td>
                 <td class="text-right">-</td>
@@ -1263,20 +1277,29 @@
             // Data Bulanan
             data.forEach((dataBulan, index) => {
                 const no = index + 1;
-                const honorWajib = dataBulan.penerimaan * dataBulan.honorWajibPercent;
+                
+                // Perhitungan Honor Wajib dipecah
+                const honorPetugas = dataBulan.penerimaan * HONOR_RATES.petugas;
+                const honorMWC = dataBulan.penerimaan * HONOR_RATES.mwc;
+                const honorPC = dataBulan.penerimaan * HONOR_RATES.pc;
+                const honorWajib = honorPetugas + honorMWC + honorPC; // Total Honor Wajib (40%)
+
                 const totalPengeluaranNonHonor = calculateTotalNonHonorExpense(dataBulan);
                 const jmlPengeluaranBulanIni = honorWajib + totalPengeluaranNonHonor;
                 const saldoAkhirBulanIni = dataBulan.penerimaan - jmlPengeluaranBulanIni;
                 runningSaldoKas += saldoAkhirBulanIni;
                 
-                // NEW: Accumulate the monthly saldo (Column 8)
                 totalSaldoAkhirBulanan += saldoAkhirBulanIni;
 
-                // Akumulasi Total Tahunan
+                // Akumulasi Total Tahunan (Honor Wajib)
+                totalHonorPetugasTahunan += honorPetugas;
+                totalHonorMWCTahunan += honorMWC;
+                totalHonorPCTahunan += honorPC;
+
+                // Akumulasi Total Tahunan (Lainnya)
                 totalPenerimaanTahunan += dataBulan.penerimaan;
                 totalDonaturTahunan += dataBulan.donatur;
                 totalPengeluaranTahunan += jmlPengeluaranBulanIni;
-                totalHonorTahunan += honorWajib;
                 totalPendUangTahunan += dataBulan.pendUang;
                 totalPendPnmTahunan += dataBulan.pendPenerima;
                 totalKesUangTahunan += dataBulan.kesUang;
@@ -1319,7 +1342,10 @@
                     <td class="text-right">${formatNominal(dataBulan.biayaBank)}</td>
                     <td class="text-right">${formatNominal(dataBulan.lainLain)}</td>
                     
-                    <td class="text-right">${formatNominal(honorWajib)}</td>
+                    <td class="text-right">${formatNominal(honorPetugas)}</td>
+                    <td class="text-right">${formatNominal(honorMWC)}</td>
+                    <td class="text-right">${formatNominal(honorPC)}</td>
+                    
                     <td class="text-right">${formatNominal(jmlPengeluaranBulanIni)}</td>
                     <td class="text-right">${formatNominal(saldoAkhirBulanIni)}</td>
                     <td class="text-right">${formatNominal(runningSaldoKas)}</td>
@@ -1345,16 +1371,18 @@
             document.getElementById('m3-total-perwtn').textContent = formatNominal(totalPerwtnTahunan);
             document.getElementById('m3-total-bank').textContent = formatNominal(totalBankTahunan);
             document.getElementById('m3-total-lain').textContent = formatNominal(totalLainTahunan);
-            document.getElementById('m3-total-honor').textContent = formatNominal(totalHonorTahunan);
+            
+            // UPDATE: Footer Honor Wajib
+            document.getElementById('m3-total-honor-petugas').textContent = formatNominal(totalHonorPetugasTahunan);
+            document.getElementById('m3-total-honor-mwc').textContent = formatNominal(totalHonorMWCTahunan);
+            document.getElementById('m3-total-honor-pc').textContent = formatNominal(totalHonorPCTahunan);
+            
+            // Total Pengeluaran (7)
             document.getElementById('m3-total-pengeluaran').textContent = formatNominal(totalPengeluaranTahunan);
             
-            // MODIFIED: Use the sum of monthly saldos for the Column 8 total (Total Surplus/Defisit Tahunan)
+            // Kolom 8 & 9
             document.getElementById('m3-footer-saldo-akhir').textContent = formatNominal(totalSaldoAkhirBulanan);
-            
-            // This is the correct total running balance (Saldo Awal + Total Surplus/Defisit)
             document.getElementById('m3-footer-saldo-kas').textContent = formatNominal(runningSaldoKas);
-            
-            // Apply filtering for Modul 3 if required (based on currentFilterMonth/Year, though typically M3 is always annual)
         }
 
         // ===================================
