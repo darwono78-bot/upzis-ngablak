@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Laporan Keuangan Modul 1 (Revisi Lebar Kolom)</title>
+    <title>Laporan Keuangan Modul 1 (Koreksi Kerusakan File)</title>
     <style>
         /* ======================================= */
         /* === 1. STYLE UMUM DAN TABEL === */
@@ -21,7 +21,7 @@
             width: 100%; 
             border-collapse: collapse; 
             margin-bottom: 20px; 
-            table-layout: fixed; /* Membantu kontrol lebar kolom */
+            /* table-layout: fixed dihilangkan untuk stabilitas */
         }
         
         .input-table th, .input-table td { 
@@ -44,7 +44,7 @@
             text-align: center !important; 
         }
 
-        /* Input Styling */
+        /* Input Styling: Default */
         input[type="number"] { 
             padding: 2px; 
             border: 1px solid #ccc; 
@@ -52,38 +52,28 @@
             box-sizing: border-box; 
             font-size: 11px; 
             background-color: white;
-            /* width: 100% diatur di JS */
+            /* Lebar 100% diatur di JavaScript */
         }
 
         /* ======================================= */
-        /* === 2. REVISI CSS LEBAR KOLOM (Modul 1) === */
-        /* Permintaan: Samakan lebar kolom Operasional (Rapat, dsb) dengan Jml Uang */
+        /* === 2. KOREKSI CSS LEBAR KOLOM (Modul 1) === */
+        /* Menetapkan lebar minimum 90px untuk SEMUA KOLOM INPUT NOMINAL/UANG */
+        /* Daftar kolom input uang: 3, 5, 7, 9, 11, 13, 15, 17, 18, 19, 20 */
+        /* Kolom yang dilebarkan: Total Koin, 6x Jml Uang Sosial, 4x Operasional */
         /* ======================================= */
         
-        /* Menyesuaikan lebar kolom NO dan BULAN */
-        #tabel-modul-1 th:nth-child(1),
-        #tabel-modul-1 td:nth-child(1) {
-            width: 30px; /* NO */
-        }
-        #tabel-modul-1 th:nth-child(2),
-        #tabel-modul-1 td:nth-child(2) {
-            width: 70px; /* BULAN */
-        }
-
-
-        /* Menetapkan lebar minimum 90px untuk SEMUA KOLOM INPUT NOMINAL/UANG */
-        #tabel-modul-1 td:nth-child(3), /* Total Koin (Penerimaan) */
-        #tabel-modul-1 td:nth-child(5), /* Pend. Jml Uang */
-        #tabel-modul-1 td:nth-child(7), /* Kes. Jml Uang */
-        #tabel-modul-1 td:nth-child(9), /* Eko. Jml Uang */
-        #tabel-modul-1 td:nth-child(11), /* Sosum. Jml Uang */
-        #tabel-modul-1 td:nth-child(13), /* Banom. Jml Uang */
-        #tabel-modul-1 td:nth-child(15), /* Bencana. Jml Uang */
-        #tabel-modul-1 td:nth-child(17), /* Rapat (Operasional) */
-        #tabel-modul-1 td:nth-child(18), /* PERWTN MLU (Operasional) */
-        #tabel-modul-1 td:nth-child(19), /* BIAYA REK BANK (Operasional) */
-        #tabel-modul-1 td:nth-child(20), /* Lain - Lain (Operasional) */
-        /* Headers juga disesuaikan */
+        #tabel-modul-1 td:nth-child(3), 
+        #tabel-modul-1 td:nth-child(5), 
+        #tabel-modul-1 td:nth-child(7), 
+        #tabel-modul-1 td:nth-child(9), 
+        #tabel-modul-1 td:nth-child(11), 
+        #tabel-modul-1 td:nth-child(13), 
+        #tabel-modul-1 td:nth-child(15), 
+        #tabel-modul-1 td:nth-child(17), 
+        #tabel-modul-1 td:nth-child(18), 
+        #tabel-modul-1 td:nth-child(19), 
+        #tabel-modul-1 td:nth-child(20),
+        /* Header-nya juga disesuaikan */
         #tabel-modul-1 th:nth-child(3), 
         #tabel-modul-1 th:nth-child(5), 
         #tabel-modul-1 th:nth-child(7), 
@@ -98,6 +88,13 @@
         {
             min-width: 90px !important; 
         }
+        
+        /* Menyesuaikan lebar kolom NO, BULAN, dan kolom total agar tidak terlalu lebar */
+        #tabel-modul-1 td:nth-child(1), #tabel-modul-1 th:nth-child(1) { width: 30px; } /* NO */
+        #tabel-modul-1 td:nth-child(2), #tabel-modul-1 th:nth-child(2) { width: 70px; } /* BULAN */
+        #tabel-modul-1 td:nth-child(21), #tabel-modul-1 th:nth-child(21) { width: 100px; } /* JML PENGELUARAN */
+        #tabel-modul-1 td:nth-child(22), #tabel-modul-1 th:nth-child(22) { width: 100px; } /* SALDO AKHIR */
+        #tabel-modul-1 td:nth-child(23), #tabel-modul-1 th:nth-child(23) { width: 100px; } /* SALDO KAS */
 
     </style>
 </head>
@@ -173,7 +170,7 @@
             { bulan: 'Desember', penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0 }
         ];
 
-        // --- INITIALIZATION (Revisi Lebar Input 100% diterapkan di sini) ---
+        // --- INITIALIZATION ---
         function initializeLaporan() {
             const inputBody = document.getElementById('m1-input-body');
             
@@ -182,7 +179,7 @@
                 const prefix = `m1-${index}-`;
                 const row = inputBody.insertRow();
                 
-                // CRITICAL REVISION: style="width: 100%;" applied to all number inputs
+                // REVISI KRUSIAL: style="width: 100%;" memastikan input memenuhi lebar kolom 90px
                 row.innerHTML = `
                     <td class="text-center">${index + 1}</td>
                     <td class="text-center">${data.bulan.toUpperCase()}</td>
