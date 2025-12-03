@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Input & Laporan KOIN NU Paling Detail</title>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script> 
     <style>
         body { font-family: Arial, sans-serif; padding: 0 0 80px 0; background-color: #f8f9fa; margin: 0; }
         h1, h2 { color: #006400; margin: 15px 0 10px 0;}
@@ -306,13 +309,18 @@
         <div id="modul-1a-section" class="module-section">
             <h2>MODUL 1A: JURNAL PENERIMAAN KOIN NU DETAIL</h2>
             
-            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding: 5px; border-left: 5px solid #006400;">
-                <div style="flex-shrink: 0; font-weight: bold; color: #006400; font-size: 12px;">Filter:</div>
-                <div>
-                    <select id="filter-bulan-m1a" onchange="updateFilters(this.id, this.value)"></select>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                 <div style="display: flex; gap: 20px; align-items: center; padding: 5px; border-left: 5px solid #006400;">
+                    <div style="flex-shrink: 0; font-weight: bold; color: #006400; font-size: 12px;">Filter:</div>
+                    <div>
+                        <select id="filter-bulan-m1a" onchange="updateFilters(this.id, this.value)"></select>
+                    </div>
+                    <div>
+                        <select id="filter-tahun-m1a" onchange="updateFilters(this.id, this.value)"></select>
+                    </div>
                 </div>
-                <div>
-                    <select id="filter-tahun-m1a" onchange="updateFilters(this.id, this.value)"></select>
+                 <div style="font-size: 12px; font-style: italic; color: red;">
+                    <p id="firebase-status-m1a">Status: Menghubungkan ke Firebase...</p>
                 </div>
             </div>
             
@@ -393,13 +401,18 @@
         <div id="modul-2-section" class="module-section" style="display: none;">
             <h2>MODUL 2: JURNAL UMUM (Buku Kas)</h2>
             
-            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding: 5px; border-left: 5px solid #006400;">
-                <div style="flex-shrink: 0; font-weight: bold; color: #006400; font-size: 12px;">Filter:</div>
-                <div>
-                    <select id="filter-bulan-m2" onchange="updateFilters(this.id, this.value)"></select>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                 <div style="display: flex; gap: 20px; align-items: center; padding: 5px; border-left: 5px solid #006400;">
+                    <div style="flex-shrink: 0; font-weight: bold; color: #006400; font-size: 12px;">Filter:</div>
+                    <div>
+                        <select id="filter-bulan-m2" onchange="updateFilters(this.id, this.value)"></select>
+                    </div>
+                    <div>
+                        <select id="filter-tahun-m2" onchange="updateFilters(this.id, this.value)"></select>
+                    </div>
                 </div>
-                <div>
-                    <select id="filter-tahun-m2" onchange="updateFilters(this.id, this.value)"></select>
+                 <div style="font-size: 12px; font-style: italic; color: red;">
+                    <p id="firebase-status-m2">Status: Menghubungkan ke Firebase...</p>
                 </div>
             </div>
             
@@ -501,13 +514,18 @@
         <div id="modul-3-section" class="module-section" style="display: none;">
             <h2>MODUL 3: TAMPILAN LAPORAN TAHUNAN</h2>
             
-            <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 15px; padding: 5px; border-left: 5px solid #006400;">
-                <div style="flex-shrink: 0; font-weight: bold; color: #006400; font-size: 12px;">Filter:</div>
-                <div>
-                    <select id="filter-bulan-m3" onchange="updateFilters(this.id, this.value)"></select>
+             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                 <div style="display: flex; gap: 20px; align-items: center; padding: 5px; border-left: 5px solid #006400;">
+                    <div style="flex-shrink: 0; font-weight: bold; color: #006400; font-size: 12px;">Filter:</div>
+                    <div>
+                        <select id="filter-bulan-m3" onchange="updateFilters(this.id, this.value)"></select>
+                    </div>
+                    <div>
+                        <select id="filter-tahun-m3" onchange="updateFilters(this.id, this.value)"></select>
+                    </div>
                 </div>
-                <div>
-                    <select id="filter-tahun-m3" onchange="updateFilters(this.id, this.value)"></select>
+                 <div style="font-size: 12px; font-style: italic; color: red;">
+                    <p id="firebase-status-m3">Status: Menghubungkan ke Firebase...</p>
                 </div>
             </div>
             
@@ -684,10 +702,10 @@
 
     <div id="login-container-bar">
         <div id="login-form-content-bar" class="logged-out-view">
-            <label for="username">Username:</label>
-            <input type="text" id="username" value="admin">
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="">
             <label for="password">Password:</label>
-            <input type="password" id="password" value="lazisnu">
+            <input type="password" id="password" value="">
             <button onclick="login()">LOGIN (Admin)</button>
         </div>
         <div id="logout-form-content-bar" class="logged-in-view" style="display: none;">
@@ -698,15 +716,34 @@
     </div>
     
     <script>
+        // ===================================
+        // 2. KONFIGURASI FIREBASE (GANTI INI DENGAN DATA PROYEK ANDA)
+        // ===================================
+         const firebaseConfig = {
+            apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
+            authDomain: "upzis-ngablak.firebaseapp.com",
+            projectId: "upzis-ngablak",
+            storageBucket: "upzis-ngablak.firebasestorage.app",
+            messagingSenderId: "869549648344",
+            appId: "1:869549648344:web:a531a37cce3a87bb672aad"
+          };
+
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth(); // Inisialisasi Firebase Auth
+        // ===================================
+        
         // Global State
         let isLoggedIn = false;
         let currentFilterMonth = 0; // 0 for All Months, 1 for Jan, 2 for Feb...
         let currentFilterYear = new Date().getFullYear();
         let activeModule = 'modul-1a-section';
 
-        // Data Storage (will be loaded/saved from/to localStorage in a real app)
-        let m1aTransactions = [];
-        let m2ManualTransactions = [];
+        // Data Storage (DIUBAH UNTUK MENYIMPAN DATA DARI FIREBASE BERDASARKAN KEY ID)
+        let m1aData = {}; // Format: { firebaseKey: { date: '...', nominal: 1000000, ... }, ... }
+        let m2Data = {};  // Format: { firebaseKey: { date: '...', debit: 0, ... }, ... }
 
         // Fixed Ratios for Honor
         const HONOR_RATES = {
@@ -733,44 +770,94 @@
         }
 
         // ===================================
-        // --- LOGIN/LOGOUT LOGIC ---
+        // --- FIREBASE LISTENERS (Data Fetching) ---
         // ===================================
-        function checkLoginStatus() {
-            // Check session/localStorage for login status (simplified for this static demo)
-            isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'; 
-            updateAdminViewVisibility(isLoggedIn);
+        function startFirebaseListeners() {
+            // Listener for Modul 1A Transactions
+            db.ref('m1aTransactions').on('value', (snapshot) => {
+                m1aData = snapshot.val() || {};
+                console.log("Data M1A dimuat:", Object.keys(m1aData).length);
+                document.getElementById('firebase-status-m1a').textContent = `Status: ${Object.keys(m1aData).length} Transaksi dimuat.`;
+                recalculateAllReports();
+            }, (error) => {
+                console.error("Gagal memuat data M1A:", error);
+                document.getElementById('firebase-status-m1a').textContent = `Status: Error memuat data.`;
+            });
+
+            // Listener for Modul 2 Manual Transactions
+            db.ref('m2ManualTransactions').on('value', (snapshot) => {
+                m2Data = snapshot.val() || {};
+                console.log("Data M2 dimuat:", Object.keys(m2Data).length);
+                document.getElementById('firebase-status-m2').textContent = `Status: ${Object.keys(m2Data).length} Transaksi dimuat.`;
+                document.getElementById('firebase-status-m3').textContent = `Status: Data siap.`;
+                recalculateAllReports();
+            }, (error) => {
+                 console.error("Gagal memuat data M2:", error);
+                 document.getElementById('firebase-status-m2').textContent = `Status: Error memuat data.`;
+            });
+            
+            // Listener untuk status Autentikasi
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // User is signed in.
+                    console.log("User logged in:", user.email);
+                    updateAdminViewVisibility(true, user.email);
+                } else {
+                    // User is signed out.
+                    console.log("User logged out.");
+                    updateAdminViewVisibility(false);
+                }
+                recalculateAllReports();
+            });
         }
-
+        
+        // ===================================
+        // --- FIREBASE AUTHENTICATION LOGIC (BARU) ---
+        // ===================================
         function login() {
-            const user = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginMsg = document.getElementById('login-message-bar');
 
-            if (user === 'admin' && pass === 'lazisnu') { // Simple hardcoded login
-                isLoggedIn = true;
-                localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('loggedInUser', user);
-                document.getElementById('login-message-bar').textContent = '';
-                alert('Login Berhasil! Anda memiliki akses Admin.');
-                updateAdminViewVisibility(true);
-                recalculateAllReports(); // Recalculate and re-render after login
-            } else {
-                document.getElementById('login-message-bar').textContent = 'Login Gagal.';
-                isLoggedIn = false;
-                localStorage.setItem('isLoggedIn', 'false');
+            if (!email || !password) {
+                loginMsg.textContent = 'Mohon masukkan email dan password.';
+                return;
             }
+
+            loginMsg.textContent = 'Mencoba login...';
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Berhasil login. onAuthStateChanged akan menangani update UI
+                    loginMsg.textContent = 'Login Berhasil!';
+                    alert(`Login Berhasil! Anda memiliki akses Admin sebagai ${userCredential.user.email}.`);
+                })
+                .catch((error) => {
+                    // Gagal login
+                    const errorMessage = error.message;
+                    loginMsg.textContent = 'Login Gagal. Cek email/password Anda.';
+                    console.error("Login Error:", errorMessage);
+                    alert(`Login Gagal: ${errorMessage}`);
+                });
         }
 
         function logout() {
             if (confirm('Yakin ingin LOGOUT? Anda akan kehilangan akses Admin.')) {
-                isLoggedIn = false;
-                localStorage.setItem('isLoggedIn', 'false');
-                document.getElementById('login-message-bar').textContent = 'Anda telah logout.';
-                updateAdminViewVisibility(false);
-                recalculateAllReports(); // Recalculate and re-render after logout
+                auth.signOut()
+                    .then(() => {
+                        // Logout berhasil. onAuthStateChanged akan menangani update UI
+                        document.getElementById('login-message-bar').textContent = 'Anda telah logout.';
+                    })
+                    .catch((error) => {
+                        alert("Gagal logout: " + error.message);
+                    });
             }
         }
 
-        function updateAdminViewVisibility(loggedIn) {
+        // Fungsi yang diperbarui untuk mengambil status dari Firebase Auth
+        function updateAdminViewVisibility(loggedIn, userEmail = '') {
+            isLoggedIn = loggedIn;
+            
             const adminOnlyElements = document.querySelectorAll('.admin-only');
             const loggedInView = document.getElementById('logout-form-content-bar');
             const loggedOutView = document.getElementById('login-form-content-bar');
@@ -783,10 +870,11 @@
             if (loggedIn) {
                 loggedInView.style.display = 'flex';
                 loggedOutView.style.display = 'none';
-                loggedInUserDisplay.textContent = localStorage.getItem('loggedInUser') || 'Admin';
+                loggedInUserDisplay.textContent = userEmail || 'Admin';
             } else {
                 loggedInView.style.display = 'none';
                 loggedOutView.style.display = 'flex';
+                document.getElementById('login-message-bar').textContent = '';
             }
 
             // Toggle table column visibility (Aksi column)
@@ -814,34 +902,25 @@
         // --- MAIN CONTROL FUNCTION ---
         // ===================================
         function recalculateAllReports() {
-            // 1. Update Modul 1A & Modul 2 (depends on each other's output)
+            // Data akan dimuat otomatis oleh Firebase Listener, kita hanya perlu render ulang
             updatePenerimaanDetail();
             updateJurnalUmum();
-            
-            // 2. Update Modul 1 (Input Agregat)
-            updateModul1();
-            
-            // 3. Update Modul 3 (Laporan Tahunan)
+            updateModul1(); // Modul 1 masih menggunakan dummy/input
             updateLaporanTahunan();
-            
-            // 4. Update Admin View visibility based on login status
-            updateAdminViewVisibility(isLoggedIn);
+            updateAdminViewVisibility(auth.currentUser != null, auth.currentUser ? auth.currentUser.email : '');
         }
 
         function renderAppView() {
-            // 1. Check Login Status
-            checkLoginStatus(); 
-            // 2. Populate Filters (always run)
             populateFilters(); 
-            // 3. Render all modules (will automatically apply filters based on initial state)
-            switchModule(activeModule);
+            // onAuthStateChanged akan memanggil updateAdminViewVisibility & recalculateAllReports
+            switchModule(activeModule); 
         }
 
         // ===================================
         // --- FILTERING LOGIC ---
         // ===================================
         function populateFilters() {
-            const currentYear = new Date().getFullYear();
+             const currentYear = new Date().getFullYear();
             const years = [currentYear - 1, currentYear, currentYear + 1]; 
             const months = ['Semua Bulan', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
@@ -892,27 +971,43 @@
         }
 
         // ===================================
-        // --- DATA RETRIEVAL (Filtered) ---
+        // --- DATA RETRIEVAL (Filtered from Firebase Objects) ---
         // ===================================
         function getFilteredM1aTransactions() {
             const month = currentFilterMonth;
             const year = currentFilterYear;
 
-            let filtered = m1aTransactions.filter(t => new Date(t.date).getFullYear() === year);
+            // 1. Konversi objek data Firebase ke array, tambahkan ID
+            let arrayData = Object.keys(m1aData).map(key => ({
+                id: key, // Firebase unique key
+                ...m1aData[key]
+            }));
+            
+            // 2. Filter
+            let filtered = arrayData.filter(t => new Date(t.date).getFullYear() === year);
             if (month !== 0) {
                 filtered = filtered.filter(t => new Date(t.date).getMonth() === (month - 1));
             }
+            // 3. Sort
             return filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
         }
 
         function getFilteredM2ManualTransactions() {
             const month = currentFilterMonth;
             const year = currentFilterYear;
+            
+            // 1. Konversi objek data Firebase ke array, tambahkan ID
+            let arrayData = Object.keys(m2Data).map(key => ({
+                id: key, // Firebase unique key
+                ...m2Data[key]
+            }));
 
-            let filtered = m2ManualTransactions.filter(t => new Date(t.date).getFullYear() === year);
+            // 2. Filter
+            let filtered = arrayData.filter(t => new Date(t.date).getFullYear() === year);
             if (month !== 0) {
                 filtered = filtered.filter(t => new Date(t.date).getMonth() === (month - 1));
             }
+            // 3. Sort
             return filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
         }
 
@@ -920,7 +1015,7 @@
         // --- MODULE SWITCHING ---
         // ===================================
         function switchModule(moduleID) {
-            // Hide all modules
+             // Hide all modules
             document.querySelectorAll('.module-section').forEach(section => {
                 section.style.display = 'none';
             });
@@ -949,8 +1044,111 @@
         }
 
         // ===================================
-        // --- MODUL 1A LOGIC: PENERIMAAN KOIN NU ---
+        // --- MODUL 1A LOGIC: PENERIMAAN KOIN NU (CRUD KE FIREBASE) ---
         // ===================================
+        function deleteKoinNUTxn(index) {
+            if (!isLoggedIn) return;
+            if (confirm(`Yakin ingin menghapus transaksi Koin NU #${index + 1}?`)) {
+                const filteredTx = getFilteredM1aTransactions()[index];
+                const firebaseId = filteredTx.id; // Ambil ID Firebase
+
+                // HAPUS DARI FIREBASE
+                db.ref(`m1aTransactions/${firebaseId}`).remove()
+                    .then(() => {
+                        console.log("Transaksi Koin NU berhasil dihapus.");
+                        // onValue listener akan otomatis memanggil recalculateAllReports
+                    })
+                    .catch(error => {
+                        alert("Gagal menghapus data dari Firebase: " + error.message);
+                    });
+            }
+        }
+
+        function editKoinNUTxn(index) {
+            if (!isLoggedIn) return;
+            const filteredTx = getFilteredM1aTransactions()[index];
+            const firebaseId = filteredTx.id;
+
+            if (firebaseId) {
+                const tx = filteredTx;
+                document.getElementById('m1a-tanggal-input').value = tx.date;
+                document.getElementById('m1a-nama-petugas-input').value = tx.petugas;
+                document.getElementById('m1a-no-hp-input').value = tx.noHp;
+                document.getElementById('m1a-donatur-input').value = tx.donatur;
+                document.getElementById('m1a-alamat-input').value = tx.alamat;
+                document.getElementById('m1a-nominal-input').value = tx.nominal;
+
+                // HAPUS DARI FIREBASE setelah dipindahkan ke form
+                db.ref(`m1aTransactions/${firebaseId}`).remove()
+                     .then(() => {
+                        console.log("Transaksi Koin NU dipindahkan ke form & dihapus dari DB.");
+                        alert('Data dipindahkan ke form input. Silakan edit dan klik "Tambah Koin NU" lagi.');
+                     })
+                     .catch(error => {
+                         alert("Gagal memindahkan data dari Firebase: " + error.message);
+                     });
+                // onValue listener akan otomatis memanggil recalculateAllReports
+            } else {
+                alert("Error: ID Transaksi tidak ditemukan.");
+            }
+        }
+
+        function addKoinNUTransaction() {
+            if (!isLoggedIn) return;
+            const date = document.getElementById('m1a-tanggal-input').value;
+            const petugas = document.getElementById('m1a-nama-petugas-input').value.trim();
+            const noHp = document.getElementById('m1a-no-hp-input').value.trim();
+            const donatur = document.getElementById('m1a-donatur-input').value.trim();
+            const alamat = document.getElementById('m1a-alamat-input').value.trim();
+            const nominal = parseFloat(document.getElementById('m1a-nominal-input').value) || 0;
+
+            if (!date || !petugas || !nominal || nominal <= 0) {
+                alert("Mohon isi Tanggal, Nama Petugas, dan Nominal Koin NU dengan benar.");
+                return;
+            }
+
+            const newTransaction = { date, petugas, noHp, donatur, alamat, nominal, timestamp: firebase.database.ServerValue.TIMESTAMP };
+            
+            // SIMPAN KE FIREBASE
+            db.ref('m1aTransactions').push(newTransaction)
+                .then(() => {
+                    clearKoinNUInputs();
+                })
+                .catch(error => {
+                    alert("Gagal menyimpan data ke Firebase: " + error.message);
+                });
+            // onValue listener akan otomatis memanggil recalculateAllReports
+        }
+
+        function clearKoinNUInputs() {
+            if (!isLoggedIn) return;
+            document.getElementById('m1a-tanggal-input').value = '';
+            document.getElementById('m1a-nama-petugas-input').value = '';
+            document.getElementById('m1a-no-hp-input').value = '';
+            document.getElementById('m1a-donatur-input').value = '';
+            document.getElementById('m1a-alamat-input').value = '';
+            document.getElementById('m1a-nominal-input').value = '';
+        }
+
+        function resetAllData() {
+             if (!isLoggedIn) return;
+            if (confirm('APA ANDA YAKIN INGIN MENGHAPUS SEMUA DATA TRANSAKSI (Modul 1A dan Modul 2)? Tindakan ini TIDAK dapat dibatalkan.')) {
+                if (confirm('KONFIRMASI TERAKHIR: Menghapus semua data! Klik OK untuk melanjutkan.')) {
+                    // RESET DATA DI FIREBASE
+                    db.ref('m1aTransactions').set(null);
+                    db.ref('m2ManualTransactions').set(null);
+                    
+                    // Reset Saldo Awal
+                    document.getElementById('m2-saldo-awal-input').value = 0;
+                    document.getElementById('saldo-bank-awal-input').value = 0;
+                    document.getElementById('saldo-tunai-awal-input').value = 0;
+                    
+                    // onValue listener akan memanggil recalculateAllReports
+                    alert('Semua data transaksi berhasil dihapus dari Firebase. Saldo Awal juga telah direset ke 0.');
+                }
+            }
+        }
+        
         function updatePenerimaanDetail() {
             const tableBody = document.getElementById('m1a-transaction-body');
             tableBody.innerHTML = '';
@@ -1008,93 +1206,6 @@
             document.getElementById('th-m1a-aksi').style.display = aksiVisibilityStyle;
             document.getElementById('tf-m1a-aksi').style.display = aksiVisibilityStyle;
         }
-
-        function deleteKoinNUTxn(index) {
-            if (!isLoggedIn) return;
-            if (confirm(`Yakin ingin menghapus transaksi Koin NU #${index + 1}?`)) {
-                // Find the transaction object in the filtered list
-                const filteredTx = getFilteredM1aTransactions()[index];
-                // Find the index of that object in the main array (m1aTransactions)
-                const originalIndex = m1aTransactions.findIndex(t => t === filteredTx);
-
-                if (originalIndex > -1) {
-                    m1aTransactions.splice(originalIndex, 1);
-                    recalculateAllReports();
-                } else {
-                    alert("Error: Transaksi tidak ditemukan di data utama.");
-                }
-            }
-        }
-
-        function editKoinNUTxn(index) {
-            if (!isLoggedIn) return;
-            // Find the transaction object in the filtered list
-            const filteredTx = getFilteredM1aTransactions()[index];
-            // Find the index of that object in the main array (m1aTransactions)
-            const originalIndex = m1aTransactions.findIndex(t => t === filteredTx);
-
-            if (originalIndex > -1) {
-                const tx = m1aTransactions[originalIndex];
-                document.getElementById('m1a-tanggal-input').value = tx.date;
-                document.getElementById('m1a-nama-petugas-input').value = tx.petugas;
-                document.getElementById('m1a-no-hp-input').value = tx.noHp;
-                document.getElementById('m1a-donatur-input').value = tx.donatur;
-                document.getElementById('m1a-alamat-input').value = tx.alamat;
-                document.getElementById('m1a-nominal-input').value = tx.nominal;
-
-                m1aTransactions.splice(originalIndex, 1);
-                recalculateAllReports();
-
-                alert('Data dipindahkan ke form input. Silakan edit dan klik "Tambah Koin NU" lagi.');
-            } else {
-                alert("Error: Transaksi tidak ditemukan di data utama.");
-            }
-        }
-
-        function addKoinNUTransaction() {
-            if (!isLoggedIn) return;
-            const date = document.getElementById('m1a-tanggal-input').value;
-            const petugas = document.getElementById('m1a-nama-petugas-input').value.trim();
-            const noHp = document.getElementById('m1a-no-hp-input').value.trim();
-            const donatur = document.getElementById('m1a-donatur-input').value.trim();
-            const alamat = document.getElementById('m1a-alamat-input').value.trim();
-            const nominal = parseFloat(document.getElementById('m1a-nominal-input').value) || 0;
-
-            if (!date || !petugas || !nominal || nominal <= 0) {
-                alert("Mohon isi Tanggal, Nama Petugas, dan Nominal Koin NU dengan benar.");
-                return;
-            }
-
-            const newTransaction = { date, petugas, noHp, donatur, alamat, nominal };
-            m1aTransactions.push(newTransaction);
-            clearKoinNUInputs();
-            recalculateAllReports();
-        }
-
-        function clearKoinNUInputs() {
-            if (!isLoggedIn) return;
-            document.getElementById('m1a-tanggal-input').value = '';
-            document.getElementById('m1a-nama-petugas-input').value = '';
-            document.getElementById('m1a-no-hp-input').value = '';
-            document.getElementById('m1a-donatur-input').value = '';
-            document.getElementById('m1a-alamat-input').value = '';
-            document.getElementById('m1a-nominal-input').value = '';
-        }
-
-        function resetAllData() {
-             if (!isLoggedIn) return;
-            if (confirm('APA ANDA YAKIN INGIN MENGHAPUS SEMUA DATA TRANSAKSI (Modul 1A dan Modul 2)? Tindakan ini TIDAK dapat dibatalkan.')) {
-                if (confirm('KONFIRMASI TERAKHIR: Menghapus semua data! Klik OK untuk melanjutkan.')) {
-                    m1aTransactions = [];
-                    m2ManualTransactions = [];
-                    document.getElementById('m2-saldo-awal-input').value = 0;
-                    document.getElementById('saldo-bank-awal-input').value = 0;
-                    document.getElementById('saldo-tunai-awal-input').value = 0;
-                    recalculateAllReports();
-                    alert('Semua data transaksi berhasil dihapus. Saldo Awal juga telah direset ke 0.');
-                }
-            }
-        }
         
         function getKoinNUAggregateData() {
             const filteredTransactions = getFilteredM1aTransactions();
@@ -1115,46 +1226,50 @@
         }
 
         // ===================================
-        // --- MODUL 2 LOGIC: JURNAL UMUM ---
+        // --- MODUL 2 LOGIC: JURNAL UMUM (CRUD KE FIREBASE) ---
         // ===================================
         function deleteManualTxn(index) {
             if (!isLoggedIn) return;
             if (confirm(`Yakin ingin menghapus transaksi manual #${index + 1}?`)) {
-                // Find the transaction object in the filtered list
                 const filteredTx = getFilteredM2ManualTransactions()[index];
-                // Find the index of that object in the main array (m2ManualTransactions)
-                const originalIndex = m2ManualTransactions.findIndex(t => t === filteredTx);
+                const firebaseId = filteredTx.id; // Ambil ID Firebase
 
-                if (originalIndex > -1) {
-                    m2ManualTransactions.splice(originalIndex, 1);
-                    recalculateAllReports();
-                } else {
-                    alert("Error: Transaksi tidak ditemukan di data utama.");
-                }
+                // HAPUS DARI FIREBASE
+                db.ref(`m2ManualTransactions/${firebaseId}`).remove()
+                    .then(() => {
+                        console.log("Transaksi Manual berhasil dihapus.");
+                        // onValue listener akan otomatis memanggil recalculateAllReports
+                    })
+                    .catch(error => {
+                        alert("Gagal menghapus data dari Firebase: " + error.message);
+                    });
             }
         }
 
         function editManualTxn(index) {
             if (!isLoggedIn) return;
-            // Find the transaction object in the filtered list
             const filteredTx = getFilteredM2ManualTransactions()[index];
-            // Find the index of that object in the main array (m2ManualTransactions)
-            const originalIndex = m2ManualTransactions.findIndex(t => t === filteredTx);
+            const firebaseId = filteredTx.id;
 
-            if (originalIndex > -1) {
-                const tx = m2ManualTransactions[originalIndex];
+            if (firebaseId) {
+                const tx = filteredTx;
                 document.getElementById('m2-tanggal-input').value = tx.date;
                 document.getElementById('m2-keterangan-input').value = tx.keterangan;
                 document.getElementById('m2-kategori-input').value = tx.kategori;
                 document.getElementById('m2-debit-input').value = tx.debit;
                 document.getElementById('m2-kredit-input').value = tx.kredit;
 
-                m2ManualTransactions.splice(originalIndex, 1);
-                recalculateAllReports();
-
-                alert('Data dipindahkan ke form input. Silakan edit dan klik "Tambah Transaksi Lain" lagi.');
+                // HAPUS DARI FIREBASE setelah dipindahkan ke form
+                db.ref(`m2ManualTransactions/${firebaseId}`).remove()
+                    .then(() => {
+                        console.log("Transaksi Manual dipindahkan ke form & dihapus dari DB.");
+                        alert('Data dipindahkan ke form input. Silakan edit dan klik "Tambah Transaksi Lain" lagi.');
+                    })
+                    .catch(error => {
+                         alert("Gagal memindahkan data dari Firebase: " + error.message);
+                    });
             } else {
-                alert("Error: Transaksi tidak ditemukan di data utama.");
+                alert("Error: ID Transaksi tidak ditemukan.");
             }
         }
 
@@ -1171,10 +1286,17 @@
                 return;
             }
 
-            const newTransaction = { date, keterangan, kategori, debit, kredit, isAuto: false };
-            m2ManualTransactions.push(newTransaction);
-            clearManualTransactionInputs();
-            recalculateAllReports();
+            const newTransaction = { date, keterangan, kategori, debit, kredit, isAuto: false, timestamp: firebase.database.ServerValue.TIMESTAMP };
+            
+            // SIMPAN KE FIREBASE
+            db.ref('m2ManualTransactions').push(newTransaction)
+                .then(() => {
+                    clearManualTransactionInputs();
+                })
+                .catch(error => {
+                    alert("Gagal menyimpan data ke Firebase: " + error.message);
+                });
+            // onValue listener akan otomatis memanggil recalculateAllReports
         }
 
         function clearManualTransactionInputs() {
@@ -1212,16 +1334,15 @@
             document.getElementById('m2-saldo-awal-display').textContent = formatNominal(saldoAwal);
             document.getElementById('m2-saldo-awal-static').textContent = formatNominal(saldoAwal);
             
-            // FIX BARU: Sembunyikan sel aksi pada baris Saldo Awal saat log out
             const saldoAwalAksiTd = document.getElementById('td-m2-saldo-awal-aksi');
             if (saldoAwalAksiTd) {
                 saldoAwalAksiTd.style.display = aksiVisibilityStyle;
             }
             
-            // 2. Buat Transaksi Otomatis (Auto-Generated Transactions) - Fixed Order (Baris 2-5)
+            // 2. Buat Transaksi Otomatis (Auto-Generated Transactions)
             const koinNUData = getKoinNUAggregateData();
             const totalNominalKoin = koinNUData.totalNominal;
-            const autoDate = null; // Tampil sebagai '-' di tabel
+            const autoDate = null; 
             const autoTransactions = [];
 
             if (totalNominalKoin > 0) {
@@ -1231,10 +1352,10 @@
                 autoTransactions.push({ date: autoDate, keterangan: 'Pengeluaran Honor PC (5%)', kategori: 'Honor PC (Otomatis)', debit: 0, kredit: koinNUData.totalHonorPC, isAuto: true });
             }
 
-            // 3. Urutkan Manual Transactions (SUDAH TERFILTER)
+            // 3. Urutkan Manual Transactions (SUDAH TERFILTER dari getFilteredM2ManualTransactions)
             const sortedManualTransactions = getFilteredM2ManualTransactions();
 
-            // 4. Gabungkan Auto dan Manual Transactions (Fixed Order)
+            // 4. Gabungkan Auto dan Manual Transactions
             const allTransactions = [...autoTransactions, ...sortedManualTransactions];
 
             let totalMasuk = 0;
@@ -1248,9 +1369,12 @@
                 totalMasuk += t.debit;
                 totalKeluar += t.kredit;
 
+                // Index untuk delete/edit harus disesuaikan ke index di array manual
+                const manualIndex = index - autoTransactions.length; 
+                
                 const actionButtons = t.isAuto ? '-' : `
-                    <button class="action-btn edit-btn" onclick="editManualTxn(${index - autoTransactions.length})">Ubah</button>
-                    <button class="action-btn delete-btn" onclick="deleteManualTxn(${index - autoTransactions.length})">Hapus</button>
+                    <button class="action-btn edit-btn" onclick="editManualTxn(${manualIndex})">Ubah</button>
+                    <button class="action-btn delete-btn" onclick="deleteManualTxn(${manualIndex})">Hapus</button>
                 `;
 
                 const row = tableBody.insertRow();
@@ -1275,7 +1399,7 @@
         }
 
         // ===================================
-        // --- MODUL 3 LOGIC: LAPORAN TAHUNAN ---
+        // --- MODUL 3 & 1 LOGIC (Tidak Berubah, karena menggunakan data Agregat) ---
         // ===================================
 
         // Define initial data for Modul 1 (used for Laporan Tahunan aggregation)
@@ -1297,7 +1421,7 @@
         
         // This function gathers data from the Modul 1 input fields (if visible) or uses the initial data.
         function gatherInputData() {
-            // If logged out or in another module, use the fixed dummy data.
+             // If logged out or in another module, use the fixed dummy data.
             if (!isLoggedIn || activeModule !== 'modul-1-section') {
                 return initialModul1Data;
             }
@@ -1337,7 +1461,7 @@
         }
 
         function updateModul1() {
-            const inputBody = document.getElementById('m1-input-body');
+             const inputBody = document.getElementById('m1-input-body');
             inputBody.innerHTML = '';
             
             const data = gatherInputData();
@@ -1442,7 +1566,7 @@
         }
 
         function updateLaporanTahunan() {
-            const tableBody = document.getElementById('m3-data-body');
+             const tableBody = document.getElementById('m3-data-body');
             tableBody.innerHTML = '';
             
             // Get data from Modul 1 (or the inputs if on that module)
@@ -1493,7 +1617,8 @@
                 <td>SALDO KAS BANK (Awal Tahun)</td> 
                 <td class="text-right">${bankSaldoContent}</td> 
                 <td class="text-right">-</td> 
-                <td colspan="21">-</td> <td class="text-right">${formatNominal(saldoBankAwal)}</td> 
+                <td colspan="21">-</td> 
+                <td class="text-right">${formatNominal(saldoBankAwal)}</td> 
             `;
 
             // Baris 2: SALDO KAS TUNAI (Awal Tahun)
@@ -1508,7 +1633,8 @@
                 <td>SALDO KAS TUNAI (Awal Tahun)</td> 
                 <td class="text-right">${tunaiSaldoContent}</td> 
                 <td class="text-right">-</td> 
-                <td colspan="21">-</td> <td class="text-right">${formatNominal(runningSaldoKas)}</td> 
+                <td colspan="21">-</td> 
+                <td class="text-right">${formatNominal(runningSaldoKas)}</td> 
             `;
 
 
@@ -1621,37 +1747,10 @@
         // ===================================
 
         window.addEventListener('DOMContentLoaded', (event) => {
-            // Check if dummy data is needed (if not loaded from local storage)
-            // In a production app, this check would involve checking localStorage or a database
-            if (m1aTransactions.length === 0) { 
-                // Dummy data for Koin NU Transactions
-                m1aTransactions = [
-                    { date: '2025-01-01', petugas: 'Bpk. A', noHp: '0812...', donatur: 'Masyarakat', alamat: 'RT 01/RW 01', nominal: 1000000 },
-                    { date: '2025-01-05', petugas: 'Bpk. B', noHp: '0813...', donatur: 'Keluarga Bapak C', alamat: 'RT 02/RW 03', nominal: 500000 },
-                    { date: '2025-02-15', petugas: 'Pak Ali', noHp: '0812...', donatur: 'Kas Panti', alamat: 'RT 02/RW 04', nominal: 500000 }
-                ];
-
-                // Dummy data for Manual Transactions
-                m2ManualTransactions = [
-                    { date: '2025-01-15', keterangan: 'Pengeluaran Santunan Pendidikan', kategori: 'Pendidikan (Lainnya)', debit: 0, kredit: 150000, isAuto: false },
-                    { date: '2025-01-20', keterangan: 'Penerimaan Sumbangan Kotak Amal Jumat', kategori: 'Infaq dan Shodaqoh', debit: 50000, kredit: 0, isAuto: false }
-                ];
-                
-                // Set initialData to localStorage if needed in a real app. For this demo, just keep initialData global.
-            } else {
-                // Load data from localStorage (optional in this context, but good practice)
-                // m1aTransactions = JSON.parse(localStorage.getItem('m1aTransactions'));
-                // m2ManualTransactions = JSON.parse(localStorage.getItem('m2ManualTransactions'));
-            }
-
-            renderAppView();
+            startFirebaseListeners(); // Mulai mendengarkan data dari Firebase
+            renderAppView(); // Render tampilan awal
         });
         
-        // Fungsionalitas simpan data ke localStorage untuk real-app
-        // window.onbeforeunload = function() {
-        //     localStorage.setItem('m1aTransactions', JSON.stringify(m1aTransactions));
-        //     localStorage.setItem('m2ManualTransactions', JSON.stringify(m2ManualTransactions));
-        // };
     </script>
 </body>
 </html>
