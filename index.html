@@ -18,25 +18,22 @@
         #nav-menu li { margin-left: 20px; }
         #nav-menu button { background: none; color: white; border: none; padding: 8px 15px; cursor: pointer; }
         #nav-menu button.active { background-color: #004d00; border-radius: 5px; }
-        .module-section { margin: 20px; padding: 15px; border: 1px solid #ccc; background: white; }
+        .module-section { margin: 20px; padding: 15px; border: 1px solid #ccc; background: white; overflow-x: auto; }
         
-        /* CSS untuk Login Bar */
-        #login-container-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%; background-color: #e9ecef;
-            border-top: 1px solid #ccc; padding: 10px 20px; display: flex;
-            justify-content: space-between; align-items: center; box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
-        }
+        /* Login/Admin Styles */
+        #login-container-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #e9ecef; border-top: 1px solid #ccc; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
         #login-form-content-bar, #logout-form-content-bar { display: flex; align-items: center; gap: 10px; }
         .admin-only { display: none; }
+        
+        /* Table Styles */
         .text-right { text-align: right; }
         .text-center { text-align: center; }
         .saldo-awal-row { font-weight: bold; background-color: #f0f0f0; }
         .auto-transaction-row { background-color: #fffacd; }
         
-        /* Input/Table styles */
         input[type="text"], input[type="number"], input[type="date"], select { padding: 5px; margin-right: 5px; border: 1px solid #ccc; }
-        table { border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
+        table { border-collapse: collapse; margin-top: 10px; min-width: 1000px; }
+        th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; white-space: nowrap; }
         th { background-color: #f2f2f2; }
     </style>
 </head>
@@ -71,7 +68,6 @@
 
         <div id="modul-1a-section" class="module-section" style="display: block;">
             <h2>Modul 1A: Input Transaksi KOIN NU Rinci</h2>
-            
             <div id="m1a-input-form-container" class="admin-only" style="margin-bottom: 15px;">
                 <input type="date" id="m1a-tanggal-input" required>
                 <input type="text" id="m1a-nama-petugas-input" placeholder="Nama Petugas" required>
@@ -83,7 +79,7 @@
                 <button onclick="clearKoinNUInputs()">Clear Form</button>
             </div>
             
-            <table id="m1a-table" style="width: 100%; border-collapse: collapse;">
+            <table id="m1a-table" style="width: 100%;">
                 <thead>
                     <tr>
                         <th style="width: 30px;">No</th><th>Tanggal</th><th>Petugas</th><th>No. HP</th><th>Donatur</th><th>Alamat</th><th>Nominal</th>
@@ -111,15 +107,14 @@
             <div id="m2-input-form-container" class="admin-only" style="margin-bottom: 15px;">
                 <input type="date" id="m2-tanggal-input" required>
                 <input type="text" id="m2-keterangan-input" placeholder="Keterangan Transaksi" required>
-                <select id="m2-kategori-input" required>
-                    </select>
+                <select id="m2-kategori-input" required></select>
                 <input type="number" id="m2-debit-input" placeholder="Dana Masuk (Debit Rp)" min="0" value="0">
                 <input type="number" id="m2-kredit-input" placeholder="Dana Keluar (Kredit Rp)" min="0" value="0">
                 <button onclick="addManualTransaction()">Tambah Transaksi Lain</button>
                 <button onclick="clearManualTransactionInputs()">Clear Form</button>
             </div>
             
-            <table id="m2-table" style="width: 100%; border-collapse: collapse;">
+            <table id="m2-table" style="width: 100%;">
                 <thead>
                     <tr>
                         <th style="width: 30px;">No</th><th>Tanggal</th><th>Keterangan</th><th>Kategori</th>
@@ -153,12 +148,59 @@
         </div>
 
         <div id="modul-3-section" class="module-section" style="display: none;">
-            <h2>Modul 3: Laporan Tahunan</h2>
-            </div>
+            <h2>Modul 3: Laporan Tahunan (Tahun <span id="m3-tahun-display"></span>)</h2>
+            <table id="m3-table">
+                <thead>
+                    <tr>
+                        <th>Bulan</th><th>Penerimaan ZISWAF/Koin NU (Rp)</th>
+                        <th>Honor Wajib (40% Total Penerimaan)</th>
+                        <th colspan="2">Pendidikan (Dana/Penerima)</th>
+                        <th colspan="2">Kesehatan (Dana/Penerima)</th>
+                        <th colspan="2">Ekonomi Produktif (Dana/Penerima)</th>
+                        <th colspan="2">Sosial Umum (Dana/Penerima)</th>
+                        <th colspan="2">Banom/Organisasi (Dana/Penerima)</th>
+                        <th colspan="2">Bencana (Dana/Penerima)</th>
+                        <th>Biaya Rapat/Operasional</th>
+                        <th>Perawatan MLU/Inventaris</th>
+                        <th>Biaya Bank</th>
+                        <th>Lain-Lain</th>
+                        <th>Total Pengeluaran (Non-Honor)</th>
+                        <th>Saldo Akhir (Estimasi)</th>
+                    </tr>
+                </thead>
+                <tbody id="m3-report-body">
+                    </tbody>
+                <tfoot id="m3-report-footer">
+                    </tfoot>
+            </table>
+        </div>
 
         <div id="modul-1-section" class="module-section" style="display: none;">
             <h2>Modul 1: Input Data Agregat Bulanan (Manual)</h2>
-            </div>
+            <p>Data ini digunakan untuk Laporan Tahunan (Modul 3). **PENTING:** Modul ini independen dari Modul 1A/2.</p>
+            <table id="m1-input-table">
+                <thead>
+                    <tr>
+                        <th>No</th><th>Bulan</th>
+                        <th>Penerimaan ZISWAF/Koin NU (Rp)</th>
+                        <th>Jumlah Donatur/KK</th>
+                        <th colspan="2">Pendidikan (Dana/Penerima)</th>
+                        <th colspan="2">Kesehatan (Dana/Penerima)</th>
+                        <th colspan="2">Ekonomi Produktif (Dana/Penerima)</th>
+                        <th colspan="2">Sosial Umum (Dana/Penerima)</th>
+                        <th colspan="2">Banom/Organisasi (Dana/Penerima)</th>
+                        <th colspan="2">Bencana (Dana/Penerima)</th>
+                        <th>Biaya Rapat/Operasional</th>
+                        <th>Perawatan MLU/Inventaris</th>
+                        <th>Biaya Bank</th>
+                        <th>Lain-Lain</th>
+                        <th style="width: 80px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="m1-input-body">
+                    </tbody>
+            </table>
+        </div>
 
     </div>
 
@@ -222,68 +264,77 @@
         
         async function loadDataFromFirebase() {
             try {
-                const m1aSnapshot = await db.collection(M1A_COLLECTION).orderBy('date', 'asc').get();
+                // 1. Load M1A
+                const m1aSnapshot = await db.collection(M1A_COLLECTION).where('year', '==', currentFilterYear).orderBy('date', 'asc').get();
                 m1aTransactions = m1aSnapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
                     nominal: parseFloat(doc.data().nominal || 0)
                 }));
-
-                const m2Snapshot = await db.collection(M2_COLLECTION).orderBy('date', 'asc').get();
+                
+                // 2. Load M2
+                const m2Snapshot = await db.collection(M2_COLLECTION).where('year', '==', currentFilterYear).orderBy('date', 'asc').get();
                 m2ManualTransactions = m2Snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data(),
                     debit: parseFloat(doc.data().debit || 0),
                     kredit: parseFloat(doc.data().kredit || 0)
                 }));
-                
-                const m1Snapshot = await db.collection(M1_COLLECTION).orderBy('order', 'asc').get();
+
+                // 3. Load M1 (Laporan Tahunan - Agregat)
+                const m1Snapshot = await db.collection(M1_COLLECTION).where('year', '==', currentFilterYear).orderBy('order', 'asc').get();
+                const defaultInitialData = Array.from({ length: 12 }, (_, i) => ({ 
+                    bulan: months[i + 1], 
+                    order: i + 1, year: currentFilterYear, 
+                    penerimaan: 0, donatur: 0, pendUang: 0, pendPenerima: 0, 
+                    kesUang: 0, kesPenerima: 0, ekoUang: 0, ekoPenerima: 0, 
+                    sosumUang: 0, sosumPenerima: 0, banomUang: 0, banomPenerima: 0, 
+                    bencanaUang: 0, bencanaPenerima: 0, rapat: 0, perwtnMlu: 0, 
+                    biayaBank: 0, lainLain: 0, honorWajibPercent: 0.40,
+                    id: null // Tandai bahwa data ini belum disimpan
+                }));
+
                 if (!m1Snapshot.empty) {
-                    initialData = m1Snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data(),
-                        penerimaan: parseFloat(doc.data().penerimaan || 0),
-                        pendUang: parseFloat(doc.data().pendUang || 0),
-                        kesUang: parseFloat(doc.data().kesUang || 0),
-                        ekoUang: parseFloat(doc.data().ekoUang || 0),
-                        sosumUang: parseFloat(doc.data().sosumUang || 0),
-                        banomUang: parseFloat(doc.data().banomUang || 0),
-                        bencanaUang: parseFloat(doc.data().bencanaUang || 0),
-                        rapat: parseFloat(doc.data().rapat || 0),
-                        perwtnMlu: parseFloat(doc.data().perwtnMlu || 0),
-                        biayaBank: parseFloat(doc.data().biayaBank || 0),
-                        lainLain: parseFloat(doc.data().lainLain || 0),
-                        honorWajibPercent: parseFloat(doc.data().honorWajibPercent || 0.40),
-                        year: doc.data().year || new Date().getFullYear(),
-                        // Pastikan semua field numerik di-parse
-                    }));
+                    const fetchedDataMap = m1Snapshot.docs.reduce((acc, doc) => {
+                        const data = doc.data();
+                        // Pastikan semua field nominal di-parse
+                        acc[data.order] = {
+                            id: doc.id,
+                            ...data,
+                            penerimaan: parseFloat(data.penerimaan || 0),
+                            pendUang: parseFloat(data.pendUang || 0),
+                            kesUang: parseFloat(data.kesUang || 0),
+                            ekoUang: parseFloat(data.ekoUang || 0),
+                            sosumUang: parseFloat(data.sosumUang || 0),
+                            banomUang: parseFloat(data.banomUang || 0),
+                            bencanaUang: parseFloat(data.bencanaUang || 0),
+                            rapat: parseFloat(data.rapat || 0),
+                            perwtnMlu: parseFloat(data.perwtnMlu || 0),
+                            biayaBank: parseFloat(data.biayaBank || 0),
+                            lainLain: parseFloat(data.lainLain || 0),
+                            honorWajibPercent: parseFloat(data.honorWajibPercent || 0.40)
+                        };
+                        return acc;
+                    }, {});
+
+                    // Merge default data with fetched data
+                    initialData = defaultInitialData.map(def => fetchedDataMap[def.order] || def);
+
                 } else {
-                    initialData = Array.from({ length: 12 }, (_, i) => ({ 
-                        bulan: months[i + 1], 
-                        order: i + 1, year: currentFilterYear, 
-                        penerimaan: 0, donatur: 0, 
-                        pendUang: 0, pendPenerima: 0, 
-                        kesUang: 0, kesPenerima: 0, 
-                        ekoUang: 0, ekoPenerima: 0, 
-                        sosumUang: 0, sosumPenerima: 0, 
-                        banomUang: 0, banomPenerima: 0, 
-                        bencanaUang: 0, bencanaPenerima: 0, 
-                        rapat: 0, perwtnMlu: 0, biayaBank: 0, lainLain: 0, 
-                        honorWajibPercent: 0.40 
-                    }));
+                    initialData = defaultInitialData;
                 }
+
             } catch (error) {
                 console.error("Error loading data from Firebase:", error);
-                // Non-fatal error jika user belum login
             }
         }
 
         // ===================================
-        // --- UTILITY & FILTERING LOGIC (DIPERBAIKI) ---
+        // --- UTILITY & FILTERING LOGIC ---
         // ===================================
         
         function formatNominal(number) {
-            if (typeof number !== 'number') return '0';
+            if (typeof number !== 'number' || isNaN(number)) return '0';
             return number.toLocaleString('id-ID');
         }
 
@@ -307,7 +358,6 @@
             return filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
         }
 
-        // FUNGSI INI WAJIB ADA DI GLOBAL SCOPE
         function switchModule(moduleID) {
             document.querySelectorAll('.module-section').forEach(section => { section.style.display = 'none'; });
             document.querySelectorAll('#nav-menu button').forEach(button => { button.classList.remove('active'); });
@@ -316,7 +366,6 @@
             recalculateAllReports();
         }
 
-        // FUNGSI INI WAJIB ADA DI GLOBAL SCOPE
         function populateFilters() {
             const monthSelects = document.querySelectorAll('[id^="filter-bulan-"]');
             monthSelects.forEach(select => {
@@ -341,18 +390,20 @@
                 }
             });
 
-            // Set current filters to the current global state
             monthSelects.forEach(select => select.value = currentFilterMonth);
             yearSelects.forEach(select => select.value = currentFilterYear);
         }
 
-        // FUNGSI INI WAJIB ADA DI GLOBAL SCOPE
-        function updateFilters(id, value) {
+        async function updateFilters(id, value) {
             const val = parseInt(value);
             if (id.includes('bulan')) {
                 currentFilterMonth = val;
             } else if (id.includes('tahun')) {
                 currentFilterYear = val;
+                // Re-load data when year changes
+                if (isLoggedIn) {
+                    await loadDataFromFirebase();
+                }
             }
             const targetPrefix = id.includes('bulan') ? 'filter-bulan-' : 'filter-tahun-';
             document.querySelectorAll(`[id^="${targetPrefix}"]`).forEach(select => {
@@ -362,32 +413,9 @@
         }
         
         // ===================================
-        // --- CRUD LOGIC (SIMPLIFIED FOR LENGTH) ---
+        // --- MODUL 1A & 2 LOGIC (Data Flow 1A -> 2) ---
         // ===================================
-
-        async function addKoinNUTransaction() {
-            if (!isLoggedIn) return alert('Anda harus login sebagai Admin untuk menambah data.');
-            // [.. Logika ambil input, validasi ..]
-            const newTx = { /* ... */ };
-            try {
-                await db.collection(M1A_COLLECTION).add(newTx);
-                alert('Transaksi Koin NU berhasil ditambahkan ke Firebase!');
-                await loadDataFromFirebase();
-                recalculateAllReports();
-            } catch (error) { console.error("Error: ", error); alert("Gagal menambahkan."); }
-        }
         
-        // ... (deleteKoinNUTxn, editKoinNUTxn, clearKoinNUInputs) ...
-        function clearKoinNUInputs() { /* ... */ }
-        function addManualTransaction() { /* ... */ }
-        function clearManualTransactionInputs() { /* ... */ }
-        function deleteKoinNUTxn(docId) { /* ... */ }
-        function editKoinNUTxn(docId) { /* ... */ }
-        function deleteManualTxn(docId) { /* ... */ }
-        function editManualTxn(docId) { /* ... */ }
-        function parseInput(id) { /* ... */ return 0; }
-        function saveModul1Data(monthData) { /* ... */ }
-
         function getKoinNUAggregateData() {
             const filtered = getFilteredM1aTransactions();
             const totalNominal = filtered.reduce((sum, t) => sum + t.nominal, 0);
@@ -398,11 +426,8 @@
             return { totalNominal, totalHonorPetugas, totalHonorMWC, totalHonorPC, totalRanting };
         }
 
-        // ===================================
-        // --- RENDERING LOGIC (DIPERBAIKI) ---
-        // ===================================
-
         function updatePenerimaanDetail() {
+            // ... (Logic untuk render table M1A dari m1aTransactions) ...
             const tableBody = document.getElementById('m1a-transaction-body');
             tableBody.innerHTML = '';
             const filtered = getFilteredM1aTransactions();
@@ -411,7 +436,6 @@
 
             filtered.forEach((tx, index) => {
                 const row = tableBody.insertRow();
-                // Honor Otomatis dihitung per baris (Logika Hardcoded Asli)
                 const honorPetugas = tx.nominal * 0.10;
                 const honorMWC = tx.nominal * 0.25;
                 const honorPC = tx.nominal * 0.05;
@@ -447,8 +471,8 @@
             document.getElementById('tf-m1a-aksi').style.display = aksiVisibilityStyle;
         }
 
-
         function updateJurnalUmum() {
+            // ... (Logic untuk render table M2 dari m2ManualTransactions + 4 auto transactions) ...
             const tableBody = document.getElementById('m2-transaction-body');
             const rowsToRemove = tableBody.querySelectorAll('tr:not(.saldo-awal-row)');
             rowsToRemove.forEach(row => row.remove());
@@ -462,21 +486,29 @@
             const saldoAwalAksiTd = document.getElementById('td-m2-saldo-awal-aksi');
             if (saldoAwalAksiTd) { saldoAwalAksiTd.style.display = aksiVisibilityStyle; }
 
-            // Logika Honor Otomatis (Persis Logika Hardcoded Anda)
             const koinNUData = getKoinNUAggregateData();
             const totalNominalKoin = koinNUData.totalNominal;
             const autoTransactions = [];
             
             if (totalNominalKoin > 0) {
-                // Logika: Penerimaan 100% Koin NU masuk Debit, lalu 3 pengeluaran Honor/MWC/PC keluar Kredit. Sisanya (Ranting) menjadi Saldo.
-                autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Penerimaan Koin NU (100% dari Modul 1A)', kategori: 'Koin NU (Otomatis)', debit: totalNominalKoin, kredit: 0, isAuto: true });
-                autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Pengeluaran Honor Petugas (10%)', kategori: 'Honor Petugas (Otomatis)', debit: 0, kredit: koinNUData.totalHonorPetugas, isAuto: true });
-                autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Pengeluaran Honor MWC (25%)', kategori: 'Honor MWC (Otomatis)', debit: 0, kredit: koinNUData.totalHonorMWC, isAuto: true });
-                autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Pengeluaran Honor PC (5%)', kategori: 'Honor PC (Otomatis)', debit: 0, kredit: koinNUData.totalHonorPC, isAuto: true });
+                autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Penerimaan Koin NU (100% dari Modul 1A)', kategori: 'Koin NU (Otomatis)', debit: totalNominalKoin, kredit: 0, isAuto: true, order: 1 });
+                autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Pengeluaran Honor Petugas (10%)', kategori: 'Honor Petugas (Otomatis)', debit: 0, kredit: koinNUData.totalHonorPetugas, isAuto: true, order: 2 });
+                autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Pengeluaran Honor MWC (25%)', kategori: 'Honor MWC (Otomatis)', debit: 0, kredit: koinNUData.totalHonorMWC, isAuto: true, order: 3 });
+                autoTransactions.push({ date: new Date().toISOString().split('T')[0], keterangan: 'Pengeluaran Honor PC (5%)', kategori: 'Honor PC (Otomatis)', debit: 0, kredit: koinNUData.totalHonorPC, isAuto: true, order: 4 });
             } 
             
             const sortedManualTransactions = getFilteredM2ManualTransactions();
-            const allTransactions = [...autoTransactions, ...sortedManualTransactions];
+            
+            // Gabungkan Transaksi Otomatis dan Manual, lalu urutkan Manual berdasarkan tanggal
+            const allTransactions = [
+                ...autoTransactions, 
+                ...sortedManualTransactions.map(tx => ({ ...tx, order: 5 })) // Beri order yang sama agar urut setelah auto transactions
+            ].sort((a, b) => {
+                if (a.isAuto && !b.isAuto) return -1;
+                if (!a.isAuto && b.isAuto) return 1;
+                return new Date(a.date) - new Date(b.date); // Urutkan manual transactions by date
+            });
+
 
             let totalMasuk = 0;
             let totalKeluar = 0;
@@ -513,42 +545,231 @@
             document.getElementById('tf-m2-aksi').style.display = aksiVisibilityStyle;
         }
 
-        function updateModul1() {
-            // Placeholder: Logika rendering Modul 1
+        // ===================================
+        // --- MODUL 1 LOGIC (CRUD Agregat) ---
+        // ===================================
+
+        function parseInput(id) {
+            const el = document.getElementById(id);
+            return el ? parseFloat(el.value) || 0 : 0;
         }
+
+        async function saveModul1Data(monthData) {
+            if (!isLoggedIn) return alert('Anda harus login sebagai Admin untuk menyimpan data.');
+            
+            const prefix = `m1-${monthData.order}-`;
+            
+            const updatedData = {
+                // Semua input harus diambil dari form
+                bulan: monthData.bulan,
+                order: monthData.order,
+                year: currentFilterYear, // Simpan dengan tahun aktif
+                penerimaan: parseInput(prefix + 'penerimaan'),
+                donatur: parseInput(prefix + 'donatur'),
+                pendUang: parseInput(prefix + 'pendUang'),
+                pendPenerima: parseInput(prefix + 'pendPenerima'),
+                kesUang: parseInput(prefix + 'kesUang'),
+                kesPenerima: parseInput(prefix + 'kesPenerima'),
+                ekoUang: parseInput(prefix + 'ekoUang'),
+                ekoPenerima: parseInput(prefix + 'ekoPenerima'),
+                sosumUang: parseInput(prefix + 'sosumUang'),
+                sosumPenerima: parseInput(prefix + 'sosumPenerima'),
+                banomUang: parseInput(prefix + 'banomUang'),
+                banomPenerima: parseInput(prefix + 'banomPenerima'),
+                bencanaUang: parseInput(prefix + 'bencanaUang'),
+                bencanaPenerima: parseInput(prefix + 'bencanaPenerima'),
+                rapat: parseInput(prefix + 'rapat'),
+                perwtnMlu: parseInput(prefix + 'perwtnMlu'),
+                biayaBank: parseInput(prefix + 'biayaBank'),
+                lainLain: parseInput(prefix + 'lainLain'),
+                honorWajibPercent: 0.40, 
+            };
+            
+            try {
+                if (monthData.id) {
+                    await db.collection(M1_COLLECTION).doc(monthData.id).update(updatedData);
+                } else {
+                    await db.collection(M1_COLLECTION).add(updatedData);
+                }
+
+                alert(`Data Agregat Bulan ${monthData.bulan} berhasil disimpan.`);
+                await loadDataFromFirebase(); // Reload untuk update initialData
+                recalculateAllReports();
+
+            } catch (error) {
+                console.error("Error saving Modul 1 data: ", error);
+                alert("Gagal menyimpan data agregat: " + error.message);
+            }
+        }
+
+        function updateModul1() {
+            const inputBody = document.getElementById('m1-input-body');
+            inputBody.innerHTML = '';
+            
+            // Filter Modul 1 tidak bergantung pada filter bulan, hanya filter tahun
+            const dataToRender = initialData.filter(d => d.year === currentFilterYear).length === 12 
+                               ? initialData.filter(d => d.year === currentFilterYear)
+                               : initialData; // Gunakan initialData default (12 bulan kosong)
+
+            const aksiVisibilityStyle = isLoggedIn ? '' : 'none';
+            const inputDisplay = isLoggedIn ? 'block' : 'none';
+            const staticDisplay = isLoggedIn ? 'none' : 'block';
+
+            dataToRender.forEach(data => {
+                const prefix = `m1-${data.order}-`;
+                const row = inputBody.insertRow();
+                
+                // Gunakan JSON.stringify dan penggantian &quot; untuk memastikan objek data yang kompleks dapat dilewatkan ke onclick
+                const saveFunctionCall = `saveModul1Data(${JSON.stringify(data).replace(/"/g, '&quot;')})`;
+                const actionButton = `<button onclick="${saveFunctionCall}" style="padding: 3px 8px; background-color: #007bff; color: white; border: none; cursor: pointer;">SIMPAN</button>`;
+                
+                row.innerHTML = `
+                    <td class="text-center">${data.order}</td>
+                    <td>${data.bulan}</td>
+                    
+                    <td><input type="number" id="${prefix}penerimaan" value="${data.penerimaan}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.penerimaan)}</span></td>
+                    <td><input type="number" id="${prefix}donatur" value="${data.donatur}" min="0" style="display: ${inputDisplay}; width: 60px;"> <span style="display: ${staticDisplay};">${formatNominal(data.donatur)}</span></td>
+                    
+                    <td><input type="number" id="${prefix}pendUang" value="${data.pendUang}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.pendUang)}</span></td>
+                    <td><input type="number" id="${prefix}pendPenerima" value="${data.pendPenerima}" min="0" style="display: ${inputDisplay}; width: 50px;"> <span style="display: ${staticDisplay};">${formatNominal(data.pendPenerima)}</span></td>
+                    
+                    <td><input type="number" id="${prefix}kesUang" value="${data.kesUang}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.kesUang)}</span></td>
+                    <td><input type="number" id="${prefix}kesPenerima" value="${data.kesPenerima}" min="0" style="display: ${inputDisplay}; width: 50px;"> <span style="display: ${staticDisplay};">${formatNominal(data.kesPenerima)}</span></td>
+                    
+                    <td><input type="number" id="${prefix}ekoUang" value="${data.ekoUang}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.ekoUang)}</span></td>
+                    <td><input type="number" id="${prefix}ekoPenerima" value="${data.ekoPenerima}" min="0" style="display: ${inputDisplay}; width: 50px;"> <span style="display: ${staticDisplay};">${formatNominal(data.ekoPenerima)}</span></td>
+
+                    <td><input type="number" id="${prefix}sosumUang" value="${data.sosumUang}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.sosumUang)}</span></td>
+                    <td><input type="number" id="${prefix}sosumPenerima" value="${data.sosumPenerima}" min="0" style="display: ${inputDisplay}; width: 50px;"> <span style="display: ${staticDisplay};">${formatNominal(data.sosumPenerima)}</span></td>
+                    
+                    <td><input type="number" id="${prefix}banomUang" value="${data.banomUang}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.banomUang)}</span></td>
+                    <td><input type="number" id="${prefix}banomPenerima" value="${data.banomPenerima}" min="0" style="display: ${inputDisplay}; width: 50px;"> <span style="display: ${staticDisplay};">${formatNominal(data.banomPenerima)}</span></td>
+                    
+                    <td><input type="number" id="${prefix}bencanaUang" value="${data.bencanaUang}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.bencanaUang)}</span></td>
+                    <td><input type="number" id="${prefix}bencanaPenerima" value="${data.bencanaPenerima}" min="0" style="display: ${inputDisplay}; width: 50px;"> <span style="display: ${staticDisplay};">${formatNominal(data.bencanaPenerima)}</span></td>
+                    
+                    <td><input type="number" id="${prefix}rapat" value="${data.rapat}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.rapat)}</span></td>
+                    <td><input type="number" id="${prefix}perwtnMlu" value="${data.perwtnMlu}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.perwtnMlu)}</span></td>
+                    <td><input type="number" id="${prefix}biayaBank" value="${data.biayaBank}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.biayaBank)}</span></td>
+                    <td><input type="number" id="${prefix}lainLain" value="${data.lainLain}" min="0" style="display: ${inputDisplay}; width: 80px;"> <span style="display: ${staticDisplay};">${formatNominal(data.lainLain)}</span></td>
+
+                    <td class="text-center" style="width: 100px; display: ${aksiVisibilityStyle};">${actionButton}</td>
+                `;
+            });
+        }
+
+
+        // ===================================
+        // --- MODUL 3 LOGIC (Laporan Tahunan) ---
+        // ===================================
 
         function updateLaporanTahunan() {
-            // Placeholder: Logika rendering Modul 3
+            // Logika Modul 3 adalah aggregasi tahunan dari data Modul 1 (initialData)
+            const reportBody = document.getElementById('m3-report-body');
+            const reportFooter = document.getElementById('m3-report-footer');
+            const yearDisplay = document.getElementById('m3-tahun-display');
+            reportBody.innerHTML = '';
+            reportFooter.innerHTML = '';
+
+            yearDisplay.textContent = currentFilterYear;
+            const dataForReport = initialData.filter(d => d.year === currentFilterYear);
+            
+            if (dataForReport.length === 0) {
+                 // Gunakan data default jika belum ada data untuk tahun ini (meski sudah dicover di loadData)
+                 reportFooter.innerHTML = `<tr><td colspan="22" class="text-center">Tidak ada data agregat untuk tahun ${currentFilterYear}. Silakan input di Modul 1.</td></tr>`;
+                 return;
+            }
+
+            let totalPenerimaan = 0;
+            let totalHonor = 0;
+            let totalPengeluaranNonHonor = 0;
+            
+            dataForReport.forEach((data, index) => {
+                const row = reportBody.insertRow();
+                
+                // Perhitungan Honor Wajib (40% dari Penerimaan bulan itu)
+                const honorWajib = data.penerimaan * data.honorWajibPercent;
+                totalHonor += honorWajib;
+                totalPenerimaan += data.penerimaan;
+                
+                // Total Pengeluaran Non-Honor
+                const pengeluaranNonHonor = data.pendUang + data.kesUang + data.ekoUang + data.sosumUang + data.banomUang + data.bencanaUang + data.rapat + data.perwtnMlu + data.biayaBank + data.lainLain;
+                totalPengeluaranNonHonor += pengeluaranNonHonor;
+                
+                // Saldo Akhir (Estimasi) = Penerimaan - Honor - Pengeluaran Non Honor
+                const saldoAkhir = data.penerimaan - honorWajib - pengeluaranNonHonor;
+
+                row.innerHTML = `
+                    <td class="text-center">${data.bulan}</td>
+                    <td class="text-right">${formatNominal(data.penerimaan)}</td>
+                    <td class="text-right">${formatNominal(honorWajib)}</td>
+                    
+                    <td class="text-right">${formatNominal(data.pendUang)}</td>
+                    <td class="text-center">${formatNominal(data.pendPenerima)}</td>
+                    
+                    <td class="text-right">${formatNominal(data.kesUang)}</td>
+                    <td class="text-center">${formatNominal(data.kesPenerima)}</td>
+                    
+                    <td class="text-right">${formatNominal(data.ekoUang)}</td>
+                    <td class="text-center">${formatNominal(data.ekoPenerima)}</td>
+                    
+                    <td class="text-right">${formatNominal(data.sosumUang)}</td>
+                    <td class="text-center">${formatNominal(data.sosumPenerima)}</td>
+                    
+                    <td class="text-right">${formatNominal(data.banomUang)}</td>
+                    <td class="text-center">${formatNominal(data.banomPenerima)}</td>
+                    
+                    <td class="text-right">${formatNominal(data.bencanaUang)}</td>
+                    <td class="text-center">${formatNominal(data.bencanaPenerima)}</td>
+                    
+                    <td class="text-right">${formatNominal(data.rapat)}</td>
+                    <td class="text-right">${formatNominal(data.perwtnMlu)}</td>
+                    <td class="text-right">${formatNominal(data.biayaBank)}</td>
+                    <td class="text-right">${formatNominal(data.lainLain)}</td>
+                    <td class="text-right">${formatNominal(pengeluaranNonHonor)}</td>
+                    <td class="text-right">${formatNominal(saldoAkhir)}</td>
+                `;
+            });
+
+            // Hitung Total Tahunan
+            const totalPengeluaranGabungan = totalHonor + totalPengeluaranNonHonor;
+            const totalSaldoAkhirTahun = totalPenerimaan - totalPengeluaranGabungan;
+
+            reportFooter.innerHTML = `
+                <tr style="font-weight: bold; background-color: #e0f2f1;">
+                    <td class="text-right">TOTAL TAHUNAN</td>
+                    <td class="text-right">${formatNominal(totalPenerimaan)}</td>
+                    <td class="text-right">${formatNominal(totalHonor)}</td>
+                    <td colspan="16"></td>
+                    <td class="text-right">${formatNominal(totalPengeluaranNonHonor)}</td>
+                    <td class="text-right">${formatNominal(totalSaldoAkhirTahun)}</td>
+                </tr>
+            `;
         }
 
-        // FUNGSI INI WAJIB ADA DI GLOBAL SCOPE
+        // ===================================
+        // --- MAIN CONTROL & AUTH ---
+        // ===================================
+
         async function recalculateAllReports() {
+            // Alur Logika dipastikan berjalan secara berurutan:
+            // 1A -> 2 (Koin NU menghitung Jurnal Umum)
+            // 1 -> 3 (Agregat Manual menghasilkan Laporan Tahunan)
             updatePenerimaanDetail();
             updateJurnalUmum(); 
             updateModul1(); 
             updateLaporanTahunan();
         }
 
-        // ===================================
-        // --- ADMIN / AUTH LOGIC ---
-        // ===================================
-        
-        // FUNGSI INI WAJIB ADA DI GLOBAL SCOPE
         async function login() {
+            // ... (Firebase Auth login logic) ...
             const emailInput = document.getElementById('username');
             const passwordInput = document.getElementById('password');
             const messageBar = document.getElementById('login-message-bar');
-
             const email = emailInput.value.trim();
             const password = passwordInput.value.trim();
-
-            if (!email || !password) {
-                 messageBar.textContent = 'Email dan Password wajib diisi.';
-                 return;
-            }
-
+            if (!email || !password) { messageBar.textContent = 'Email dan Password wajib diisi.'; return; }
             messageBar.textContent = 'Loading...';
-            
             try {
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 messageBar.textContent = 'Login berhasil! Memuat data...';
@@ -558,7 +779,6 @@
             }
         }
 
-        // FUNGSI INI WAJIB ADA DI GLOBAL SCOPE
         function logout() {
             auth.signOut().then(() => {
             }).catch((error) => {
@@ -566,20 +786,12 @@
             });
         }
         
-        async function resetAllData() {
-            if (!isLoggedIn) return;
-            if (confirm("ANDA YAKIN INGIN MENGHAPUS SEMUA DATA TRANSAKSI (M1A & M2)?")) {
-                alert("Simulasi penghapusan data... Selesaikan logika ini untuk menghapus data di Firebase!");
-                await loadDataFromFirebase();
-                recalculateAllReports();
-            }
-        }
-
         async function handleAuthStateChange(user) {
             const loginContainer = document.getElementById('login-form-content-bar');
             const logoutContainer = document.getElementById('logout-form-content-bar');
             const adminStatus = document.getElementById('admin-status');
             const adminElements = document.querySelectorAll('.admin-only');
+            const saldoInput = document.getElementById('m2-saldo-awal-input');
 
             isLoggedIn = !!user;
             currentAdminEmail = user ? user.email : 'Belum Login';
@@ -588,30 +800,31 @@
                 loginContainer.style.display = 'none';
                 logoutContainer.style.display = 'flex';
                 adminStatus.textContent = currentAdminEmail;
-                adminElements.forEach(el => el.style.display = 'block'); 
+                adminElements.forEach(el => el.style.display = 'block');
+                if (saldoInput) {
+                    saldoInput.style.display = 'block';
+                    document.getElementById('m2-saldo-awal-static').style.display = 'none';
+                }
             } else {
                 loginContainer.style.display = 'flex';
                 logoutContainer.style.display = 'none';
-                adminElements.forEach(el => el.style.display = 'none'); 
+                adminElements.forEach(el => el.style.display = 'none');
+                if (saldoInput) {
+                    saldoInput.style.display = 'none';
+                    document.getElementById('m2-saldo-awal-static').style.display = 'block';
+                }
             }
         }
 
-        // ===================================
-        // --- ONLOAD FUNCTION ---
-        // ===================================
-
         window.onload = async () => {
-            // 1. Initialize Firebase
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
             auth = firebase.auth(); 
             
-            // 2. Populate Filters and Categories
-            populateFilters(); // FIX: Sekarang populateFilters sudah didefinisikan di scope global
+            populateFilters();
             const select = document.getElementById('m2-kategori-input');
             select.innerHTML = M2_CATEGORIES.map(cat => `<option value="${cat}">${cat}</option>`).join('');
             
-            // 3. Firebase Auth State Listener
             auth.onAuthStateChanged(async (user) => {
                 handleAuthStateChange(user); 
                 
@@ -620,16 +833,26 @@
                 } else {
                     m1aTransactions = [];
                     m2ManualTransactions = [];
-                    initialData = [];
+                    initialData = initialData.map(data => ({ ...data, penerimaan: 0, donatur: 0, /* reset all values */ }));
                 }
                 
-                // Render view (based on the latest data and login status)
                 recalculateAllReports(); 
             });
 
-            // 4. Set default module
             switchModule('modul-1a-section'); 
         };
+        
+        // --- Placeholder CRUD Functions ---
+        // (Anda harus mengisi implementasi CRUD penuh untuk add/delete/edit)
+        async function addKoinNUTransaction() { /* ... */ alert("CRUD logic needs implementation."); }
+        function clearKoinNUInputs() { /* ... */ }
+        function editKoinNUTxn(docId) { /* ... */ }
+        function deleteKoinNUTxn(docId) { /* ... */ }
+        async function addManualTransaction() { /* ... */ alert("CRUD logic needs implementation."); }
+        function clearManualTransactionInputs() { /* ... */ }
+        function editManualTxn(docId) { /* ... */ }
+        function deleteManualTxn(docId) { /* ... */ }
+        async function resetAllData() { /* ... */ alert("Logic untuk menghapus semua koleksi harus diimplementasikan dengan hati-hati!"); }
     </script>
 </body>
 </html>
