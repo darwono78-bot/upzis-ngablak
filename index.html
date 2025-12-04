@@ -109,6 +109,19 @@
             color: var(--nu-white); /* Dipastikan berwarna putih */
             font-weight: bold;
         }
+        
+        /* === NEW: WARNA KHUSUS MODUL 2 (Jurnal Umum) === */
+        .bg-dana-masuk {
+            background-color: #d4edda !important; /* Soft Green (Success) */
+        }
+        .bg-dana-keluar {
+            background-color: #f8d7da !important; /* Soft Red (Danger) */
+        }
+        .bg-saldo {
+            background-color: #cce5ff !important; /* Soft Blue (Info) */
+            font-weight: bold;
+        }
+        /* ============================================== */
 
         .text-center { text-align: center; }
         .text-right { text-align: right; }
@@ -1018,13 +1031,13 @@ function saveM1aTransaction(event) {
             <td>SALDO BULAN LALU (Input Manual)</td>
             <td class="text-center" colspan="7">-</td>
             <td>Saldo Bulan Lalu</td>
-            <td class="text-right saldo-awal-input-cell" colspan="2">
+            <td class="text-right saldo-awal-input-cell bg-dana-masuk" colspan="2">
                 <input type="number" id="m2-saldo-awal-input" value="${currentM2InitialBalance}" 
                        onchange="saveM2InitialBalance(this.value)"
                        style="width:100%; text-align:right; font-weight:bold; padding: 0;" 
                        ${isLoggedIn ? '' : 'readonly'}>
             </td>
-            <td class="text-right numeric-cell">${formatNominal(currentM2InitialBalance)}</td>
+            <td class="text-right numeric-cell bg-saldo">${formatNominal(currentM2InitialBalance)}</td>
             <td class="text-center admin-only">-</td>
         `;
 
@@ -1038,9 +1051,9 @@ function saveM1aTransaction(event) {
             <td>Total Penerimaan Koin NU (Dari Modul 1)</td>
             <td class="text-center" colspan="7">-</td>
             <td>Koin NU (Masuk)</td>
-            <td class="text-right numeric-cell">${formatNominal(aggregates.totalKoin)}</td>
-            <td class="text-right numeric-cell">-</td>
-            <td class="text-right numeric-cell">${formatNominal(runningSaldo)}</td>
+            <td class="text-right numeric-cell bg-dana-masuk">${formatNominal(aggregates.totalKoin)}</td>
+            <td class="text-right numeric-cell bg-dana-keluar">-</td>
+            <td class="text-right numeric-cell bg-saldo">${formatNominal(runningSaldo)}</td>
             <td class="text-center admin-only">-</td>
         `;
 
@@ -1054,9 +1067,9 @@ function saveM1aTransaction(event) {
             <td>Honor Petugas 10%</td>
             <td class="text-center" colspan="7">-</td>
             <td>Petugas 10%</td>
-            <td class="text-right numeric-cell">-</td>
-            <td class="text-right numeric-cell">${formatNominal(aggregates.honorPetugas)}</td>
-            <td class="text-right numeric-cell">${formatNominal(runningSaldo)}</td>
+            <td class="text-right numeric-cell bg-dana-masuk">-</td>
+            <td class="text-right numeric-cell bg-dana-keluar">${formatNominal(aggregates.honorPetugas)}</td>
+            <td class="text-right numeric-cell bg-saldo">${formatNominal(runningSaldo)}</td>
             <td class="text-center admin-only">-</td>
         `;
 
@@ -1070,9 +1083,9 @@ function saveM1aTransaction(event) {
             <td>Honor MWC 25%</td>
             <td class="text-center" colspan="7">-</td>
             <td>MWC 25%</td>
-            <td class="text-right numeric-cell">-</td>
-            <td class="text-right numeric-cell">${formatNominal(aggregates.honorMWC)}</td>
-            <td class="text-right numeric-cell">${formatNominal(runningSaldo)}</td>
+            <td class="text-right numeric-cell bg-dana-masuk">-</td>
+            <td class="text-right numeric-cell bg-dana-keluar">${formatNominal(aggregates.honorMWC)}</td>
+            <td class="text-right numeric-cell bg-saldo">${formatNominal(runningSaldo)}</td>
             <td class="text-center admin-only">-</td>
         `;
 
@@ -1086,9 +1099,9 @@ function saveM1aTransaction(event) {
             <td>Honor PC 5%</td>
             <td class="text-center" colspan="7">-</td>
             <td>PC 5%</td>
-            <td class="text-right numeric-cell">-</td>
-            <td class="text-right numeric-cell">${formatNominal(aggregates.honorPC)}</td>
-            <td class="text-right numeric-cell">${formatNominal(runningSaldo)}</td>
+            <td class="text-right numeric-cell bg-dana-masuk">-</td>
+            <td class="text-right numeric-cell bg-dana-keluar">${formatNominal(aggregates.honorPC)}</td>
+            <td class="text-right numeric-cell bg-saldo">${formatNominal(runningSaldo)}</td>
             <td class="text-center admin-only">-</td>
         `;
 
@@ -1131,9 +1144,9 @@ function saveM1aTransaction(event) {
                 <td class="text-center">${t.penerimaSubsidi || '-'}</td>
                 <td class="text-center">${t.penerimaBencana || '-'}</td>
                 <td>${t.kategori}</td>
-                <td class="text-right numeric-cell">${formatNominal(masuk)}</td>
-                <td class="text-right numeric-cell">${formatNominal(keluar)}</td>
-                <td class="text-right numeric-cell">${formatNominal(runningSaldo)}</td>
+                <td class="text-right numeric-cell ${masuk > 0 ? 'bg-dana-masuk' : ''}">${formatNominal(masuk)}</td>
+                <td class="text-right numeric-cell ${keluar > 0 ? 'bg-dana-keluar' : ''}">${formatNominal(keluar)}</td>
+                <td class="text-right numeric-cell bg-saldo">${formatNominal(runningSaldo)}</td>
                 <td class="text-center admin-only">
                     <div class="btn-action-group">
                         <button class="btn-action" onclick="editTransaction('m2', '${t.id}')">Edit</button>
@@ -1685,7 +1698,6 @@ function updateM1aTransaction() {
                     0, // rotation
                     0, // sourceX
                     (srcY / imgHeight) * canvas.height, // sourceY
-                    canvas.width, // sourceWidth
                     (clipHeight / imgHeight) * canvas.height // sourceHeight
                 );
 
