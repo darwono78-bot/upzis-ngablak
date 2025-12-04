@@ -1492,162 +1492,162 @@ function updateM1aTransaction() {
     }
 
     function updateLaporanTahunan() {
-        const tableBody = document.getElementById('m3-table-body');
-        if (!tableBody) return;
-        tableBody.innerHTML = '';
-        
-        const monthlyData = getMonthlyAggregates(currentFilterYear);
-        let runningSaldoTahunan = saldoBankAwal + saldoTunaiAwal;
+    const tableBody = document.getElementById('m3-table-body');
+    if (!tableBody) return;
+    tableBody.innerHTML = '';
+    
+    const monthlyData = getMonthlyAggregates(currentFilterYear);
+    let runningSaldoTahunan = saldoBankAwal + saldoTunaiAwal;
 
-        // NEW: Footer totals initialization (Permintaan 3)
-        let totalPenerimaan = 0; 
-        let totalJmlDonatur = 0;
-        let totalUangPendidikan = 0;
-        let totalPenerimaPendidikan = 0;
-        let totalUangKesehatan = 0;
-        let totalPenerimaKesehatan = 0;
-        let totalUangEkonomi = 0;
-        let totalPenerimaEkonomi = 0;
-        let totalUangSosial = 0;
-        let totalPenerimaSosial = 0;
-        let totalUangBencana = 0;
-        let totalPenerimaBencana = 0;
-        let totalSubsidi = 0;
-        let totalHonorPetugas = 0;
-        let totalHonorMWC = 0;
-        let totalHonorPC = 0;
-        let totalRapat = 0;
-        let totalPerwtnMlu = 0;
-        let totalBiayaRekBank = 0;
-        let totalLainLain = 0;
-        let totalJumlahPengeluaran = 0;
-        let totalSaldoAkhirBulaniIni = 0; 
-        let finalSaldoTahunan = runningSaldoTahunan; 
+    // NEW: Footer totals initialization (Permintaan 3)
+    let totalPenerimaan = 0; 
+    let totalJmlDonatur = 0;
+    let totalUangPendidikan = 0;
+    let totalPenerimaPendidikan = 0;
+    let totalUangKesehatan = 0;
+    let totalPenerimaKesehatan = 0;
+    let totalUangEkonomi = 0;
+    let totalPenerimaEkonomi = 0;
+    let totalUangSosial = 0;
+    let totalPenerimaSosial = 0;
+    let totalUangBencana = 0;
+    let totalPenerimaBencana = 0;
+    let totalSubsidi = 0;
+    let totalHonorPetugas = 0;
+    let totalHonorMWC = 0;
+    let totalHonorPC = 0;
+    let totalRapat = 0;
+    let totalPerwtnMlu = 0;
+    let totalBiayaRekBank = 0;
+    let totalLainLain = 0;
+    let totalJumlahPengeluaran = 0;
+    let totalSaldoAkhirBulaniIni = 0; 
+    let finalSaldoTahunan = runningSaldoTahunan; 
 
-        // --- BARIS SALDO AWAL TAHUN (Baris 1 & 2) ---
-        
-        // Baris 1: SALDO KAS BANK (Awal Tahun)
-        let rowBank = tableBody.insertRow();
-        rowBank.classList.add('saldo-awal-row');
-        rowBank.innerHTML = `
-            <td class="text-center">1</td>
-            <td>SALDO KAS BANK (Awal Tahun)</td>
-            <td class="text-right numeric-cell bg-dana-masuk">${formatNominal(saldoBankAwal)}</td>
-            <td colspan="20" class="text-center" style="background-color: #f8f8f8;">-</td> <td class="text-right numeric-cell">${formatNominal(0)}</td>
-            <td class="text-right numeric-cell bg-final-saldo">${formatNominal(saldoBankAwal)}</td>
+    // --- BARIS SALDO AWAL TAHUN (Baris 1 & 2) ---
+    
+    // Baris 1: SALDO KAS BANK (Awal Tahun)
+    let rowBank = tableBody.insertRow();
+    rowBank.classList.add('saldo-awal-row');
+    rowBank.innerHTML = `
+        <td class="text-center">1</td>
+        <td>SALDO KAS BANK (Awal Tahun)</td>
+        <td class="text-right numeric-cell bg-dana-masuk">${formatNominal(saldoBankAwal)}</td>
+        <td colspan="20" class="text-center" style="background-color: #f8f8f8;">-</td>
+        <td class="text-right numeric-cell">${formatNominal(0)}</td>
+        <td class="text-right numeric-cell bg-final-saldo">${formatNominal(saldoBankAwal)}</td>
+    `;
+
+    // Baris 2: SALDO KAS TUNAI (Awal Tahun)
+    let rowTunai = tableBody.insertRow();
+    rowTunai.classList.add('saldo-awal-row');
+    rowTunai.innerHTML = `
+        <td class="text-center">2</td>
+        <td>SALDO KAS TUNAI (Awal Tahun)</td>
+        <td class="text-right numeric-cell bg-dana-masuk">${formatNominal(saldoTunaiAwal)}</td>
+        <td colspan="20" class="text-center" style="background-color: #f8f8f8;">-</td>
+        <td class="text-right numeric-cell">${formatNominal(0)}</td>
+        <td class="text-right numeric-cell bg-final-saldo">${formatNominal(runningSaldoTahunan)}</td>
+    `;
+    
+    // --- BARIS DATA BULANAN (Baris 3 - 14) ---
+    monthlyData.forEach((data, index) => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td class="text-center">${index + 3}</td>
+            <td>${data.bulan}</td>
+            <td class="text-right numeric-cell bg-dana-masuk">${formatNominal(data.penerimaan)}</td>
+            <td class="text-center">${data.pengeluaranWajib.donatur}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.pendidikan.uang)}</td>
+            <td class="text-center">${data.pengeluaranWajib.pendidikan.penerima}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.kesehatan.uang)}</td>
+            <td class="text-center">${data.pengeluaranWajib.kesehatan.penerima}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.ekonomi.uang)}</td>
+            <td class="text-center">${data.pengeluaranWajib.ekonomi.penerima}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.sosial.uang)}</td>
+            <td class="text-center">${data.pengeluaranWajib.sosial.penerima}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.bencana.uang)}</td>
+            <td class="text-center">${data.pengeluaranWajib.bencana.penerima}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.subsidi)}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.honor.petugas)}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.honor.mwc)}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.honor.pc)}</td>
+            
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranLain.rapat)}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranLain.perwtnMlu)}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranLain.biayaRekBank)}</td>
+            <td class="text-right numeric-cell">${formatNominal(data.pengeluaranLain.lainLain)}</td>
+
+            <td class="text-right numeric-cell bg-dana-keluar">${formatNominal(data.jumlahPengeluaran)}</td>
+            
+            <td class="text-right numeric-cell bg-saldo">${formatNominal(data.saldoAkhirBulanIni)}</td>
+            
+            <td class="text-right numeric-cell bg-final-saldo">${formatNominal(data.saldoKasTahunBerjalan)}</td>
         `;
 
-        // Baris 2: SALDO KAS TUNAI (Awal Tahun)
-        let rowTunai = tableBody.insertRow();
-        rowTunai.classList.add('saldo-awal-row');
-        rowTunai.innerHTML = `
-            <td class="text-center">2</td>
-            <td>SALDO KAS TUNAI (Awal Tahun)</td>
-            <td class="text-right numeric-cell bg-dana-masuk">${formatNominal(saldoTunaiAwal)}</td>
-            <td colspan="20" class="text-center" style="background-color: #f8f8f8;">-</td> <td class="text-right numeric-cell">${formatNominal(0)}</td>
-            <td class="text-right numeric-cell bg-final-saldo">${formatNominal(runningSaldoTahunan)}</td>
-        `;
-        
-        // --- BARIS DATA BULANAN (Baris 3 - 14) ---
-        monthlyData.forEach((data, index) => {
-            const row = tableBody.insertRow();
-            row.innerHTML = `
-                <td class="text-center">${index + 3}</td>
-                <td>${data.bulan}</td>
-                <td class="text-right numeric-cell bg-dana-masuk">${formatNominal(data.penerimaan)}</td>
-                <td class="text-center">${data.pengeluaranWajib.donatur}</td> <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.pendidikan.uang)}</td>
-                <td class="text-center">${data.pengeluaranWajib.pendidikan.penerima}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.kesehatan.uang)}</td>
-                <td class="text-center">${data.pengeluaranWajib.kesehatan.penerima}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.ekonomi.uang)}</td>
-                <td class="text-center">${data.pengeluaranWajib.ekonomi.penerima}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.sosial.uang)}</td>
-                <td class="text-center">${data.pengeluaranWajib.sosial.penerima}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.bencana.uang)}</td>
-                <td class="text-center">${data.pengeluaranWajib.bencana.penerima}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.subsidi)}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.honor.petugas)}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.honor.mwc)}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.honor.pc)}</td>
-                
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranLain.rapat)}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranLain.perwtnMlu)}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranLain.biayaRekBank)}</td>
-                <td class="text-right numeric-cell">${formatNominal(data.pengeluaranLain.lainLain)}</td>
+        // Accumulate totals for footer
+        totalPenerimaan += data.penerimaan;
+        totalJmlDonatur += data.pengeluaranWajib.donatur;
+        totalUangPendidikan += data.pengeluaranWajib.pendidikan.uang;
+        totalPenerimaPendidikan += data.pengeluaranWajib.pendidikan.penerima;
+        totalUangKesehatan += data.pengeluaranWajib.kesehatan.uang;
+        totalPenerimaKesehatan += data.pengeluaranWajib.kesehatan.penerima;
+        totalUangEkonomi += data.pengeluaranWajib.ekonomi.uang;
+        totalPenerimaEkonomi += data.pengeluaranWajib.ekonomi.penerima;
+        totalUangSosial += data.pengeluaranWajib.sosial.uang;
+        totalPenerimaSosial += data.pengeluaranWajib.sosial.penerima;
+        totalUangBencana += data.pengeluaranWajib.bencana.uang;
+        totalPenerimaBencana += data.pengeluaranWajib.bencana.penerima;
+        totalSubsidi += data.pengeluaranWajib.subsidi;
+        totalHonorPetugas += data.honor.petugas;
+        totalHonorMWC += data.honor.mwc;
+        totalHonorPC += data.honor.pc;
+        totalRapat += data.pengeluaranLain.rapat;
+        totalPerwtnMlu += data.pengeluaranLain.perwtnMlu;
+        totalBiayaRekBank += data.pengeluaranLain.biayaRekBank;
+        totalLainLain += data.pengeluaranLain.lainLain;
+        totalJumlahPengeluaran += data.jumlahPengeluaran;
+        totalSaldoAkhirBulaniIni += data.saldoAkhirBulanIni;
+        finalSaldoTahunan = data.saldoKasTahunBerjalan; // Ambil saldo akhir bulan terakhir
+    });
+    
+    // --- Update Footer (tfoot) menggunakan ID yang sudah ada ---
+    
+    // Col 3 - PENERIMAAN (3) - Termasuk saldo awal
+    const grandTotalPenerimaan = totalPenerimaan + saldoBankAwal + saldoTunaiAwal;
+    document.querySelector('#m3-table tfoot td:nth-child(3)').innerHTML = `<strong>${formatNominal(grandTotalPenerimaan)}</strong>`;
 
-                <td class="text-right numeric-cell bg-dana-keluar">${formatNominal(data.jumlahPengeluaran)}</td>
-                
-                <td class="text-right numeric-cell bg-saldo">${formatNominal(data.saldoAkhirBulanIni)}</td>
-                
-                <td class="text-right numeric-cell bg-final-saldo">${formatNominal(data.saldoKasTahunBerjalan)}</td>
-            `;
+    // Kolom detail pengeluaran (diperbarui)
+    document.getElementById('m3-total-donatur').innerHTML = `<strong>${formatNominal(totalJmlDonatur)}</strong>`;
+    document.getElementById('m3-total-uang-pendidikan').innerHTML = `<strong>${formatNominal(totalUangPendidikan)}</strong>`;
+    document.getElementById('m3-total-penerima-pendidikan').innerHTML = `<strong>${formatNominal(totalPenerimaPendidikan)}</strong>`;
+    document.getElementById('m3-total-uang-kesehatan').innerHTML = `<strong>${formatNominal(totalUangKesehatan)}</strong>`;
+    document.getElementById('m3-total-penerima-kesehatan').innerHTML = `<strong>${formatNominal(totalPenerimaKesehatan)}</strong>`;
+    document.getElementById('m3-total-uang-ekonomi').innerHTML = `<strong>${formatNominal(totalUangEkonomi)}</strong>`;
+    document.getElementById('m3-total-penerima-ekonomi').innerHTML = `<strong>${formatNominal(totalPenerimaEkonomi)}</strong>`;
+    document.getElementById('m3-total-uang-sosial').innerHTML = `<strong>${formatNominal(totalUangSosial)}</strong>`;
+    document.getElementById('m3-total-penerima-sosial').innerHTML = `<strong>${formatNominal(totalPenerimaSosial)}</strong>`;
+    document.getElementById('m3-total-uang-bencana').innerHTML = `<strong>${formatNominal(totalUangBencana)}</strong>`;
+    document.getElementById('m3-total-penerima-bencana').innerHTML = `<strong>${formatNominal(totalPenerimaBencana)}</strong>`;
+    document.getElementById('m3-total-subsidi').innerHTML = `<strong>${formatNominal(totalSubsidi)}</strong>`;
+    document.getElementById('m3-total-honor-petugas').innerHTML = `<strong>${formatNominal(totalHonorPetugas)}</strong>`;
+    document.getElementById('m3-total-honor-mwc').innerHTML = `<strong>${formatNominal(totalHonorMWC)}</strong>`;
+    document.getElementById('m3-total-honor-pc').innerHTML = `<strong>${formatNominal(totalHonorPC)}</strong>`;
+    document.getElementById('m3-total-rapat').innerHTML = `<strong>${formatNominal(totalRapat)}</strong>`;
+    document.getElementById('m3-total-perwtn-mlu').innerHTML = `<strong>${formatNominal(totalPerwtnMlu)}</strong>`;
+    document.getElementById('m3-total-biaya-rek-bank').innerHTML = `<strong>${formatNominal(totalBiayaRekBank)}</strong>`;
+    document.getElementById('m3-total-lain-lain').innerHTML = `<strong>${formatNominal(totalLainLain)}</strong>`;
+    
+    // Col 7 - JUMLAH PENGELUARAN (7)
+    document.getElementById('m3-total-pengeluaran').innerHTML = `<strong>${formatNominal(totalJumlahPengeluaran)}</strong>`;
 
-            // Accumulate totals for footer
-            totalPenerimaan += data.penerimaan;
-            totalJmlDonatur += data.pengeluaranWajib.donatur;
-            totalUangPendidikan += data.pengeluaranWajib.pendidikan.uang;
-            totalPenerimaPendidikan += data.pengeluaranWajib.pendidikan.penerima;
-            totalUangKesehatan += data.pengeluaranWajib.kesehatan.uang;
-            totalPenerimaKesehatan += data.pengeluaranWajib.kesehatan.penerima;
-            totalUangEkonomi += data.pengeluaranWajib.ekonomi.uang;
-            totalPenerimaEkonomi += data.pengeluaranWajib.ekonomi.penerima;
-            totalUangSosial += data.pengeluaranWajib.sosial.uang;
-            totalPenerimaSosial += data.pengeluaranWajib.sosial.penerima;
-            totalUangBencana += data.pengeluaranWajib.bencana.uang;
-            totalPenerimaBencana += data.pengeluaranWajib.bencana.penerima;
-            totalSubsidi += data.pengeluaranWajib.subsidi;
-            totalHonorPetugas += data.honor.petugas;
-            totalHonorMWC += data.honor.mwc;
-            totalHonorPC += data.honor.pc;
-            totalRapat += data.pengeluaranLain.rapat;
-            totalPerwtnMlu += data.pengeluaranLain.perwtnMlu;
-            totalBiayaRekBank += data.pengeluaranLain.biayaRekBank;
-            totalLainLain += data.pengeluaranLain.lainLain;
-            totalJumlahPengeluaran += data.jumlahPengeluaran;
-            totalSaldoAkhirBulaniIni += data.saldoAkhirBulanIni;
-            finalSaldoTahunan = data.saldoKasTahunBerjalan; // Ambil saldo akhir bulan terakhir
-        });
-        
-        // Update Footer (TIDAK menambahkan kelas warna di sini)
-        
-        // Col 3 - PENERIMAAN (3) - Termasuk saldo awal
-        const totalPenerimaanCell = document.querySelector('#m3-table tfoot td:nth-child(3)');
-        totalPenerimaanCell.innerHTML = `<strong>${formatNominal(totalPenerimaan + saldoBankAwal + saldoTunaiAwal)}</strong>`;
-        // totalPenerimaanCell.classList.add('bg-dana-masuk'); // Dihapus
+    // Col 8 - SALDO AKHIR BULAN INI (8)
+    document.getElementById('m3-total-saldo-akhir-bulan').innerHTML = `<strong>${formatNominal(totalSaldoAkhirBulaniIni)}</strong>`;
+    
+    // Col 9 - SALDO KAS TAHUN BERJALAN (9)
+    document.getElementById('m3-final-saldo-tahunan').innerHTML = `<strong>${formatNominal(finalSaldoTahunan)}</strong>`;
 
-        document.getElementById('m3-total-donatur').innerHTML = `<strong>${formatNominal(totalJmlDonatur)}</strong>`;
-        document.getElementById('m3-total-uang-pendidikan').innerHTML = `<strong>${formatNominal(totalUangPendidikan)}</strong>`;
-        document.getElementById('m3-total-penerima-pendidikan').innerHTML = `<strong>${formatNominal(totalPenerimaPendidikan)}</strong>`;
-        document.getElementById('m3-total-uang-kesehatan').innerHTML = `<strong>${formatNominal(totalUangKesehatan)}</strong>`;
-        document.getElementById('m3-total-penerima-kesehatan').innerHTML = `<strong>${formatNominal(totalPenerimaKesehatan)}</strong>`;
-        document.getElementById('m3-total-uang-ekonomi').innerHTML = `<strong>${formatNominal(totalUangEkonomi)}</strong>`;
-        document.getElementById('m3-total-penerima-ekonomi').innerHTML = `<strong>${formatNominal(totalPenerimaEkonomi)}</strong>`;
-        document.getElementById('m3-total-uang-sosial').innerHTML = `<strong>${formatNominal(totalUangSosial)}</strong>`;
-        document.getElementById('m3-total-penerima-sosial').innerHTML = `<strong>${formatNominal(totalPenerimaSosial)}</strong>`;
-        document.getElementById('m3-total-uang-bencana').innerHTML = `<strong>${formatNominal(totalUangBencana)}</strong>`;
-        document.getElementById('m3-total-penerima-bencana').innerHTML = `<strong>${formatNominal(totalPenerimaBencana)}</strong>`;
-        document.getElementById('m3-total-subsidi').innerHTML = `<strong>${formatNominal(totalSubsidi)}</strong>`;
-        document.getElementById('m3-total-honor-petugas').innerHTML = `<strong>${formatNominal(totalHonorPetugas)}</strong>`;
-        document.getElementById('m3-total-honor-mwc').innerHTML = `<strong>${formatNominal(totalHonorMWC)}</strong>`;
-        document.getElementById('m3-total-honor-pc').innerHTML = `<strong>${formatNominal(totalHonorPC)}</strong>`;
-        document.getElementById('m3-total-rapat').innerHTML = `<strong>${formatNominal(totalRapat)}</strong>`;
-        document.getElementById('m3-total-perwtn-mlu').innerHTML = `<strong>${formatNominal(totalPerwtnMlu)}</strong>`;
-        document.getElementById('m3-total-biaya-rek-bank').innerHTML = `<strong>${formatNominal(totalBiayaRekBank)}</strong>`;
-        document.getElementById('m3-total-lain-lain').innerHTML = `<strong>${formatNominal(totalLainLain)}</strong>`;
-        
-        // Col 7 - JUMLAH PENGELUARAN (7)
-        document.getElementById('m3-total-pengeluaran').innerHTML = `<strong>${formatNominal(totalJumlahPengeluaran)}</strong>`;
-        // document.getElementById('m3-total-pengeluaran').classList.add('bg-dana-keluar'); // Dihapus
-
-        // Col 8 - SALDO AKHIR BULAN INI (8)
-        document.getElementById('m3-total-saldo-akhir-bulan').innerHTML = `<strong>${formatNominal(totalSaldoAkhirBulaniIni)}</strong>`;
-        // document.getElementById('m3-total-saldo-akhir-bulan').classList.add('bg-saldo'); // Dihapus
-        
-        // Col 9 - SALDO KAS TAHUN BERJALAN (9)
-        document.getElementById('m3-final-saldo-tahunan').innerHTML = `<strong>${formatNominal(finalSaldoTahunan)}</strong>`;
-        // document.getElementById('m3-final-saldo-tahunan').classList.add('bg-final-saldo'); // Dihapus
-
-    }
+}
 
 
     // --- Global Delete Function ---
@@ -1833,12 +1833,3 @@ function updateM1aTransaction() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
