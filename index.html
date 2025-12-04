@@ -670,43 +670,53 @@ function saveM1aTransaction(event) { // <--- BARIS INI YANG HILANG DAN SUDAH DIK
 }
     
     function updateModul1() {
-        const tableBody = document.getElementById('m1-table-body');
-        if (!tableBody) return;
-        tableBody.innerHTML = '';
+    const tableBody = document.getElementById('m1-table-body');
+    const totalNominalCell = document.getElementById('m1-total-nominal'); // <-- Elemen baru
+    if (!tableBody || !totalNominalCell) return;
+    tableBody.innerHTML = '';
 
-        const filteredTxns = m1aTransactions.filter(t => {
-            const dateInfo = getMonthYearFromDate(t.tanggal);
-            return dateInfo.month === currentFilterMonth && dateInfo.year === currentFilterYear;
-        });
+    let grandTotalNominal = 0; // <-- Variabel baru untuk menampung total
 
-        filteredTxns.forEach((t, index) => {
-            const nominal = parseFloat(t.nominal) || 0;
-            // Pembagian Dana Koin
-            const ranting = nominal * 0.6;
-            const petugas = nominal * 0.1;
-            const mwc = nominal * 0.25;
-            const pc = nominal * 0.05;
+    const filteredTxns = m1aTransactions.filter(t => {
+        const dateInfo = getMonthYearFromDate(t.tanggal);
+        return dateInfo.month === currentFilterMonth && dateInfo.year === currentFilterYear;
+    });
 
-            const row = tableBody.insertRow();
-            row.innerHTML = `
-                <td class="text-center">${index + 1}</td>
-                <td class="text-center">${formatDate(t.tanggal)}</td>
-                <td>${t.petugas}</td>
-                <td>${t.noHp || '-'}</td>
-                <td>${t.donatur}</td>
-                <td>${t.alamat}</td>
-                <td class="text-right numeric-cell">${formatNominal(nominal)}</td>
-                <td class="text-right numeric-cell">${formatNominal(ranting)}</td>
-                <td class="text-right numeric-cell">${formatNominal(petugas)}</td>
-                <td class="text-right numeric-cell">${formatNominal(mwc)}</td>
-                <td class="text-right numeric-cell">${formatNominal(pc)}</td>
-                <td class="text-center admin-only">
-                   <button class="btn-action" onclick="editTransaction('m1a', '${t.id}')">Edit</button>
-                    <button class="btn-action btn-danger" onclick="deleteTransaction('m1a', '${t.id}')">Hapus</button>
-                </td>
-            `;
-        });
-    }
+    filteredTxns.forEach((t, index) => {
+        const nominal = parseFloat(t.nominal) || 0;
+        
+        // 1. TAMBAHKAN NOMINAL KE GRAND TOTAL
+        grandTotalNominal += nominal; 
+        
+        // Pembagian Dana Koin
+        const ranting = nominal * 0.6;
+        const petugas = nominal * 0.1;
+        const mwc = nominal * 0.25;
+        const pc = nominal * 0.05;
+
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td class="text-center">${index + 1}</td>
+            <td class="text-center">${formatDate(t.tanggal)}</td>
+            <td>${t.petugas}</td>
+            <td>${t.noHp || '-'}</td>
+            <td>${t.donatur}</td>
+            <td>${t.alamat}</td>
+            <td class="text-right numeric-cell">${formatNominal(nominal)}</td>
+            <td class="text-right numeric-cell">${formatNominal(ranting)}</td>
+            <td class="text-right numeric-cell">${formatNominal(petugas)}</td>
+            <td class="text-right numeric-cell">${formatNominal(mwc)}</td>
+            <td class="text-right numeric-cell">${formatNominal(pc)}</td>
+            <td class="text-center admin-only">
+                <button class="btn-action" onclick="editTransaction('m1a', '${t.id}')">Edit</button>
+                <button class="btn-action btn-danger" onclick="deleteTransaction('m1a', '${t.id}')">Hapus</button>
+            </td>
+        `;
+    });
+    
+    // 2. TAMPILKAN GRAND TOTAL DI FOOTER
+    totalNominalCell.innerHTML = `<strong>${formatNominal(grandTotalNominal)}</strong>`; 
+}
 
     // ===========================================
     // --- MODUL 2 LOGIC (Jurnal Umum) ---
@@ -1215,6 +1225,7 @@ function updateM1aTransaction() {
 </script>
 </body>
 </html>
+
 
 
 
