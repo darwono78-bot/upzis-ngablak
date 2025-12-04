@@ -746,76 +746,91 @@
     // --- MAIN CONTROL FUNCTIONS ---
     // ===========================================
     function recalculateAllReports() {
-        updateModul1();
-        updateJurnalUmum(); 
-        updateLaporanTahunan(); 
-        updateAdminViewVisibility(isLoggedIn);
-    }
-    
-    function renderAppView() {
-        document.querySelectorAll('.module-section').forEach(section => {
-            section.style.display = 'none';
-        });
-        document.getElementById(activeModule).style.display = 'block';
+    updateModul1();
+    updateJurnalUmum(); 
+    updateLaporanTahunan(); 
+    updateAdminViewVisibility(isLoggedIn);
+}
 
-        document.querySelectorAll('[id^="nav-"]').forEach(btn => {
-            btn.classList.remove('active-module');
-        });
-        document.getElementById('nav-' + activeModule).classList.add('active-module');
-    }
+function renderAppView() {
+    document.querySelectorAll('.module-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    document.getElementById(activeModule).style.display = 'block';
 
-    function setActiveModule(moduleId) {
-        activeModule = moduleId;
-        renderAppView();
-    }
-    
-    function applyFilter() {
-        const newMonth = parseInt(document.getElementById('filter-month').value);
-        const newYear = parseInt(document.getElementById('filter-year').value);
+    document.querySelectorAll('[id^="nav-"]').forEach(btn => {
+        btn.classList.remove('active-module');
+    });
+    document.getElementById('nav-' + activeModule).classList.add('active-module');
+}
 
-        if (newMonth !== currentFilterMonth || newYear !== currentFilterYear) {
-            currentFilterMonth = newMonth;
-            currentFilterYear = newYear;
-            // Muat ulang saldo awal bulanan jika filter berubah
-            loadM2InitialBalance().then(recalculateAllReports); 
-        } else {
-            recalculateAllReports();
+function setActiveModule(moduleId) {
+    activeModule = moduleId;
+    renderAppView();
+}
+
+function applyFilter() {
+    const newMonth = parseInt(document.getElementById('filter-month').value);
+    const newYear = parseInt(document.getElementById('filter-year').value);
+
+    if (newMonth !== currentFilterMonth || newYear !== currentFilterYear) {
+        currentFilterMonth = newMonth;
+        currentFilterYear = newYear;
+        // Muat ulang saldo awal bulanan jika filter berubah
+        loadM2InitialBalance().then(recalculateAllReports); 
+    } else {
+        recalculateAllReports();
+    }
+}
+
+function populateFilters() {
+    const monthFilter = document.getElementById('filter-month');
+    const yearFilter = document.getElementById('filter-year');
+    const today = new Date();
+    const currentYear = today.getFullYear();
+
+    monthFilter.innerHTML = '';
+    bulanNama.forEach((name, index) => {
+        const option = document.createElement('option');
+        option.value = index + 1;
+        option.textContent = name;
+        if (index + 1 === currentFilterMonth) {
+            option.selected = true;
         }
+        monthFilter.appendChild(option);
+    });
+
+    // --- LOGIKA FILTER TAHUN BARU (2025 s/d 2035, otomatis bertambah jika melebihi) ---
+    yearFilter.innerHTML = '';
+    
+    // Tentukan Tahun Awal dan Tahun Akhir tampilan
+    const startYear = 2025; // Mulai dari 2025
+    let endYear = 2035;   // Target akhir default 2035
+    
+    // Jika tahun saat ini (currentYear) atau tahun yang sedang dipilih (currentFilterYear)
+    // melebihi 2035, maka batas akhir ditambah hingga (tahun saat ini + 1).
+    if (currentYear > 2035 || currentFilterYear > 2035) {
+        endYear = Math.max(currentYear, currentFilterYear) + 1;
     }
     
-    function populateFilters() {
-        const monthFilter = document.getElementById('filter-month');
-        const yearFilter = document.getElementById('filter-year');
-        const currentYear = new Date().getFullYear();
+    // Pastikan currentFilterYear default terisi jika belum diset
+    if (currentFilterYear === 0) {
+        currentFilterYear = currentYear;
+    }
 
-        monthFilter.innerHTML = '';
-        bulanNama.forEach((name, index) => {
-            const option = document.createElement('option');
-            option.value = index + 1;
-            option.textContent = name;
-            if (index + 1 === currentFilterMonth) {
-                option.selected = true;
-            }
-            monthFilter.appendChild(option);
-        });
-
-        yearFilter.innerHTML = '';
-        // Ambil tahun laporan dari settings, dan 5 tahun ke belakang
-        const startYear = Math.max(currentYear, reportYear);
-        for (let year = startYear + 1; year >= currentYear - 5; year--) {
-             if (year === startYear + 1) {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                yearFilter.appendChild(option);
-            }
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year;
-            if (year === currentFilterYear) {
-                option.selected = true;
-            }
-            yearFilter.appendChild(option);
+    // Loop untuk membuat opsi tahun
+    for (let year = endYear; year >= startYear; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        
+        // Pilihan awal adalah tahun yang sedang dipilih di state,
+        // atau tahun saat ini jika belum ada filter yang diset.
+        if (year === currentFilterYear) { 
+            option.selected = true;
+        }
+        
+        yearFilter.appendChild(option);
         }
     }
 
@@ -1785,3 +1800,4 @@ function updateM1aTransaction() {
 </script>
 </body>
 </html>
+
