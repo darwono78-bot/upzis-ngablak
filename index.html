@@ -103,11 +103,10 @@
             text-align: center; 
         }
         
-        /* Footer Total (tfoot) - Warna Hijau NU (Updated for better contrast) */
-        /* PERMINTAAN USER: Memastikan Footer M2 & M3 (dan M1) menggunakan warna header kolom */
-        table tfoot tr {
+        /* Footer Total (tfoot) - Warna Hijau NU (FIXED: Lebih spesifik ke TD) */
+        table tfoot td, table tfoot tr {
             background-color: var(--nu-dark-green); 
-            color: var(--nu-white);
+            color: var(--nu-white); /* Dipastikan berwarna putih */
             font-weight: bold;
         }
 
@@ -125,7 +124,7 @@
         /* Baris Khusus Modul 2 */
         .auto-txn-row td { background-color: #f0f0f0; font-weight: bold; }
         .saldo-awal-input-cell input { border: none; background-color: transparent; width: 100%; text-align: right; }
-        .saldo-awal-row { background-color: var(--nu-light-green); font-weight: bold; }
+        .saldo-awal-row { background-color: var(--nu-light-green); font-weight: bold; } /* Ini untuk baris di <tbody> */
 
         /* Input Form */
         .input-group label { display: block; margin-top: 10px; font-weight: bold; font-size: 12px; }
@@ -320,7 +319,7 @@
                 <tbody id="m2-table-body">
                     </tbody>
                 <tfoot>
-                    <tr class="saldo-awal-row">
+                    <tr>
                         <td colspan="3" class="text-right"><strong>TOTAL BULAN INI:</strong></td>
                         <td class="text-center" id="m2-total-penerima-donatur"><strong>0</strong></td>
                         <td class="text-center" id="m2-total-penerima-pendidikan"><strong>0</strong></td>
@@ -489,7 +488,7 @@
                 <tbody id="m3-table-body">
                     </tbody>
                 <tfoot>
-                    <tr class="saldo-awal-row">
+                    <tr>
                         <td colspan="3" class="text-right"><strong>TOTAL TAHUN BERJALAN</strong></td>
                         <td class="text-center" id="m3-total-donatur"><strong>0</strong></td>
                         
@@ -1010,6 +1009,8 @@ function saveM1aTransaction(event) {
         // --- Baris Otomatis dan Terkunci (Total 5 Baris) ---
         // 1. SALDO BULAN LALU (Input Manual)
         const rowSaldoAwal = tableBody.insertRow();
+        // NOTE: Saldo awal bulan di M2 tidak boleh memiliki kelas .saldo-awal-row
+        // karena kelas tersebut digunakan di M3 untuk baris Kas Bank/Tunai.
         rowSaldoAwal.classList.add('auto-txn-row');
         rowSaldoAwal.innerHTML = `
             <td class="text-center">-</td>
