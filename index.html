@@ -184,14 +184,6 @@
         
         <div id="left-group" class="flex-row" style="align-items: center; gap: 15px;">
             
-            <div id="admin-actions-left" class="flex-row admin-only" style="gap: 5px; align-items: center; flex-shrink: 0;">
-                <div id="logout-info" class="flex-row" style="gap: 5px; align-items: center;">
-                    <button class="btn-action btn-danger" onclick="logout()">Logout</button>
-                    <span id="logout-message" style="font-size: 12px; margin-right: 10px;"></span> 
-                </div>
-                <button class="btn-action" onclick="resetApp()" style="background-color: #ffc107; color: #333;">Reset Data</button>
-            </div>
-            
             <div id="filter-controls" class="flex-row" style="justify-content: flex-start; gap: 5px; align-items: center; flex-shrink: 0;">
                 <div style="font-weight: bold;">Filter:</div>
                 <select id="filter-month" onchange="applyFilter()" style="padding: 5px;"></select>
@@ -199,8 +191,16 @@
             </div>
         </div>
         
-        <div id="utility-controls" class="flex-row" style="justify-content: flex-end; flex-shrink: 0;">
-            <button class="btn-action btn-primary" onclick="generatePDF()">Unduh PDF (Ttd Ketua/Bendahara)</button>
+        <div id="right-group" class="flex-row" style="align-items: center; justify-content: flex-end; gap: 10px; flex-shrink: 0;">
+            
+            <div id="logout-info" class="flex-row admin-only" style="gap: 5px; align-items: center; flex-shrink: 0;">
+                <span id="logout-message" style="font-size: 12px;"></span> 
+                <button class="btn-action btn-danger" onclick="logout()">Logout</button>
+            </div>
+
+            <div id="utility-controls" class="flex-row" style="justify-content: flex-end; flex-shrink: 0;">
+                <button class="btn-action btn-primary" onclick="generatePDF()">Unduh PDF (Ttd Ketua/Bendahara)</button>
+            </div>
         </div>
     </div>
     <hr style="margin-top: 0;">
@@ -245,8 +245,12 @@
             </table>
         </div>
         
-        <form id="m1-form" class="admin-only" onsubmit="saveM1aTransaction(event)" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
-            <h3>Input Data Koin NU Baru</h3>
+        <div class="admin-only flex-row" style="justify-content: space-between; align-items: center; margin-top: 20px;">
+            <h3 style="margin: 0; font-size: 1.17em;">Input Data Koin NU Baru</h3>
+            <button class="btn-action" onclick="resetApp()" style="background-color: #ffc107; color: #333;">Reset Data</button>
+        </div>
+
+        <form id="m1-form" class="admin-only" onsubmit="saveM1aTransaction(event)" style="padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
             <div style="display: flex; flex-wrap: wrap; gap: 15px;">
                 <div class="input-group" style="flex: 1 1 30%;">
                     <label for="m1_tanggal">Tanggal</label>
@@ -328,8 +332,13 @@
                 </tfoot>
             </table>
         </div>
-        <form id="m2-form" class="admin-only" onsubmit="saveM2ManualTransaction(event)" style="margin-top: 20px; padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
-            <h3>Input Transaksi Manual (Masuk/Keluar)</h3>
+
+        <div class="admin-only flex-row" style="justify-content: space-between; align-items: center; margin-top: 20px;">
+            <h3 style="margin: 0; font-size: 1.17em;">Input Transaksi Manual (Masuk/Keluar)</h3>
+            <button class="btn-action" onclick="resetApp()" style="background-color: #ffc107; color: #333;">Reset Data</button>
+        </div>
+
+        <form id="m2-form" class="admin-only" onsubmit="saveM2ManualTransaction(event)" style="padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
             <div style="display: flex; flex-wrap: wrap; gap: 15px;">
                 <div class="input-group" style="flex: 1 1 30%;">
                     <label for="m2_tanggal">Tanggal Transaksi</label>
@@ -763,12 +772,10 @@
         if (user) {
             isLoggedIn = true;
             document.getElementById('login-section-bottom').style.display = 'none'; // Sembunyikan form login
-            document.getElementById('logout-info').style.display = 'flex'; // Tampilkan info logout
             document.getElementById('logout-message').textContent = 'Login: ' + user.email;
         } else {
             isLoggedIn = false;
             document.getElementById('login-section-bottom').style.display = 'flex'; // Tampilkan form login
-            document.getElementById('logout-info').style.display = 'none'; // Sembunyikan info logout
             document.getElementById('logout-message').textContent = '';
         }
         recalculateAllReports(); 
@@ -791,17 +798,12 @@
         document.querySelectorAll('.admin-only').forEach(el => {
              // Untuk TH/TD, gunakan 'table-cell' atau biarkan CSS handle
              const isTableElement = el.tagName === 'TD' || el.tagName === 'TH';
-             const displayStyle = loggedIn ? (isTableElement ? 'table-cell' : 'flex') : 'none';
+             // Gunakan 'flex' karena DIV/form admin-only diatur sebagai flex/block di HTML
+             const displayStyle = loggedIn ? (isTableElement ? 'table-cell' : 'flex') : 'none'; 
              el.style.display = displayStyle;
         });
         document.getElementById('m1-form').style.display = loggedIn ? 'block' : 'none';
         document.getElementById('m2-form').style.display = loggedIn ? 'block' : 'none';
-        
-        // Pastikan div admin actions di kiri juga diatur display-nya
-        const adminActionsLeft = document.getElementById('admin-actions-left');
-        if(adminActionsLeft) {
-            adminActionsLeft.style.display = loggedIn ? 'flex' : 'none';
-        }
     }
 // ===========================================
 // --- MODUL 1 LOGIC (Dana Koin) ---
