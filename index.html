@@ -621,8 +621,6 @@
         document.getElementById('m1-form').style.display = loggedIn ? 'block' : 'none';
         document.getElementById('m2-form').style.display = loggedIn ? 'block' : 'none';
     }
-
-
     // ===========================================
 // --- MODUL 1 LOGIC (Dana Koin) ---
 // ===========================================
@@ -631,7 +629,7 @@ function saveM1aTransaction(event) {
     
     // 1. Cek Login
     if (!isLoggedIn) { 
-        alert("Anda harus login untuk menyimpan data. Silakan login di bawah."); 
+        console.log("GAGAL SIMPAN: Belum Login."); 
         return; 
     }
 
@@ -639,9 +637,12 @@ function saveM1aTransaction(event) {
     
     // 2. Cek Nominal & Tanggal
     if (nominal <= 0 || isNaN(nominal) || !document.getElementById('m1_tanggal').value) { 
-        alert("Tanggal dan Nominal (> 0) harus diisi."); 
+        console.log("GAGAL SIMPAN: Nominal atau Tanggal tidak valid."); 
         return; 
     }
+
+    // ⭐⭐ BARIS KUNCI: AKAN MUNCUL JIKA SUKSES VALIDASI ⭐⭐
+    console.log("✅ DATA KOIN TER-VALIDASI. Mencoba menyimpan ke Firebase..."); 
 
     const newTransaction = {
         tanggal: document.getElementById('m1_tanggal').value,
@@ -656,15 +657,17 @@ function saveM1aTransaction(event) {
     // 3. Simpan ke Firebase
     database.ref('transactions/m1a').push(newTransaction)
         .then(() => {
-            alert('Data Koin berhasil disimpan!');
+            console.log("✅ STATUS: SUKSES DISIMPAN KE FIREBASE! (Cek di Console)");
             document.getElementById('m1-form').reset();
             loadAllDataAndRecalculate(); 
         })
         .catch(error => {
             console.error("Gagal menyimpan data:", error);
-            alert("Gagal menyimpan data ke Firebase. Error: " + error.message);
+            // Kita harus melihat error di sini jika ada masalah otorisasi mendadak.
         });
 }
+
+    
     function updateModul1() {
         const tableBody = document.getElementById('m1-table-body');
         if (!tableBody) return;
@@ -1127,5 +1130,6 @@ function saveM1aTransaction(event) {
 </script>
 </body>
 </html>
+
 
 
