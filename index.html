@@ -1500,7 +1500,7 @@ function updateM1aTransaction() {
         let runningSaldoTahunan = saldoBankAwal + saldoTunaiAwal;
 
         // --- Inisialisasi Grand Total ---
-        let totalPenerimaan = 0; // TOTAL PENERIMAAN BULANAN (Tanpa Saldo Awal)
+        let totalPenerimaan = 0; 
         let totalJmlDonatur = 0;
         let totalUangPendidikan = 0;
         let totalPenerimaPendidikan = 0;
@@ -1521,7 +1521,7 @@ function updateM1aTransaction() {
         let totalBiayaRekBank = 0;
         let totalLainLain = 0;
         let totalJumlahPengeluaran = 0;
-        let finalSaldoTahunan = runningSaldoTahunan; // Akan diisi dengan saldo akhir bulan Desember
+        let finalSaldoTahunan = runningSaldoTahunan; 
 
         // --- BARIS SALDO AWAL TAHUN (Baris 1 & 2) ---
         
@@ -1556,7 +1556,7 @@ function updateM1aTransaction() {
                 <td class="text-center">${index + 3}</td>
                 <td>${data.bulan}</td>
                 <td class="text-right numeric-cell bg-dana-masuk">${formatNominal(data.penerimaan)}</td>
-                <td class="text-center">${data.pengeluaranWajib.donatur}</td>
+                <td class="text-center">${formatNominal(data.pengeluaranWajib.donatur)}</td>
                 <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.pendidikan.uang)}</td>
                 <td class="text-center">${formatNominal(data.pengeluaranWajib.pendidikan.penerima)}</td>
                 <td class="text-right numeric-cell">${formatNominal(data.pengeluaranWajib.kesehatan.uang)}</td>
@@ -1606,15 +1606,16 @@ function updateM1aTransaction() {
             totalBiayaRekBank += data.pengeluaranLain.biayaRekBank;
             totalLainLain += data.pengeluaranLain.lainLain;
             totalJumlahPengeluaran += data.jumlahPengeluaran;
-            finalSaldoTahunan = data.saldoKasTahunBerjalan; // Ambil saldo akhir bulan terakhir
+            finalSaldoTahunan = data.saldoKasTahunBerjalan; 
         });
         
         // --- Update Footer (tfoot) menggunakan ID atau nth-child selector ---
         
         // Kolom 2: Teks (Disingkat menjadi TOTAL)
+        // Ini adalah kolom tempat keterangan "Bulan" berada
         document.querySelector('#m3-table tfoot td:nth-child(2)').innerHTML = `<strong>TOTAL</strong>`;
         
-        // Kolom 3: PENERIMAAN (3) - TOTAL Kumulatif: (Total Bulanan + Saldo Bank Awal + Saldo Tunai Awal)
+        // Kolom 3: PENERIMAAN (3) - TOTAL Kumulatif
         const grandTotalPenerimaan = totalPenerimaan + saldoBankAwal + saldoTunaiAwal;
         document.querySelector('#m3-table tfoot td:nth-child(3)').innerHTML = `<strong>${formatNominal(grandTotalPenerimaan)}</strong>`;
 
@@ -1647,7 +1648,7 @@ function updateM1aTransaction() {
         document.getElementById('m3-total-pengeluaran').innerHTML = `<strong>${formatNominal(totalJumlahPengeluaran)}</strong>`;
 
         // Kolom 8: SALDO AKHIR BULAN INI (8) 
-        // Kolom ini biasanya tidak di-total, diisi 0 agar tidak kosong.
+        // Diberi nilai 0 karena kolom ini bukan kolom penjumlahan kumulatif tahunan.
         document.getElementById('m3-total-saldo-akhir-bulan').innerHTML = `<strong>${formatNominal(0)}</strong>`;
         
         // Kolom 9: SALDO KAS TAHUN BERJALAN (9) - SALDO AKHIR TAHUN
@@ -1838,5 +1839,6 @@ function updateM1aTransaction() {
 </script>
 </body>
 </html>
+
 
 
