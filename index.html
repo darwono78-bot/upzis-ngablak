@@ -624,37 +624,47 @@
 
 
     // ===========================================
-    // --- MODUL 1 LOGIC (Dana Koin) ---
-    // ===========================================
-    function saveM1aTransaction(event) {
-        event.preventDefault();
-        if (!isLoggedIn) { alert("Anda harus login untuk menyimpan data. Silakan login di bawah."); return; }
-
-        const nominal = parseFloat(document.getElementById('m1_nominal').value);
-        if (nominal <= 0 || !document.getElementById('m1_tanggal').value) { alert("Tanggal dan Nominal (> 0) harus diisi."); return; }
-
-        const newTransaction = {
-            tanggal: document.getElementById('m1_tanggal').value,
-            petugas: document.getElementById('m1_petugas').value,
-            noHp: document.getElementById('m1_no_hp').value,
-            donatur: document.getElementById('m1_donatur').value,
-            alamat: document.getElementById('m1_alamat').value,
-            nominal: nominal,
-            timestamp: firebase.database.ServerValue.TIMESTAMP 
-        };
-
-        database.ref('transactions/m1a').push(newTransaction)
-            .then(() => {
-                alert('Data Koin berhasil disimpan!');
-                document.getElementById('m1-form').reset();
-                loadAllDataAndRecalculate(); 
-            })
-            .catch(error => {
-                console.error("Gagal menyimpan data:", error);
-                alert("Gagal menyimpan data ke Firebase. Error: " + error.message);
-            });
+// --- MODUL 1 LOGIC (Dana Koin) ---
+// ===========================================
+function saveM1aTransaction(event) {
+    event.preventDefault();
+    
+    // 1. Cek Login
+    if (!isLoggedIn) { 
+        alert("Anda harus login untuk menyimpan data. Silakan login di bawah."); 
+        return; 
     }
 
+    const nominal = parseFloat(document.getElementById('m1_nominal').value);
+    
+    // 2. Cek Nominal & Tanggal
+    if (nominal <= 0 || isNaN(nominal) || !document.getElementById('m1_tanggal').value) { 
+        alert("Tanggal dan Nominal (> 0) harus diisi."); 
+        return; 
+    }
+
+    const newTransaction = {
+        tanggal: document.getElementById('m1_tanggal').value,
+        petugas: document.getElementById('m1_petugas').value,
+        noHp: document.getElementById('m1_no_hp').value,
+        donatur: document.getElementById('m1_donatur').value,
+        alamat: document.getElementById('m1_alamat').value,
+        nominal: nominal,
+        timestamp: firebase.database.ServerValue.TIMESTAMP 
+    };
+
+    // 3. Simpan ke Firebase
+    database.ref('transactions/m1a').push(newTransaction)
+        .then(() => {
+            alert('Data Koin berhasil disimpan!');
+            document.getElementById('m1-form').reset();
+            loadAllDataAndRecalculate(); 
+        })
+        .catch(error => {
+            console.error("Gagal menyimpan data:", error);
+            alert("Gagal menyimpan data ke Firebase. Error: " + error.message);
+        });
+}
     function updateModul1() {
         const tableBody = document.getElementById('m1-table-body');
         if (!tableBody) return;
@@ -1117,4 +1127,5 @@
 </script>
 </body>
 </html>
+
 
