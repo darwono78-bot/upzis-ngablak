@@ -104,6 +104,7 @@
         }
         
         /* Footer Total (tfoot) - Warna Hijau NU (Updated for better contrast) */
+        /* PERMINTAAN USER: Memastikan Footer M2 & M3 (dan M1) menggunakan warna header kolom */
         table tfoot tr {
             background-color: var(--nu-dark-green); 
             color: var(--nu-white);
@@ -233,8 +234,11 @@
                         <td class="text-right numeric-cell" id="m1-total-nominal">
                             <strong>Rp 0</strong> 
                         </td>
-                        <td colspan="5" class="text-right"></td>
-                    </tr>
+                        <td class="text-right numeric-cell" id="m1-total-ranting"><strong>Rp 0</strong></td>
+                        <td class="text-right numeric-cell" id="m1-total-petugas"><strong>Rp 0</strong></td>
+                        <td class="text-right numeric-cell" id="m1-total-mwc"><strong>Rp 0</strong></td>
+                        <td class="text-right numeric-cell" id="m1-total-pc"><strong>Rp 0</strong></td>
+                        <td class="text-center admin-only"></td> </tr>
                 </tfoot>
             </table>
         </div>
@@ -871,6 +875,10 @@ function saveM1aTransaction(event) {
     tableBody.innerHTML = '';
 
     let grandTotalNominal = 0; 
+    let grandTotalRanting = 0; // NEW: Akumulator untuk Ranting (60%)
+    let grandTotalPetugas = 0; // NEW: Akumulator untuk Petugas (10%)
+    let grandTotalMWC = 0;     // NEW: Akumulator untuk MWC (25%)
+    let grandTotalPC = 0;      // NEW: Akumulator untuk PC (5%)
 
     const filteredTxns = m1aTransactions.filter(t => {
         const dateInfo = getMonthYearFromDate(t.tanggal);
@@ -888,6 +896,12 @@ function saveM1aTransaction(event) {
         const petugas = nominal * 0.1;
         const mwc = nominal * 0.25;
         const pc = nominal * 0.05;
+
+        // 2. AKUMULASI TOTAL BARU
+        grandTotalRanting += ranting;
+        grandTotalPetugas += petugas;
+        grandTotalMWC += mwc;
+        grandTotalPC += pc;
 
         const row = tableBody.insertRow();
         row.innerHTML = `
@@ -911,8 +925,12 @@ function saveM1aTransaction(event) {
         `;
     });
     
-    // 2. TAMPILKAN GRAND TOTAL DI FOOTER
+    // 3. TAMPILKAN GRAND TOTAL DI FOOTER (UPDATED)
     totalNominalCell.innerHTML = `<strong>${formatNominal(grandTotalNominal)}</strong>`; 
+    document.getElementById('m1-total-ranting').innerHTML = `<strong>${formatNominal(grandTotalRanting)}</strong>`;
+    document.getElementById('m1-total-petugas').innerHTML = `<strong>${formatNominal(grandTotalPetugas)}</strong>`;
+    document.getElementById('m1-total-mwc').innerHTML = `<strong>${formatNominal(grandTotalMWC)}</strong>`;
+    document.getElementById('m1-total-pc').innerHTML = `<strong>${formatNominal(grandTotalPC)}</strong>`;
 }
 
     // ===========================================
