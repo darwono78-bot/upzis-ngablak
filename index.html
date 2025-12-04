@@ -367,6 +367,10 @@
     let currentFilterMonth = new Date().getMonth() + 1;
     let currentFilterYear = new Date().getFullYear();
     let currentM2InitialBalance = 0; // Saldo Awal Bulan M2, disimpan di global state sementara
+    // ⭐⭐ SISIPKAN KODE BARU DI SINI UNTUK STEP 1 ⭐⭐
+    let isEditing = false; // Status apakah sedang dalam mode edit
+    let currentEditId = null; // Menyimpan ID transaksi yang sedang diedit
+    // ⭐⭐ SAMPAI SINI ⭐⭐
 
     // Data Global yang Dimuat dari Firebase
     let reportYear = new Date().getFullYear();
@@ -624,25 +628,23 @@
     // ===========================================
 // --- MODUL 1 LOGIC (Dana Koin) ---
 // ===========================================
-function saveM1aTransaction(event) {
-    event.preventDefault();
+event.preventDefault();
     
-    // 1. Cek Login
-    if (!isLoggedIn) { 
-        console.log("GAGAL SIMPAN: Belum Login."); 
-        return; 
+    // ⭐⭐ PENGECEKAN MODE EDIT BARU DITAMBAHKAN DI SINI ⭐⭐
+    if (isEditing) {
+        updateM1aTransaction(); // Panggil fungsi update jika sedang edit
+        return;
     }
+    
+    // --- Lanjutan logika SIMPAN BARU (PUSH) ---
+    if (!isLoggedIn) { alert("Anda harus login untuk menyimpan data."); return; }
 
     const nominal = parseFloat(document.getElementById('m1_nominal').value);
     
-    // 2. Cek Nominal & Tanggal
     if (nominal <= 0 || isNaN(nominal) || !document.getElementById('m1_tanggal').value) { 
-        console.log("GAGAL SIMPAN: Nominal atau Tanggal tidak valid."); 
+        alert("Tanggal dan Nominal (> 0) harus diisi."); 
         return; 
     }
-
-    // ⭐⭐ BARIS KUNCI: AKAN MUNCUL JIKA SUKSES VALIDASI ⭐⭐
-    console.log("✅ DATA KOIN TER-VALIDASI. Mencoba menyimpan ke Firebase..."); 
 
     const newTransaction = {
         tanggal: document.getElementById('m1_tanggal').value,
@@ -654,7 +656,6 @@ function saveM1aTransaction(event) {
         timestamp: firebase.database.ServerValue.TIMESTAMP 
     };
 
-    // 3. Simpan ke Firebase
     database.ref('transactions/m1a').push(newTransaction)
         .then(() => {
             alert('Data Koin berhasil disimpan!');
@@ -663,10 +664,9 @@ function saveM1aTransaction(event) {
         })
         .catch(error => {
             console.error("Gagal menyimpan data:", error);
-            // Kita harus melihat error di sini jika ada masalah otorisasi mendadak.
+            alert("Gagal menyimpan data ke Firebase. Error: " + error.message);
         });
 }
-
     
     function updateModul1() {
         const tableBody = document.getElementById('m1-table-body');
@@ -700,7 +700,7 @@ function saveM1aTransaction(event) {
                 <td class="text-right numeric-cell">${formatNominal(mwc)}</td>
                 <td class="text-right numeric-cell">${formatNominal(pc)}</td>
                 <td class="text-center admin-only">
-                    <button class="btn-action" onclick="alert('Fitur Edit belum diimplementasikan.')">Edit</button>
+                   <button class="btn-action" onclick="editTransaction('m1a', '${t.id}')">Edit</button>
                     <button class="btn-action btn-danger" onclick="deleteTransaction('m1a', '${t.id}')">Hapus</button>
                 </td>
             `;
@@ -882,13 +882,97 @@ function saveM1aTransaction(event) {
                 <td class="text-right numeric-cell">${formatNominal(t.danaKeluar)}</td>
                 <td class="text-right numeric-cell">${formatNominal(runningSaldo)}</td>
                 <td class="text-center admin-only">
-                    <button class="btn-action" onclick="alert('Fitur Edit belum diimplementasikan.')">Edit</button>
+                    <button class="btn-action" onclick="editTransaction('m2', '${t.id}')">Edit</button>
                     <button class="btn-action btn-danger" onclick="deleteTransaction('m2', '${t.id}')">Hapus</button>
                 </td>
             `;
         });
     }
 
+    // ===========================================
+// --- 2A: Fungsi Reset (Dipanggil Setelah Update) ---
+// ===========================================
+function resetEditMode() {
+    isEditing = false;
+    currentEditId = null;
+    document.getElementById('m1-form').reset();
+    document.getElementById('m1-save-button').textContent = 'Simpan Data Koin';
+}
+
+// ===========================================
+// --- 2B: Fungsi EDIT (Mengambil Data dari Tabel ke Form) ---
+// ===========================================
+function editTransaction(type, id) {
+    if (!isLoggedIn) {
+        alert("Anda harus login untuk mengedit data.");
+        return;
+    }
+    
+    isEditing = true;
+    currentEditId = id;
+
+    // Ganti teks tombol Simpan menjadi Update
+    document.getElementById('m1-save-button').textContent = 'Update Data Koin';
+
+    // Ambil data dari Firebase berdasarkan ID
+    database.ref(`transactions/${type}/${id}`).once('value', snapshot => {
+        const data = snapshot.val();
+        if (data) {
+            // Isi formulir dengan data lama
+            document.getElementById('m1_tanggal').value = data.tanggal || '';
+            document.getElementById('m1_petugas').value = data.petugas || '';
+            document.getElementById('m1_no_hp').value = data.noHp || '';
+            document.getElementById('m1_donatur').value = data.donatur || '';
+            document.getElementById('m1_alamat').value = data.alamat || '';
+            document.getElementById('m1_nominal').value = data.nominal || '';
+            
+            document.getElementById('m1-form').scrollIntoView({ behavior: 'smooth' });
+            alert(`Siap mengedit data Donasi Koin (ID: ${id}).`);
+        } else {
+            alert("Data transaksi tidak ditemukan!");
+            resetEditMode();
+        }
+    });
+}
+
+// ===========================================
+// --- 2C: Fungsi UPDATE (Menyimpan Perubahan ke Firebase) ---
+// ===========================================
+function updateM1aTransaction() {
+    if (!isLoggedIn) { 
+        alert("Anda harus login untuk memperbarui data."); 
+        return; 
+    }
+
+    const nominal = parseFloat(document.getElementById('m1_nominal').value);
+    
+    if (nominal <= 0 || isNaN(nominal) || !document.getElementById('m1_tanggal').value) { 
+        alert("Tanggal dan Nominal (> 0) harus diisi."); 
+        return; 
+    }
+
+    const updatedTransaction = {
+        tanggal: document.getElementById('m1_tanggal').value,
+        petugas: document.getElementById('m1_petugas').value,
+        noHp: document.getElementById('m1_no_hp').value,
+        donatur: document.getElementById('m1_donatur').value,
+        alamat: document.getElementById('m1_alamat').value,
+        nominal: nominal,
+    };
+
+    // Menggunakan update() ke ID yang sedang diedit (currentEditId)
+    database.ref(`transactions/m1a/${currentEditId}`).update(updatedTransaction)
+        .then(() => {
+            alert('Data Koin berhasil diperbarui!');
+            resetEditMode();
+            loadAllDataAndRecalculate(); 
+        })
+        .catch(error => {
+            console.error("Gagal memperbarui data:", error);
+            alert("Gagal memperbarui data ke Firebase. Error: " + error.message);
+        });
+}
+    
     // ===========================================
     // --- MODUL 3 LOGIC (Laporan Tahunan) ---
     // ===========================================
@@ -1130,6 +1214,7 @@ function saveM1aTransaction(event) {
 </script>
 </body>
 </html>
+
 
 
 
