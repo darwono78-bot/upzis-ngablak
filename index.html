@@ -130,11 +130,6 @@
             font-weight: bold;
         }
         
-        /* HAPUS: Style untuk mengubah warna teks di footer menjadi gelap.
-           Karena footer kembali ke Hijau NU, teks harus tetap putih. 
-           (Kode sebelumnya sudah menghapus ini, ini hanya konfirmasi) */
-        /* ============================================== */
-
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .numeric-cell { white-space: nowrap; }
@@ -172,7 +167,10 @@
             table { font-size: 9px; min-width: 1200px; }
             th, td { padding: 6px 3px; }
             .flex-row { flex-direction: column; align-items: flex-start; }
-            .input-group { width: 100% !important; }
+            /* Tambahan: Pastikan input group di M2 full width di mobile */
+            #m2-form .input-group { width: 100% !important; flex: 1 1 100% !important; }
+            #m2-form > div { flex-wrap: wrap !important; }
+
             #top-controls { gap: 5px; }
             #filter-controls, #utility-controls { width: 100%; justify-content: flex-start !important; }
             #nav-menu { justify-content: space-around; }
@@ -377,7 +375,8 @@
         </div>
 
         <form id="m2-form" class="admin-only" onsubmit="saveM2ManualTransaction(event)" style="padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
-            <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
                 <div class="input-group" style="flex: 1 1 30%;">
                     <label for="m2_tanggal">Tanggal Transaksi</label>
                     <input type="date" id="m2_tanggal" required>
@@ -412,8 +411,11 @@
                     <label for="m2_keterangan">Keterangan Transaksi</label>
                     <input type="text" id="m2_keterangan" required placeholder="Cth: Pembelian seragam yatim piatu">
                 </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 15px;">
                 
-                <div class="input-group" style="flex: 1 1 95%;">
+                <div class="input-group" style="flex: 1 1 100%;">
                     <h4 style="margin-top: 0; font-size: 14px;">Jumlah Penerima (Tidak Wajib Diisi)</h4>
                     <div style="display: flex; flex-wrap: wrap; gap: 5px;">
                         <div style="flex: 1 1 13%;"><label for="m2_penerima_donatur">Donatur</label><input type="number" id="m2_penerima_donatur" value="0" min="0"></div>
@@ -426,13 +428,15 @@
                     </div>
                 </div>
 
-                <div class="input-group" style="flex: 1 1 45%;">
-                    <label for="m2_dana_masuk">Dana Masuk (Hanya Angka)</label>
-                    <input type="number" id="m2_dana_masuk" value="0" min="0" placeholder="Isi 0 jika pengeluaran">
-                </div>
-                <div class="input-group" style="flex: 1 1 45%;">
-                    <label for="m2_dana_keluar">Dana Keluar (Hanya Angka)</label>
-                    <input type="number" id="m2_dana_keluar" value="0" min="0" placeholder="Isi 0 jika penerimaan">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <div class="input-group" style="flex: 1 1 45%;">
+                        <label for="m2_dana_masuk">Dana Masuk (Hanya Angka)</label>
+                        <input type="number" id="m2_dana_masuk" value="0" min="0" placeholder="Isi 0 jika pengeluaran">
+                    </div>
+                    <div class="input-group" style="flex: 1 1 45%;">
+                        <label for="m2_dana_keluar">Dana Keluar (Hanya Angka)</label>
+                        <input type="number" id="m2_dana_keluar" value="0" min="0" placeholder="Isi 0 jika penerimaan">
+                    </div>
                 </div>
             </div>
             
@@ -1229,7 +1233,7 @@ function editTransaction(type, id) {
             } else if (type === 'm2') {
                 // Untuk Modul 2, harus ada fungsi edit/update yang terpisah, 
                 // tapi karena formulir M2 tidak memiliki ID tombol yang sama dengan M1,
-                // saya hanya akan mengisi formulir M2 sebagai contoh.
+                // update ini akan mengaktifkan mode edit tapi pengguna harus menghapus data lama manual.
                 
                 // Isi formulir M2 dengan data lama
                 document.getElementById('m2_tanggal').value = data.tanggal || '';
@@ -1247,13 +1251,7 @@ function editTransaction(type, id) {
                 document.getElementById('m2_penerima_bencana').value = data.penerimaBencana || 0;
                 
                 document.getElementById('m2-form').scrollIntoView({ behavior: 'smooth' });
-                alert(`Siap mengedit data Jurnal Umum (ID: ${id}). Klik 'Simpan Transaksi' di bawah untuk update.`);
-
-                // CATATAN: Karena fungsi saveM2ManualTransaction belum mendukung mode edit
-                // seperti M1, update ini akan menyimpan sebagai data baru.
-                // Untuk kesederhanaan, mode edit M2 diaktifkan, namun pengguna perlu 
-                // menghapus data lama secara manual.
-                // (Ini adalah batasan yang ada di kode asli, yang perlu perbaikan lebih lanjut)
+                alert(`Siap mengedit data Jurnal Umum (ID: ${id}). Untuk update, silakan ubah data dan klik 'Simpan Transaksi'. (Anda mungkin perlu menghapus entri lama secara manual jika ingin menggantinya, bukan mengedit langsung.)`);
             }
             
         } else {
