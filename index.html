@@ -8,6 +8,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         /* CSS Dasar & Responsif */
@@ -422,10 +425,8 @@
     let currentFilterMonth = new Date().getMonth() + 1;
     let currentFilterYear = new Date().getFullYear();
     let currentM2InitialBalance = 0; // Saldo Awal Bulan M2, disimpan di global state sementara
-    // ⭐⭐ SISIPKAN KODE BARU DI SINI UNTUK STEP 1 ⭐⭐
     let isEditing = false; // Status apakah sedang dalam mode edit
     let currentEditId = null; // Menyimpan ID transaksi yang sedang diedit
-    // ⭐⭐ SAMPAI SINI ⭐⭐
 
     // Data Global yang Dimuat dari Firebase
     let reportYear = new Date().getFullYear();
@@ -1413,9 +1414,153 @@ function updateM1aTransaction() {
     }
 
 
-    // [PLACEHOLDER] - Fungsi Aksi (PDF/Reset)
-    function generatePDF() { 
-        alert('Fitur Unduh PDF (dengan Tanda Tangan Ketua/Bendahara) memerlukan pustaka pihak ketiga (seperti jsPDF) dan akan diimplementasikan kemudian. Saat ini, fungsionalitasnya hanya simulasi.'); 
+    // ===========================================
+    // --- FUNGSI UNDUH PDF (IMPLEMENTASI BARU) ---
+    // ===========================================
+    function generatePDF() {
+        // Memastikan pustaka sudah dimuat
+        if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+            alert("Pustaka PDF (jsPDF dan html2canvas) belum dimuat. Coba muat ulang halaman atau periksa koneksi internet Anda.");
+            return;
+        }
+
+        // 1. Dapatkan konten modul yang aktif
+        let moduleTitle = '';
+        let contentId = ''; 
+        let tableId = '';
+
+        switch (activeModule) {
+            case 'modul-1-section':
+                moduleTitle = 'Laporan Dana Koin';
+                contentId = '#modul-1-section';
+                tableId = '#m1-table';
+                break;
+            case 'modul-2-section':
+                moduleTitle = 'Jurnal Umum (Dana Masuk & Keluar)';
+                contentId = '#modul-2-section';
+                tableId = '#m2-table';
+                break;
+            case 'modul-3-section':
+                moduleTitle = 'Laporan Tahunan';
+                contentId = '#modul-3-section';
+                tableId = '#m3-table';
+                break;
+            default:
+                alert("Modul tidak ditemukan.");
+                return;
+        }
+        
+        // 2. Tampilkan pesan proses
+        const button = document.querySelector('.btn-action[onclick="generatePDF()"]');
+        const originalText = button.textContent;
+        button.textContent = 'Memproses PDF... Tunggu Sebentar...';
+        button.disabled = true;
+
+        // Gunakan elemen scrollable-table
+        const input = document.querySelector(contentId + ' .scrollable-table'); 
+        
+        // Sembunyikan kolom aksi (Edit/Hapus) jika ada, agar tidak tercetak di PDF
+        const adminColumns = document.querySelectorAll(`${tableId} .admin-only`);
+        adminColumns.forEach(el => el.style.display = 'none');
+
+        // Menggunakan html2canvas untuk merender konten tabel
+        html2canvas(input, {
+            scale: 2, // Meningkatkan kualitas gambar
+            useCORS: true,
+            windowWidth: input.scrollWidth + 20, // Pastikan lebar canvas cukup
+            width: input.scrollWidth + 20, // Set lebar canvas
+            x: input.scrollLeft, // Mulai dari awal scroll
+            scrollX: -input.scrollLeft, // Compensate for scroll
+            scrollY: -window.scrollY // Pastikan capture dari awal elemen
+        }).then(canvas => {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('l', 'mm', 'a4'); // 'l' for landscape, 'mm' unit, 'a4' size
+            const imgData = canvas.toDataURL('image/jpeg', 1.0);
+            const margin = 10;
+            const pdfWidth = pdf.internal.pageSize.getWidth() - (2 * margin); // Lebar A4 Landscape dikurangi margin
+            const pdfHeight = pdf.internal.pageSize.getHeight() - (2 * margin); // Tinggi A4 Landscape dikurangi margin
+            const imgHeight = canvas.height * pdfWidth / canvas.width;
+            let heightLeft = imgHeight;
+            let position = margin; // Posisi awal Y (margin top)
+
+            // Teks Header PDF
+            pdf.setFontSize(14);
+            pdf.text(`Laporan Keuangan UPZIS NU - ${moduleTitle} Tahun ${currentFilterYear}`, pdf.internal.pageSize.getWidth() / 2, 10, null, null, "center");
+            pdf.setFontSize(10);
+            if (activeModule === 'modul-1-section' || activeModule === 'modul-2-section') {
+                pdf.text(`Filter: ${bulanNama[currentFilterMonth - 1]} ${currentFilterYear}`, pdf.internal.pageSize.getWidth() / 2, 15, null, null, "center");
+            }
+            pdf.line(margin, 17, pdf.internal.pageSize.getWidth() - margin, 17); // Garis pemisah
+
+            // Pindah posisi awal ke bawah header
+            position = 20;
+            heightLeft -= (position - margin);
+
+            // Menambahkan gambar (tabel) ke PDF (Multi-page logic)
+            let pageNum = 1;
+            while (heightLeft >= -1) { // -1 untuk mengakomodasi pembulatan
+                if (pageNum > 1) {
+                    pdf.addPage();
+                    position = margin; // Reset posisi Y untuk halaman baru
+                }
+                
+                // Tinggi konten yang dapat dimuat di halaman ini
+                let contentHeight = pdfHeight - position; 
+                
+                // Hitung tinggi potong (crop) dari gambar asli
+                let clipHeight = Math.min(heightLeft, contentHeight);
+
+                // Hitung posisi Y sumber (source Y) di canvas
+                let srcY = imgHeight - heightLeft;
+
+                // Tambahkan gambar dengan pemotongan
+                pdf.addImage(
+                    imgData, 
+                    'JPEG', 
+                    margin, // x-posisi di PDF
+                    position, // y-posisi di PDF
+                    pdfWidth, // lebar gambar di PDF
+                    imgHeight, // tinggi gambar di PDF
+                    undefined, // alias
+                    'NONE', // compression
+                    0, // rotation
+                    0, // sourceX
+                    (srcY / imgHeight) * canvas.height, // sourceY
+                    canvas.width, // sourceWidth
+                    (clipHeight / imgHeight) * canvas.height // sourceHeight
+                );
+
+                heightLeft -= contentHeight;
+                position = contentHeight + margin;
+                pageNum++;
+            }
+            
+            // Tambahkan placeholder tanda tangan (di halaman terakhir)
+            const signatureText = "Mengetahui,\nKetua UPZISNU\n\n\n\n( Nama Ketua )";
+            const bendaharaText = "Dibuat oleh,\nBendahara UPZISNU\n\n\n\n( Nama Bendahara )";
+            const signatureY = pdf.internal.pageSize.getHeight() - 40; 
+            const center = pdf.internal.pageSize.getWidth() / 2;
+
+            pdf.setFontSize(10);
+            pdf.text(signatureText, center - 50, signatureY, { align: "center" });
+            pdf.text(bendaharaText, center + 50, signatureY, { align: "center" });
+
+            // Simpan PDF
+            const filename = `${moduleTitle.replace(/\s/g, '_')}_${currentFilterMonth > 0 ? bulanNama[currentFilterMonth - 1] : 'Tahunan'}_${currentFilterYear}.pdf`;
+            pdf.save(filename);
+
+            // 3. Kembalikan tampilan tombol dan kolom aksi
+            button.textContent = originalText;
+            button.disabled = false;
+            adminColumns.forEach(el => el.style.display = isLoggedIn ? (el.tagName === 'TD' || el.tagName === 'TH' ? 'table-cell' : 'flex') : 'none');
+
+        }).catch(error => {
+            console.error("Gagal membuat PDF:", error);
+            alert("Gagal membuat PDF. Periksa konsol untuk detailnya.");
+            button.textContent = originalText;
+            button.disabled = false;
+            adminColumns.forEach(el => el.style.display = isLoggedIn ? (el.tagName === 'TD' || el.tagName === 'TH' ? 'table-cell' : 'flex') : 'none');
+        });
     }
     
     function resetApp() { 
