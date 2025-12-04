@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Pelaporan Keuangan NU - Firebase Native</title>
+    <title>NU CARE UPZIS - LAZISNU RANTING NGABLAK</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
@@ -13,21 +13,79 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
+        /* Define NU Green Variables */
+        :root {
+            --nu-green: #006400; /* Warna utama NU */
+            --nu-dark-green: #004d00; /* Warna lebih gelap untuk header tabel */
+            --nu-light-green: #e6ffe6; 
+            --nu-white: white;
+        }
+
         /* CSS Dasar & Responsif */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333; }
         .container { width: 98%; max-width: 1400px; margin: 0 auto; padding: 10px; }
-        h1, h2, h3 { color: #006400; }
+        /* Judul modul tetap hijau, namun judul utama di navbar menjadi putih */
+        h2, h3 { color: var(--nu-green); }
         
-        /* Navbar & Menu */
-        #main-nav { background-color: #006400; color: white; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
-        #nav-menu button { background: none; color: white; border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; transition: background-color 0.3s; }
-        #nav-menu button:hover { background-color: #004d00; }
-        .active-module { font-weight: bold; background-color: #004d00 !important; }
+        /* Navbar & Menu (Diperbarui) */
+        #main-nav { 
+            background-color: var(--nu-green); 
+            color: var(--nu-white); 
+            padding: 10px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        
+        /* Header Branding (Logo & Title) */
+        #header-branding {
+            display: flex; 
+            align-items: center; 
+            gap: 15px;
+        }
+        #header-branding h1 {
+            color: var(--nu-white); /* Judul utama putih di background hijau */
+            font-size: 24px;
+            margin: 0;
+        }
+        #secretariat-address {
+            margin: 0;
+            font-size: 12px;
+            color: #ccf; /* Warna terang untuk alamat */
+        }
+        #logo-nu {
+            width: 60px; /* Ukuran Logo */
+            height: 60px;
+            /* Menggunakan file logo yang disebutkan user */
+            background-image: url('logo-lazisnu.png'); 
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            flex-shrink: 0;
+        }
 
-        /* Tabel Umum */
+        #nav-menu button { background: none; color: var(--nu-white); border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; transition: background-color 0.3s; }
+        #nav-menu button:hover { background-color: var(--nu-dark-green); }
+        .active-module { font-weight: bold; background-color: var(--nu-dark-green) !important; }
+
+        /* Tabel Umum - Header & Footer (Diperbarui) */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10px; table-layout: auto; min-width: 1000px; }
         th, td { border: 1px solid #ddd; padding: 8px 4px; text-align: left; word-wrap: break-word; }
-        th { background-color: #e9ecef; text-align: center; }
+        
+        /* Header Kolom (th) - Warna Hijau NU */
+        th { 
+            background-color: var(--nu-dark-green); 
+            color: var(--nu-white); 
+            text-align: center; 
+        }
+        
+        /* Footer Total (tfoot) - Warna Hijau NU */
+        table tfoot tr {
+            background-color: var(--nu-green); 
+            color: var(--nu-white);
+            font-weight: bold;
+        }
+
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .numeric-cell { white-space: nowrap; }
@@ -35,7 +93,7 @@
         /* Baris Khusus Modul 2 */
         .auto-txn-row td { background-color: #f0f0f0; font-weight: bold; }
         .saldo-awal-input-cell input { border: none; background-color: transparent; width: 100%; text-align: right; }
-        .saldo-awal-row { background-color: #e6ffe6; font-weight: bold; }
+        .saldo-awal-row { background-color: var(--nu-light-green); font-weight: bold; }
 
         /* Input Form */
         .input-group label { display: block; margin-top: 10px; font-weight: bold; font-size: 12px; }
@@ -45,13 +103,15 @@
         .flex-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
         .admin-only, #logout-info { display: none; }
         .btn-action { padding: 4px 8px; cursor: pointer; font-size: 10px; margin: 2px; border-radius: 4px; border: 1px solid #ccc; }
-        .btn-primary { background-color: #006400; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-        .btn-danger { background-color: #dc3545; color: white; border: none; }
+        .btn-primary { background-color: var(--nu-green); color: var(--nu-white); border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-danger { background-color: #dc3545; color: var(--nu-white); border: none; }
         .module-section { margin-top: 20px; }
         .scrollable-table { overflow-x: auto; margin-bottom: 20px; }
         
         /* Mobile Adjustments */
         @media (max-width: 900px) {
+            #main-nav { flex-direction: column; align-items: flex-start; }
+            #header-branding { margin-bottom: 10px; }
             table { font-size: 9px; min-width: 1200px; }
             th, td { padding: 6px 3px; }
             .flex-row { flex-direction: column; align-items: flex-start; }
@@ -64,7 +124,13 @@
 <body>
 
 <div id="main-nav">
-    <h1>Sistem Keuangan UPZIS</h1>
+    <div id="header-branding" style="display: flex; align-items: center; gap: 15px;">
+        <div id="logo-nu"></div> 
+        <div>
+            <h1>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h1>
+            <p id="secretariat-address">Sekretariat: Jalan [Nama Jalan], Desa Ngablak, Kec. [Kecamatan], Kab. [Kabupaten]</p>
+        </div>
+    </div>
     <div id="nav-menu">
         <button id="nav-modul-1-section" onclick="setActiveModule('modul-1-section')" class="active-module">M1: Dana Koin</button>
         <button id="nav-modul-2-section" onclick="setActiveModule('modul-2-section')">M2: Jurnal Umum</button>
@@ -282,7 +348,7 @@
     <section id="modul-3-section" class="module-section" style="display:none;">
         <h2>Modul 3: Laporan Tahunan</h2>
         
-        <div class="admin-only" style="margin-bottom: 15px; background-color: #e6ffe6; padding: 15px; border-radius: 8px;">
+        <div class="admin-only" style="margin-bottom: 15px; background-color: var(--nu-light-green); padding: 15px; border-radius: 8px;">
             <h3>Input Saldo Awal Tahunan (Pengaruh ke Baris 1 & 2 Laporan Tahunan)</h3>
             <div class="flex-row" style="gap: 10px;">
                 <div class="input-group" style="flex-grow: 1;">
@@ -308,7 +374,8 @@
                         <th class="text-center" rowspan="4" style="width: 25px;">NO (1)</th>
                         <th class="text-center" rowspan="4" style="width: 80px;">BULAN (2)</th>
                         <th class="text-center" rowspan="4" style="width: 100px;">PENERIMAAN (3)</th>
-                        <th class="text-center" rowspan="4" style="width: 80px;">JML DONATUR (4)</th> <th class="text-center" colspan="14">PENGELUARAN WAJIB (5)</th>
+                        <th class="text-center" rowspan="4" style="width: 80px;">JML DONATUR (4)</th> 
+                        <th class="text-center" colspan="14">PENGELUARAN WAJIB (5)</th>
                         <th class="text-center" colspan="4">PENGELUARAN LAIN-LAIN (6)</th>
                         <th class="text-center" rowspan="4" style="width: 100px;">JUMLAH PENGELUARAN (7)</th>
                         <th class="text-center" rowspan="4" style="width: 100px;">SALDO AKHIR BULAN INI (8)</th>
@@ -684,7 +751,7 @@
 // ===========================================
 // --- MODUL 1 LOGIC (Dana Koin) ---
 // ===========================================
-function saveM1aTransaction(event) { // <--- BARIS INI YANG HILANG DAN SUDAH DIKEMBALIKAN!
+function saveM1aTransaction(event) { 
     event.preventDefault();
     
     // ⭐⭐ PENGECEKAN MODE EDIT ⭐⭐
@@ -727,11 +794,11 @@ function saveM1aTransaction(event) { // <--- BARIS INI YANG HILANG DAN SUDAH DIK
     
     function updateModul1() {
     const tableBody = document.getElementById('m1-table-body');
-    const totalNominalCell = document.getElementById('m1-total-nominal'); // <-- Elemen baru
+    const totalNominalCell = document.getElementById('m1-total-nominal'); 
     if (!tableBody || !totalNominalCell) return;
     tableBody.innerHTML = '';
 
-    let grandTotalNominal = 0; // <-- Variabel baru untuk menampung total
+    let grandTotalNominal = 0; 
 
     const filteredTxns = m1aTransactions.filter(t => {
         const dateInfo = getMonthYearFromDate(t.tanggal);
@@ -981,7 +1048,7 @@ function saveM1aTransaction(event) { // <--- BARIS INI YANG HILANG DAN SUDAH DIK
             `;
         });
         
-        // Update Footer (Permintaan 1)
+        // Update Footer (Warna Hijau NU sudah di handle CSS tfoot)
         document.getElementById('m2-total-penerima-donatur').innerHTML = `<strong>${formatNominal(totalPenerimaDonatur)}</strong>`;
         document.getElementById('m2-total-penerima-pendidikan').innerHTML = `<strong>${formatNominal(totalPenerimaPendidikan)}</strong>`;
         document.getElementById('m2-total-penerima-kesehatan').innerHTML = `<strong>${formatNominal(totalPenerimaKesehatan)}</strong>`;
@@ -1373,7 +1440,7 @@ function updateM1aTransaction() {
             finalSaldoTahunan = data.saldoKasTahunBerjalan; // Ambil saldo akhir bulan terakhir
         });
         
-        // Update Footer (Permintaan 3)
+        // Update Footer (Warna Hijau NU sudah di handle CSS tfoot)
         document.querySelector('#m3-table tfoot td:nth-child(3)').innerHTML = `<strong>${formatNominal(totalPenerimaan + saldoBankAwal + saldoTunaiAwal)}</strong>`; // PENERIMAAN (3) - Termasuk saldo awal
         document.getElementById('m3-total-donatur').innerHTML = `<strong>${formatNominal(totalJmlDonatur)}</strong>`;
         document.getElementById('m3-total-uang-pendidikan').innerHTML = `<strong>${formatNominal(totalUangPendidikan)}</strong>`;
@@ -1485,7 +1552,7 @@ function updateM1aTransaction() {
 
             // Teks Header PDF
             pdf.setFontSize(14);
-            pdf.text(`Laporan Keuangan UPZIS NU - ${moduleTitle} Tahun ${currentFilterYear}`, pdf.internal.pageSize.getWidth() / 2, 10, null, null, "center");
+            pdf.text(`Laporan Keuangan NU CARE UPZIS - LAZISNU RANTING NGABLAK - ${moduleTitle} Tahun ${currentFilterYear}`, pdf.internal.pageSize.getWidth() / 2, 10, null, null, "center");
             pdf.setFontSize(10);
             if (activeModule === 'modul-1-section' || activeModule === 'modul-2-section') {
                 pdf.text(`Filter: ${bulanNama[currentFilterMonth - 1]} ${currentFilterYear}`, pdf.internal.pageSize.getWidth() / 2, 15, null, null, "center");
