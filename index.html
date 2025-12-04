@@ -24,17 +24,14 @@
         /* CSS Dasar & Responsif */
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; color: #333; }
         .container { width: 98%; max-width: 1400px; margin: 0 auto; padding: 10px; }
-        /* Judul modul tetap hijau, namun judul utama di navbar menjadi putih */
+        /* Judul modul */
         h2, h3 { color: var(--nu-green); }
         
-        /* Navbar & Menu (Diperbarui) */
-        #main-nav { 
-            background-color: var(--nu-green); 
-            color: var(--nu-white); 
+        /* --- BRANDING HEADER (AREA PUTIH DI ATAS NAV BAR) --- */
+        #header-branding-container {
+            background-color: var(--nu-white); /* Background putih agar logo hijau terlihat */
             padding: 10px 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
+            border-bottom: 3px solid var(--nu-dark-green); /* Garis pemisah hijau tua */
         }
         
         /* Header Branding (Logo & Title) */
@@ -42,20 +39,22 @@
             display: flex; 
             align-items: center; 
             gap: 15px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
         #header-branding h1 {
-            color: var(--nu-white); /* Judul utama putih di background hijau */
-            font-size: 24px;
+            color: var(--nu-green); /* Judul utama kembali ke warna hijau */
+            font-size: 28px;
             margin: 0;
         }
         #secretariat-address {
             margin: 0;
-            font-size: 12px;
-            color: #ccf; /* Warna terang untuk alamat */
+            font-size: 14px;
+            color: #666; /* Warna gelap untuk alamat */
         }
         #logo-nu {
-            width: 60px; /* Ukuran Logo */
-            height: 60px;
+            width: 80px; /* Ukuran Logo */
+            height: 80px;
             /* Menggunakan file logo yang disebutkan user */
             background-image: url('logo-lazisnu.png'); 
             background-size: contain;
@@ -64,11 +63,36 @@
             flex-shrink: 0;
         }
 
-        #nav-menu button { background: none; color: var(--nu-white); border: none; padding: 8px 15px; cursor: pointer; border-radius: 4px; transition: background-color 0.3s; }
+        /* --- NAVIGATION BAR (AREA HIJAU) --- */
+        #main-nav { 
+            background-color: var(--nu-green); 
+            color: var(--nu-white); 
+            padding: 0 20px; 
+            display: flex; 
+            justify-content: center; /* Nav menu di tengah */
+            align-items: center; 
+            min-height: 40px;
+        }
+        #nav-menu {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            justify-content: flex-start;
+        }
+        #nav-menu button { 
+            background: none; 
+            color: var(--nu-white); 
+            border: none; 
+            padding: 8px 15px; 
+            cursor: pointer; 
+            border-radius: 0; /* Hilangkan border-radius agar menyatu dengan nav bar */
+            transition: background-color 0.3s; 
+        }
         #nav-menu button:hover { background-color: var(--nu-dark-green); }
         .active-module { font-weight: bold; background-color: var(--nu-dark-green) !important; }
 
-        /* Tabel Umum - Header & Footer (Diperbarui) */
+        /* Tabel Umum - Header & Footer (Warna NU Green) */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10px; table-layout: auto; min-width: 1000px; }
         th, td { border: 1px solid #ddd; padding: 8px 4px; text-align: left; word-wrap: break-word; }
         
@@ -110,27 +134,32 @@
         
         /* Mobile Adjustments */
         @media (max-width: 900px) {
-            #main-nav { flex-direction: column; align-items: flex-start; }
-            #header-branding { margin-bottom: 10px; }
+            #header-branding { flex-direction: column; align-items: flex-start; }
+            #header-branding h1 { font-size: 22px; }
+            #logo-nu { width: 60px; height: 60px; }
             table { font-size: 9px; min-width: 1200px; }
             th, td { padding: 6px 3px; }
             .flex-row { flex-direction: column; align-items: flex-start; }
             .input-group { width: 100% !important; }
             #top-controls { gap: 5px; }
             #filter-controls, #utility-controls { width: 100%; justify-content: flex-start !important; }
+            #nav-menu { justify-content: space-around; }
         }
     </style>
 </head>
 <body>
 
-<div id="main-nav">
-    <div id="header-branding" style="display: flex; align-items: center; gap: 15px;">
+<div id="header-branding-container">
+    <div id="header-branding">
         <div id="logo-nu"></div> 
         <div>
             <h1>NU CARE UPZIS - LAZISNU RANTING NGABLAK</h1>
             <p id="secretariat-address">Sekretariat: Jalan [Nama Jalan], Desa Ngablak, Kec. [Kecamatan], Kab. [Kabupaten]</p>
         </div>
     </div>
+</div>
+
+<div id="main-nav">
     <div id="nav-menu">
         <button id="nav-modul-1-section" onclick="setActiveModule('modul-1-section')" class="active-module">M1: Dana Koin</button>
         <button id="nav-modul-2-section" onclick="setActiveModule('modul-2-section')">M2: Jurnal Umum</button>
@@ -672,7 +701,6 @@
     function populateFilters() {
         const monthFilter = document.getElementById('filter-month');
         const yearFilter = document.getElementById('filter-year');
-        const currentMonthIdx = new Date().getMonth();
         const currentYear = new Date().getFullYear();
 
         monthFilter.innerHTML = '';
@@ -1215,9 +1243,6 @@ function updateM1aTransaction() {
         let runningSaldoTahunan = saldoBankAwal + saldoTunaiAwal;
 
         for (let month = 1; month <= 12; month++) {
-            const currentMonthStart = new Date(year, month - 1, 1).toISOString().split('T')[0];
-            const currentMonthEnd = new Date(year, month, 0).toISOString().split('T')[0];
-            
             // 1. Agregasi M1 (Dana Koin)
             const m1Txns = m1aTransactions.filter(t => {
                 const dateInfo = getMonthYearFromDate(t.tanggal);
