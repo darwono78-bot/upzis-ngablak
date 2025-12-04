@@ -255,7 +255,7 @@
                 </div>
             </div>
             
-            <button type="submit" class="btn-primary" style="margin-top: 15px;">Simpan Transaksi</button>
+            <button type="submit" id="m2-save-button" class="btn-primary" style="margin-top: 15px;">Simpan Transaksi</button>
         </form>
     </section>
 
@@ -347,7 +347,7 @@
     // --- FIREBASE CONFIGURATION & INITIALIZATION ---
     // ===========================================
     
-    // 🔥🔥🔥🔥 LANGKAH 1: GANTI PLACEHOLDER INI DENGAN KONFIGURASI ASLI ANDA 🔥🔥🔥🔥
+    // 🔥🔥🔥🔥 Konfigurasi ini diambil UTUH dari file Kakak! 🔥🔥🔥🔥
         const firebaseConfig = {
             apiKey: "AIzaSyA_8NMmZBaXZ4H6KQt7rHy8G1URR3HLP3A",
             authDomain: "upzis-ngablak.firebaseapp.com",
@@ -377,7 +377,7 @@
     let currentFilterMonth = new Date().getMonth() + 1;
     let currentFilterYear = new Date().getFullYear();
     let currentM2InitialBalance = 0; // Saldo Awal Bulan M2, disimpan di global state sementara
-    // ⭐⭐ SISIPKAN KODE BARU DI SINI UNTUK STEP 1 ⭐⭐
+    // ⭐⭐ VARIABEL EDIT DARI KAKAK ⭐⭐
     let isEditing = false; // Status apakah sedang dalam mode edit
     let currentEditId = null; // Menyimpan ID transaksi yang sedang diedit
     // ⭐⭐ SAMPAI SINI ⭐⭐
@@ -638,7 +638,7 @@
 // ===========================================
 // --- MODUL 1 LOGIC (Dana Koin) ---
 // ===========================================
-function saveM1aTransaction(event) { // <--- BARIS INI YANG HILANG DAN SUDAH DIKEMBALIKAN!
+function saveM1aTransaction(event) { 
     event.preventDefault();
     
     // ⭐⭐ PENGECEKAN MODE EDIT ⭐⭐
@@ -747,6 +747,13 @@ function saveM1aTransaction(event) { // <--- BARIS INI YANG HILANG DAN SUDAH DIK
     function saveM2ManualTransaction(event) {
         event.preventDefault();
         if (!isLoggedIn) { alert("Anda harus login untuk menyimpan data. Silakan login di bawah."); return; }
+        
+        // ⭐⭐ FIX B: ADD EDIT CHECK ⭐⭐
+        if (isEditing) {
+            updateM2ManualTransaction();
+            return;
+        }
+        // ---------------------
         
         const danaMasuk = parseFloat(document.getElementById('m2_dana_masuk').value) || 0;
         const danaKeluar = parseFloat(document.getElementById('m2_dana_keluar').value) || 0;
@@ -911,18 +918,25 @@ function saveM1aTransaction(event) { // <--- BARIS INI YANG HILANG DAN SUDAH DIK
     }
 
     // ===========================================
-// --- 2A: Fungsi Reset (Dipanggil Setelah Update) ---
+// --- FUNGSI EDIT/UPDATE MULTI-MODULE ---
 // ===========================================
+
+// 1. Fungsi Reset (Diperbaiki untuk reset M1 dan M2)
 function resetEditMode() {
     isEditing = false;
     currentEditId = null;
     document.getElementById('m1-form').reset();
     document.getElementById('m1-save-button').textContent = 'Simpan Data Koin';
+
+    // ⭐⭐ FIX D: ADD M2 RESET ⭐⭐
+    const m2Form = document.getElementById('m2-form');
+    const m2Button = document.getElementById('m2-save-button'); // Menggunakan ID yang sudah ditambahkan di HTML
+    if (m2Form) m2Form.reset();
+    if (m2Button) m2Button.textContent = 'Simpan Transaksi'; 
+    // ---------------------------
 }
 
-// ===========================================
-// --- 2B: Fungsi EDIT (Mengambil Data dari Tabel ke Form) ---
-// ===========================================
+// 2. Fungsi EDIT (Diperbarui untuk support M1 dan M2)
 function editTransaction(type, id) {
     if (!isLoggedIn) {
         alert("Anda harus login untuk mengedit data.");
@@ -932,23 +946,60 @@ function editTransaction(type, id) {
     isEditing = true;
     currentEditId = id;
 
+    let formId, saveButtonId, moduleName;
+
+    if (type === 'm1a') {
+        formId = 'm1-form';
+        saveButtonId = 'm1-save-button';
+        moduleName = 'Dana Koin';
+    } else if (type === 'm2') { 
+        formId = 'm2-form';
+        saveButtonId = 'm2-save-button';
+        moduleName = 'Jurnal Umum';
+    } else {
+        alert("Jenis modul tidak dikenal untuk pengeditan.");
+        resetEditMode();
+        return;
+    }
+
     // Ganti teks tombol Simpan menjadi Update
-    document.getElementById('m1-save-button').textContent = 'Update Data Koin';
+    const saveButton = document.getElementById(saveButtonId);
+    if (saveButton) saveButton.textContent = 'Update Data'; 
+    
+    // Scroll ke formulir agar mudah diedit
+    document.getElementById(formId).scrollIntoView({ behavior: 'smooth' });
 
     // Ambil data dari Firebase berdasarkan ID
     database.ref(`transactions/${type}/${id}`).once('value', snapshot => {
         const data = snapshot.val();
         if (data) {
-            // Isi formulir dengan data lama
-            document.getElementById('m1_tanggal').value = data.tanggal || '';
-            document.getElementById('m1_petugas').value = data.petugas || '';
-            document.getElementById('m1_no_hp').value = data.noHp || '';
-            document.getElementById('m1_donatur').value = data.donatur || '';
-            document.getElementById('m1_alamat').value = data.alamat || '';
-            document.getElementById('m1_nominal').value = data.nominal || '';
+            // --- Logika Pengisian Formulir ---
+            if (type === 'm1a') {
+                // Modul 1: Dana Koin
+                document.getElementById('m1_tanggal').value = data.tanggal || '';
+                document.getElementById('m1_petugas').value = data.petugas || '';
+                document.getElementById('m1_no_hp').value = data.noHp || '';
+                document.getElementById('m1_donatur').value = data.donatur || '';
+                document.getElementById('m1_alamat').value = data.alamat || '';
+                document.getElementById('m1_nominal').value = data.nominal || '';
             
-            document.getElementById('m1-form').scrollIntoView({ behavior: 'smooth' });
-            alert(`Siap mengedit data Donasi Koin (ID: ${id}).`);
+            } else if (type === 'm2') {
+                // ⭐⭐ FIX C: Populate M2 fields ⭐⭐
+                document.getElementById('m2_tanggal').value = data.tanggal || '';
+                document.getElementById('m2_kategori').value = data.kategori || '';
+                document.getElementById('m2_keterangan').value = data.keterangan || '';
+                document.getElementById('m2_dana_masuk').value = data.danaMasuk || 0;
+                document.getElementById('m2_dana_keluar').value = data.danaKeluar || 0;
+                document.getElementById('m2_penerima_donatur').value = data.penerimaDonatur || 0;
+                document.getElementById('m2_penerima_pendidikan').value = data.penerimaPendidikan || 0;
+                document.getElementById('m2_penerima_kesehatan').value = data.penerimaKesehatan || 0;
+                document.getElementById('m2_penerima_ekonomi').value = data.penerimaEkonomi || 0;
+                document.getElementById('m2_penerima_sosial').value = data.penerimaSosial || 0;
+                document.getElementById('m2_penerima_subsidi').value = data.penerimaSubsidi || 0;
+                document.getElementById('m2_penerima_bencana').value = data.penerimaBencana || 0;
+            }
+            
+            alert(`Siap mengedit data ${moduleName} (ID: ${id}).`);
         } else {
             alert("Data transaksi tidak ditemukan!");
             resetEditMode();
@@ -956,9 +1007,7 @@ function editTransaction(type, id) {
     });
 }
 
-// ===========================================
-// --- 2C: Fungsi UPDATE (Menyimpan Perubahan ke Firebase) ---
-// ===========================================
+// 3. Fungsi UPDATE M1
 function updateM1aTransaction() {
     if (!isLoggedIn) { 
         alert("Anda harus login untuk memperbarui data."); 
@@ -993,6 +1042,48 @@ function updateM1aTransaction() {
             alert("Gagal memperbarui data ke Firebase. Error: " + error.message);
         });
 }
+
+// ⭐⭐ FIX A: NEW FUNCTION - UPDATE M2 MANUAL TRANSACTION ⭐⭐
+function updateM2ManualTransaction() {
+    if (!isLoggedIn) { 
+        alert("Anda harus login untuk memperbarui data."); 
+        return; 
+    }
+
+    const danaMasuk = parseFloat(document.getElementById('m2_dana_masuk').value) || 0;
+    const danaKeluar = parseFloat(document.getElementById('m2_dana_keluar').value) || 0;
+    
+    if ((danaMasuk === 0 && danaKeluar === 0) || !document.getElementById('m2_tanggal').value) { 
+         alert("Tanggal dan salah satu dari Dana Masuk/Keluar harus diisi."); return; 
+    }
+
+    const updatedTransaction = {
+        tanggal: document.getElementById('m2_tanggal').value,
+        keterangan: document.getElementById('m2_keterangan').value,
+        kategori: document.getElementById('m2_kategori').value,
+        danaMasuk: danaMasuk,
+        danaKeluar: danaKeluar,
+        penerimaDonatur: parseInt(document.getElementById('m2_penerima_donatur').value) || 0,
+        penerimaPendidikan: parseInt(document.getElementById('m2_penerima_pendidikan').value) || 0,
+        penerimaKesehatan: parseInt(document.getElementById('m2_penerima_kesehatan').value) || 0,
+        penerimaEkonomi: parseInt(document.getElementById('m2_penerima_ekonomi').value) || 0,
+        penerimaSosial: parseInt(document.getElementById('m2_penerima_sosial').value) || 0,
+        penerimaSubsidi: parseInt(document.getElementById('m2_penerima_subsidi').value) || 0,
+        penerimaBencana: parseInt(document.getElementById('m2_penerima_bencana').value) || 0,
+    };
+
+    database.ref(`transactions/m2/${currentEditId}`).update(updatedTransaction)
+        .then(() => {
+            alert('Data Jurnal Umum berhasil diperbarui!');
+            resetEditMode();
+            loadAllDataAndRecalculate(); 
+        })
+        .catch(error => {
+            console.error("Gagal memperbarui data:", error);
+            alert("Gagal memperbarui data ke Firebase. Error: " + error.message);
+        });
+}
+// ------------------------------------------------------------------
     
     // ===========================================
     // --- MODUL 3 LOGIC (Laporan Tahunan) ---
