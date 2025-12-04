@@ -16,7 +16,7 @@
         /* Define NU Green Variables */
         :root {
             --nu-green: #006400; /* Warna utama NU */
-            --nu-dark-green: #004d00; /* Warna lebih gelap untuk header tabel */
+            --nu-dark-green: #004d00; /* Warna lebih gelap untuk header tabel dan footer */
             --nu-light-green: #e6ffe6; 
             --nu-white: white;
         }
@@ -103,9 +103,9 @@
             text-align: center; 
         }
         
-        /* Footer Total (tfoot) - Warna Hijau NU */
+        /* Footer Total (tfoot) - Warna Hijau NU (Updated for better contrast) */
         table tfoot tr {
-            background-color: var(--nu-green); 
+            background-color: var(--nu-dark-green); 
             color: var(--nu-white);
             font-weight: bold;
         }
@@ -113,6 +113,13 @@
         .text-center { text-align: center; }
         .text-right { text-align: right; }
         .numeric-cell { white-space: nowrap; }
+        
+        /* 3. Aksi Edit/Hapus Sejajar */
+        .btn-action-group {
+            display: flex;
+            gap: 2px;
+            justify-content: center; /* Center the buttons */
+        }
 
         /* Baris Khusus Modul 2 */
         .auto-txn-row td { background-color: #f0f0f0; font-weight: bold; }
@@ -144,6 +151,10 @@
             #top-controls { gap: 5px; }
             #filter-controls, #utility-controls { width: 100%; justify-content: flex-start !important; }
             #nav-menu { justify-content: space-around; }
+            
+            /* Penyesuaian Login di Mobile */
+            #login-form-content { flex-direction: column !important; width: 100%; }
+            #login-form-content input { width: 100% !important; }
         }
     </style>
 </head>
@@ -169,20 +180,26 @@
 
 <div class="container">
     
-    <div class="flex-row" id="top-controls">
-        <div id="filter-controls" class="flex-row" style="flex-grow: 1; justify-content: flex-start;">
-            <div style="font-weight: bold; flex-shrink: 0;">Filter:</div>
-            <select id="filter-month" onchange="applyFilter()" style="padding: 5px;">
-                </select>
-            <select id="filter-year" onchange="applyFilter()" style="padding: 5px;">
-                </select>
-            <button class="btn-action admin-only" onclick="resetApp()" style="background-color: #ffc107; color: #333;">Reset Data (Rata Kiri)</button>
-        </div>
-        <div id="utility-controls" class="flex-row" style="flex-grow: 1; justify-content: flex-end;">
-            <div id="logout-info" class="flex-row admin-only" style="gap: 5px; align-items: center;">
-                <span id="logout-message" style="font-size: 12px;"></span> 
-                <button class="btn-action btn-danger" onclick="logout()">Logout</button>
+    <div class="flex-row" id="top-controls" style="align-items: center; justify-content: space-between; margin-bottom: 5px;">
+        
+        <div id="left-group" class="flex-row" style="align-items: center; gap: 15px;">
+            
+            <div id="admin-actions-left" class="flex-row admin-only" style="gap: 5px; align-items: center; flex-shrink: 0;">
+                <div id="logout-info" class="flex-row" style="gap: 5px; align-items: center;">
+                    <button class="btn-action btn-danger" onclick="logout()">Logout</button>
+                    <span id="logout-message" style="font-size: 12px; margin-right: 10px;"></span> 
+                </div>
+                <button class="btn-action" onclick="resetApp()" style="background-color: #ffc107; color: #333;">Reset Data</button>
             </div>
+            
+            <div id="filter-controls" class="flex-row" style="justify-content: flex-start; gap: 5px; align-items: center; flex-shrink: 0;">
+                <div style="font-weight: bold;">Filter:</div>
+                <select id="filter-month" onchange="applyFilter()" style="padding: 5px;"></select>
+                <select id="filter-year" onchange="applyFilter()" style="padding: 5px;"></select>
+            </div>
+        </div>
+        
+        <div id="utility-controls" class="flex-row" style="justify-content: flex-end; flex-shrink: 0;">
             <button class="btn-action btn-primary" onclick="generatePDF()">Unduh PDF (Ttd Ketua/Bendahara)</button>
         </div>
     </div>
@@ -256,7 +273,9 @@
                     <input type="number" id="m1_nominal" required min="1" placeholder="Cth: 500000">
                 </div>
             </div>
-            <button type="submit" id="m1-save-button" class="btn-primary" style="margin-top: 15px;">Simpan Data Koin</button>
+            <div style="text-align: right; margin-top: 15px;">
+                <button type="submit" id="m1-save-button" class="btn-primary">Simpan Data Koin</button>
+            </div>
         </form>
         
     </section>
@@ -370,7 +389,9 @@
                 </div>
             </div>
             
-            <button type="submit" class="btn-primary" style="margin-top: 15px;">Simpan Transaksi</button>
+            <div style="text-align: right; margin-top: 15px;">
+                <button type="submit" class="btn-primary">Simpan Transaksi</button>
+            </div>
         </form>
     </section>
 
@@ -476,12 +497,12 @@
         </div>
     </section>
 
-    <div id="login-section-bottom" style="margin-top: 20px;">
-        <div id="login-form-content" style="display:flex; flex-direction: column; gap: 10px; max-width: 300px;">
-            <p>Kolom Login (di bawah Kolom Input)</p>
-            <input type="email" id="login-email" placeholder="Email Admin">
-            <input type="password" id="login-password" placeholder="Password Admin">
-            <button class="btn-primary" onclick="login()">Login</button>
+    <div id="login-section-bottom" style="margin-top: 20px; display: flex; justify-content: center;">
+        <div id="login-form-content" style="display:flex; align-items: center; gap: 10px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background-color: var(--nu-light-green);">
+            <p style="margin: 0; font-weight: bold; flex-shrink: 0;">Admin Login:</p>
+            <input type="email" id="login-email" placeholder="Email Admin" style="width: 180px;">
+            <input type="password" id="login-password" placeholder="Password Admin" style="width: 180px;">
+            <button class="btn-primary" onclick="login()" style="flex-shrink: 0;">Login</button>
         </div>
     </div>
 </div>
@@ -741,13 +762,13 @@
     auth.onAuthStateChanged((user) => {
         if (user) {
             isLoggedIn = true;
-            document.getElementById('login-form-content').style.display = 'none';
-            document.getElementById('logout-info').style.display = 'flex';
+            document.getElementById('login-section-bottom').style.display = 'none'; // Sembunyikan form login
+            document.getElementById('logout-info').style.display = 'flex'; // Tampilkan info logout
             document.getElementById('logout-message').textContent = 'Login: ' + user.email;
         } else {
             isLoggedIn = false;
-            document.getElementById('login-form-content').style.display = 'flex';
-            document.getElementById('logout-info').style.display = 'none';
+            document.getElementById('login-section-bottom').style.display = 'flex'; // Tampilkan form login
+            document.getElementById('logout-info').style.display = 'none'; // Sembunyikan info logout
             document.getElementById('logout-message').textContent = '';
         }
         recalculateAllReports(); 
@@ -775,6 +796,12 @@
         });
         document.getElementById('m1-form').style.display = loggedIn ? 'block' : 'none';
         document.getElementById('m2-form').style.display = loggedIn ? 'block' : 'none';
+        
+        // Pastikan div admin actions di kiri juga diatur display-nya
+        const adminActionsLeft = document.getElementById('admin-actions-left');
+        if(adminActionsLeft) {
+            adminActionsLeft.style.display = loggedIn ? 'flex' : 'none';
+        }
     }
 // ===========================================
 // --- MODUL 1 LOGIC (Dana Koin) ---
@@ -859,8 +886,10 @@ function saveM1aTransaction(event) {
             <td class="text-right numeric-cell">${formatNominal(mwc)}</td>
             <td class="text-right numeric-cell">${formatNominal(pc)}</td>
             <td class="text-center admin-only">
-                <button class="btn-action" onclick="editTransaction('m1a', '${t.id}')">Edit</button>
-                <button class="btn-action btn-danger" onclick="deleteTransaction('m1a', '${t.id}')">Hapus</button>
+                <div class="btn-action-group">
+                    <button class="btn-action" onclick="editTransaction('m1a', '${t.id}')">Edit</button>
+                    <button class="btn-action btn-danger" onclick="deleteTransaction('m1a', '${t.id}')">Hapus</button>
+                </div>
             </td>
         `;
     });
@@ -1070,8 +1099,10 @@ function saveM1aTransaction(event) {
                 <td class="text-right numeric-cell">${formatNominal(keluar)}</td>
                 <td class="text-right numeric-cell">${formatNominal(runningSaldo)}</td>
                 <td class="text-center admin-only">
-                    <button class="btn-action" onclick="editTransaction('m2', '${t.id}')">Edit</button>
-                    <button class="btn-action btn-danger" onclick="deleteTransaction('m2', '${t.id}')">Hapus</button>
+                    <div class="btn-action-group">
+                        <button class="btn-action" onclick="editTransaction('m2', '${t.id}')">Edit</button>
+                        <button class="btn-action btn-danger" onclick="deleteTransaction('m2', '${t.id}')">Hapus</button>
+                    </div>
                 </td>
             `;
         });
