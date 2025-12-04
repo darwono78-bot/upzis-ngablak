@@ -103,14 +103,15 @@
             text-align: center; 
         }
         
-        /* Footer Total (tfoot) - Warna Hijau NU (FIXED: Lebih spesifik ke TD) */
+        /* Footer Total (tfoot) - Warna Hijau NU (Diterapkan ke semua TD/TR di Footer) */
         table tfoot td, table tfoot tr {
             background-color: var(--nu-dark-green); 
             color: var(--nu-white); /* Dipastikan berwarna putih */
             font-weight: bold;
         }
         
-        /* === NEW/UPDATED: WARNA KHUSUS MODUL 2 & 3 === */
+        /* === NEW/UPDATED: WARNA KHUSUS MODUL 2 & 3 (Hanya untuk baris <tbody>) === */
+        /* Warna terang ini TIDAK diterapkan di tfoot lagi */
         .bg-dana-masuk {
             background-color: #d4edda !important; /* Soft Green (Success) */
         }
@@ -121,18 +122,15 @@
             background-color: #cce5ff !important; /* Soft Blue (Info) - Digunakan untuk Saldo Akhir Bulan */
             font-weight: bold;
         }
-        /* NEW: Warna Saldo Kumulatif Tahunan */
+        /* Warna Saldo Kumulatif Tahunan */
         .bg-final-saldo {
             background-color: #b8daff !important; /* Biru Sedang - Digunakan untuk Saldo Kas Tahunan */
             font-weight: bold;
         }
-        /* Style untuk mengubah warna teks di footer menjadi gelap jika latar belakangnya terang */
-        table tfoot td.bg-dana-masuk, 
-        table tfoot td.bg-dana-keluar, 
-        table tfoot td.bg-saldo,
-        table tfoot td.bg-final-saldo {
-            color: #333 !important;
-        }
+        
+        /* HAPUS: Style untuk mengubah warna teks di footer menjadi gelap.
+           Karena footer kembali ke Hijau NU, teks harus tetap putih. 
+           (Kode sebelumnya sudah menghapus ini, ini hanya konfirmasi) */
         /* ============================================== */
 
         .text-center { text-align: center; }
@@ -354,9 +352,9 @@
                         <td class="text-center" id="m2-total-penerima-subsidi"><strong>0</strong></td>
                         <td class="text-center" id="m2-total-penerima-bencana"><strong>0</strong></td>
                         <td class="text-right"><strong>TOTAL:</strong></td>
-                        <td class="text-right numeric-cell bg-dana-masuk" id="m2-total-dana-masuk"><strong>Rp 0</strong></td>
-                        <td class="text-right numeric-cell bg-dana-keluar" id="m2-total-dana-keluar"><strong>Rp 0</strong></td>
-                        <td class="text-right numeric-cell bg-saldo" id="m2-final-saldo"><strong>Rp 0</strong></td>
+                        <td class="text-right numeric-cell" id="m2-total-dana-masuk"><strong>Rp 0</strong></td>
+                        <td class="text-right numeric-cell" id="m2-total-dana-keluar"><strong>Rp 0</strong></td>
+                        <td class="text-right numeric-cell" id="m2-final-saldo"><strong>Rp 0</strong></td>
                         <td class="text-center admin-only" style="display: none;">-</td>
                     </tr>
                 </tfoot>
@@ -1034,8 +1032,6 @@ function saveM1aTransaction(event) {
         // --- Baris Otomatis dan Terkunci (Total 5 Baris) ---
         // 1. SALDO BULAN LALU (Input Manual)
         const rowSaldoAwal = tableBody.insertRow();
-        // NOTE: Saldo awal bulan di M2 tidak boleh memiliki kelas .saldo-awal-row
-        // karena kelas tersebut digunakan di M3 untuk baris Kas Bank/Tunai.
         rowSaldoAwal.classList.add('auto-txn-row');
         rowSaldoAwal.innerHTML = `
             <td class="text-center">-</td>
@@ -1168,7 +1164,7 @@ function saveM1aTransaction(event) {
             `;
         });
         
-        // Update Footer (Warna sudah diatur di tfoot menggunakan class baru)
+        // Update Footer (TIDAK menambahkan kelas warna di sini)
         document.getElementById('m2-total-penerima-donatur').innerHTML = `<strong>${formatNominal(totalPenerimaDonatur)}</strong>`;
         document.getElementById('m2-total-penerima-pendidikan').innerHTML = `<strong>${formatNominal(totalPenerimaPendidikan)}</strong>`;
         document.getElementById('m2-total-penerima-kesehatan').innerHTML = `<strong>${formatNominal(totalPenerimaKesehatan)}</strong>`;
@@ -1557,12 +1553,12 @@ function updateM1aTransaction() {
             finalSaldoTahunan = data.saldoKasTahunBerjalan; // Ambil saldo akhir bulan terakhir
         });
         
-        // Update Footer (Warna Hijau NU sudah di handle CSS tfoot)
+        // Update Footer (TIDAK menambahkan kelas warna di sini)
         
         // Col 3 - PENERIMAAN (3) - Termasuk saldo awal
         const totalPenerimaanCell = document.querySelector('#m3-table tfoot td:nth-child(3)');
         totalPenerimaanCell.innerHTML = `<strong>${formatNominal(totalPenerimaan + saldoBankAwal + saldoTunaiAwal)}</strong>`;
-        totalPenerimaanCell.classList.add('bg-dana-masuk');
+        // totalPenerimaanCell.classList.add('bg-dana-masuk'); // Dihapus
 
         document.getElementById('m3-total-donatur').innerHTML = `<strong>${formatNominal(totalJmlDonatur)}</strong>`;
         document.getElementById('m3-total-uang-pendidikan').innerHTML = `<strong>${formatNominal(totalUangPendidikan)}</strong>`;
@@ -1586,17 +1582,16 @@ function updateM1aTransaction() {
         
         // Col 7 - JUMLAH PENGELUARAN (7)
         document.getElementById('m3-total-pengeluaran').innerHTML = `<strong>${formatNominal(totalJumlahPengeluaran)}</strong>`;
-        document.getElementById('m3-total-pengeluaran').classList.add('bg-dana-keluar');
+        // document.getElementById('m3-total-pengeluaran').classList.add('bg-dana-keluar'); // Dihapus
 
         // Col 8 - SALDO AKHIR BULAN INI (8)
         document.getElementById('m3-total-saldo-akhir-bulan').innerHTML = `<strong>${formatNominal(totalSaldoAkhirBulaniIni)}</strong>`;
-        document.getElementById('m3-total-saldo-akhir-bulan').classList.add('bg-saldo');
+        // document.getElementById('m3-total-saldo-akhir-bulan').classList.add('bg-saldo'); // Dihapus
         
         // Col 9 - SALDO KAS TAHUN BERJALAN (9)
         document.getElementById('m3-final-saldo-tahunan').innerHTML = `<strong>${formatNominal(finalSaldoTahunan)}</strong>`;
-        document.getElementById('m3-final-saldo-tahunan').classList.add('bg-final-saldo');
+        // document.getElementById('m3-final-saldo-tahunan').classList.add('bg-final-saldo'); // Dihapus
 
-        // Note: Perubahan warna teks di footer (dari putih ke gelap) sudah diatur di blok <style>
     }
 
 
