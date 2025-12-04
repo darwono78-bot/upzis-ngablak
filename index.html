@@ -192,12 +192,6 @@
         </div>
         
         <div id="right-group" class="flex-row" style="align-items: center; justify-content: flex-end; gap: 10px; flex-shrink: 0;">
-            
-            <div id="logout-info" class="flex-row admin-only" style="gap: 5px; align-items: center; flex-shrink: 0;">
-                <span id="logout-message" style="font-size: 12px;"></span> 
-                <button class="btn-action btn-danger" onclick="logout()">Logout</button>
-            </div>
-
             <div id="utility-controls" class="flex-row" style="justify-content: flex-end; flex-shrink: 0;">
                 <button class="btn-action btn-primary" onclick="generatePDF()">Unduh PDF (Ttd Ketua/Bendahara)</button>
             </div>
@@ -245,9 +239,17 @@
             </table>
         </div>
         
-        <div class="admin-only flex-row" style="justify-content: space-between; align-items: center; margin-top: 20px;">
-            <h3 style="margin: 0; font-size: 1.17em;">Input Data Koin NU Baru</h3>
-            <button class="btn-action" onclick="resetApp()" style="background-color: #ffc107; color: #333;">Reset Data</button>
+        <div class="admin-only flex-row" style="justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="btn-action" onclick="resetApp()" style="background-color: #ffc107; color: #333; flex-shrink: 0;">Reset Data</button>
+                <h3 style="margin: 0; font-size: 1.17em;">Input Data Koin NU Baru</h3>
+            </div>
+            
+            <div class="flex-row" style="gap: 5px; align-items: center; justify-content: flex-end; flex-shrink: 0;">
+                <span id="logout-message-m1" style="font-size: 12px; color: #666;"></span> 
+                <button class="btn-action btn-danger" onclick="logout()">Logout</button>
+            </div>
         </div>
 
         <form id="m1-form" class="admin-only" onsubmit="saveM1aTransaction(event)" style="padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
@@ -333,9 +335,17 @@
             </table>
         </div>
 
-        <div class="admin-only flex-row" style="justify-content: space-between; align-items: center; margin-top: 20px;">
-            <h3 style="margin: 0; font-size: 1.17em;">Input Transaksi Manual (Masuk/Keluar)</h3>
-            <button class="btn-action" onclick="resetApp()" style="background-color: #ffc107; color: #333;">Reset Data</button>
+        <div class="admin-only flex-row" style="justify-content: space-between; align-items: center; margin-top: 20px; margin-bottom: 10px;">
+            
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="btn-action" onclick="resetApp()" style="background-color: #ffc107; color: #333; flex-shrink: 0;">Reset Data</button>
+                <h3 style="margin: 0; font-size: 1.17em;">Input Transaksi Manual (Masuk/Keluar)</h3>
+            </div>
+            
+            <div class="flex-row" style="gap: 5px; align-items: center; justify-content: flex-end; flex-shrink: 0;">
+                <span id="logout-message-m2" style="font-size: 12px; color: #666;"></span> 
+                <button class="btn-action btn-danger" onclick="logout()">Logout</button>
+            </div>
         </div>
 
         <form id="m2-form" class="admin-only" onsubmit="saveM2ManualTransaction(event)" style="padding: 15px; border: 1px solid #ccc; border-radius: 8px;">
@@ -772,11 +782,16 @@
         if (user) {
             isLoggedIn = true;
             document.getElementById('login-section-bottom').style.display = 'none'; // Sembunyikan form login
-            document.getElementById('logout-message').textContent = 'Login: ' + user.email;
+            // Tampilkan email di area logout baru
+            const emailText = user.email;
+            if (document.getElementById('logout-message-m1')) document.getElementById('logout-message-m1').innerHTML = `Login: <b>${emailText}</b>`;
+            if (document.getElementById('logout-message-m2')) document.getElementById('logout-message-m2').innerHTML = `Login: <b>${emailText}</b>`;
         } else {
             isLoggedIn = false;
             document.getElementById('login-section-bottom').style.display = 'flex'; // Tampilkan form login
-            document.getElementById('logout-message').textContent = '';
+            // Hapus email dari area logout
+            if (document.getElementById('logout-message-m1')) document.getElementById('logout-message-m1').textContent = '';
+            if (document.getElementById('logout-message-m2')) document.getElementById('logout-message-m2').textContent = '';
         }
         recalculateAllReports(); 
     });
